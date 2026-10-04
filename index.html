@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="Place sword stones, capture the enemy's, and watch whole chains flip. Free browser game.">
 <title>Chain Stones</title>
+<meta name="theme-color" content="#162034">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Chain Stones">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="../apps/icons/stones.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
@@ -22,8 +28,8 @@ body{margin:0}
   --hs:76px;
   color-scheme:dark;
 }
-body{background:radial-gradient(ellipse at 50% -10%,#2b3d66 0%,var(--bg) 60%) fixed var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;min-height:100vh}
-.wrap{max-width:1000px;margin:0 auto;padding:18px 16px 40px;display:grid;gap:14px}
+body{background:radial-gradient(ellipse at 50% -10%,#2b3d66 0%,var(--bg) 60%) fixed var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;min-height:100vh;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.wrap{max-width:1000px;margin:0 auto;padding:max(18px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 40px max(16px,env(safe-area-inset-left));display:grid;gap:14px}
 .top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px}
 .title{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;min-width:0}
 .back{color:var(--muted);text-decoration:none;font-family:var(--f-display);font-size:14px;width:100%}
@@ -93,6 +99,7 @@ details li{margin:4px 0}
   .table{grid-template-columns:1fr;gap:14px}
   .hand{max-width:none}
   #hand1{order:-1}
+  #hand0{order:1}
   .board{--gap:8px}
 }
 @media (max-width:560px){h1{font-size:24px}.score .p{font-size:18px}select,button{font-size:14px;padding:8px 11px}}
@@ -155,7 +162,7 @@ details li{margin:4px 0}
       <li>If a side of your new stone has <b>more swords</b> than the side of an enemy stone it touches, you take that stone.</li>
       <li><b>Chains:</b> a stone you take is chained to the stone that took it, and chained stones always have the same owner. If the enemy takes <i>any</i> stone in a chain, the whole chain goes over to them and joins the stone that took it. Chains only grow, so a big chain is a big prize.</li>
       <li>When the board is full, count your stones on the board plus any still in your hand. Most stones wins.</li>
-      <li>Pick a stone, then hover over a square to see which stones you would take.</li>
+      <li>Pick a stone, then hover over a square (or tap it once on a phone) to see which stones you would take.</li>
     </ul>
     <p class="record" id="record"></p>
   </details>
@@ -419,13 +426,22 @@ $('#board').addEventListener('click',e=>{
   const c=e.target.closest('.cell');if(!c||busy||full(G)||!human(G.turn))return;
   const i=+c.dataset.i;if(G.own[i]>=0)return;
   if(sel<0){setStatus('Pick a stone from your hand first.');return;}
+  if(touchTap&&hover!==i){ // touch has no hover: the first tap previews, a second tap on the same square places
+    hover=i;renderBoard();
+    const k=gain(G,sel,i);
+    setStatus(`${k?`Takes <b>${k}</b> stone${k>1?'s':''}. `:''}Tap again to place.`);
+    return;
+  }
   move(sel,i);
 });
-$('#board').addEventListener('mousemove',e=>{
+let touchTap=false;
+$('#board').addEventListener('pointerdown',e=>{touchTap=e.pointerType!=='mouse';});
+$('#board').addEventListener('pointermove',e=>{
+  if(e.pointerType!=='mouse')return; // phones send a fake hover with every tap
   const c=e.target.closest('.cell'),i=c?+c.dataset.i:-1;
   if(i!==hover){hover=i;if(sel>=0&&!busy)renderBoard();}
 });
-$('#board').addEventListener('mouseleave',()=>{hover=-1;if(sel>=0&&!busy)renderBoard();});
+$('#board').addEventListener('pointerleave',e=>{if(e.pointerType!=='mouse')return;hover=-1;if(sel>=0&&!busy)renderBoard();});
 addEventListener('keydown',e=>{
   if(e.key==='Escape'&&sel>=0){sel=-1;renderHands();renderBoard();}
   const k=+e.key;if(k>=1&&k<=9&&!busy&&human(G.turn)&&k<=G.hands[G.turn].length){sel=k-1;renderHands();renderBoard();}
