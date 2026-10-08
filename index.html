@@ -25,7 +25,7 @@ body{margin:0}
   --accent:#f3c54a; --blue:#4aa3ff; --red:#ff6150;
   --f-display:"Fredoka", "Avenir Next Rounded", system-ui, sans-serif;
   --f-body:"Nunito", system-ui, sans-serif;
-  --hs:76px;
+  --hs:76px;--t:1;
   color-scheme:dark;
 }
 body{background:radial-gradient(ellipse at 50% -10%,#2b3d66 0%,var(--bg) 60%) fixed var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;min-height:100vh;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
@@ -75,14 +75,20 @@ button.primary{background:var(--accent);color:#2a2410}
 .cell.lose::after{content:"";position:absolute;inset:-4px;border-radius:16px;border:3px solid var(--red);animation:pulse .9s ease-in-out infinite;pointer-events:none}
 .cell.crack path.brk{opacity:.35;stroke-dasharray:3 2}
 .cell svg.stone{overflow:visible}
-.cell:not(.crack) path.brk{transform-box:fill-box;transform-origin:50% 100%;animation:shatter .45s ease-in forwards}
+.cell:not(.crack) path.brk{transform-box:fill-box;transform-origin:50% 100%;animation:shatter calc(.45s*var(--t)) ease-in forwards}
 .gain.bad{color:var(--red)}
+body.slow{--t:4}
+#bSlow[aria-pressed="true"]{background:var(--accent);color:#2a2410}
+.clash{position:absolute;transform:translate(-50%,-50%);z-index:3;pointer-events:none;display:flex;gap:3px;align-items:center;font-family:var(--f-display);font-weight:700;font-size:17px;
+  background:#0e1422;border:2px solid var(--line);border-radius:9px;padding:1px 7px;font-variant-numeric:tabular-nums;animation:drop calc(.3s*var(--t)) ease-out}
+.clash .w{text-decoration:underline;text-underline-offset:3px}
+.clash .vs{color:var(--muted);font-size:12px}
 .cell.hit::after{content:"";position:absolute;inset:-4px;border-radius:16px;border:3px solid var(--accent);animation:pulse .9s ease-in-out infinite;pointer-events:none}
-.cell.new svg.stone{animation:drop .3s cubic-bezier(.3,1.5,.5,1)}
-.cell.flip svg.stone{animation:flip .38s ease-in-out}
+.cell.new svg.stone{animation:drop calc(.3s*var(--t)) cubic-bezier(.3,1.5,.5,1)}
+.cell.flip svg.stone{animation:flip calc(.38s*var(--t)) ease-in-out}
 .cell.last::before{content:"";position:absolute;inset:-5px;border-radius:17px;border:2px dashed rgba(255,255,255,.35);pointer-events:none}
 svg.links{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
-.gain{position:absolute;font-family:var(--f-display);font-weight:700;font-size:26px;color:var(--accent);text-shadow:0 2px 0 #0e1422,0 0 10px rgba(0,0,0,.6);pointer-events:none;transform:translate(-50%,-50%);animation:rise 1.1s ease-out forwards}
+.gain{position:absolute;font-family:var(--f-display);font-weight:700;font-size:26px;color:var(--accent);text-shadow:0 2px 0 #0e1422,0 0 10px rgba(0,0,0,.6);pointer-events:none;transform:translate(-50%,-50%);animation:rise calc(1.1s*var(--t)) ease-out forwards}
 
 .overlay{position:absolute;inset:-8px;display:grid;place-items:center;background:rgba(14,20,34,.62);border-radius:22px;padding:16px;z-index:5}
 .res{background:var(--panel);border:2px solid var(--line);padding:20px 26px;border-radius:16px;text-align:center;display:grid;gap:12px;min-width:min(300px,100%)}
@@ -133,6 +139,7 @@ details li{margin:4px 0}
         <option value="3">3 × 3 board</option>
         <option value="4">4 × 4 board</option>
       </select>
+      <button id="bSlow" aria-pressed="false" title="Slow motion (S)">Slow-mo</button>
       <button class="primary" id="bNew">New game</button>
     </div>
   </div>
@@ -162,6 +169,7 @@ details li{margin:4px 0}
       <li><b>Chains:</b> a stone you take is chained to the stone that took it, and chained stones always have the same owner. If the enemy takes <i>any</i> stone in a chain, the whole chain goes over to them.</li>
       <li>When the board is full, count your stones on the board plus any still in your hand. Most stones wins. On 4 × 4 the first player gets a spare stone, because the second player places last.</li>
       <li>Pick a stone, then hover over a square (or tap it once on a phone): yellow stones you would take, red stones you would lose, faded spikes would break.</li>
+      <li><b>Slow-mo</b> (or S) plays every move four times slower and shows each clash as a score, like 3 vs 1.</li>
     </ul>
     <p class="record" id="record"></p>
   </details>
@@ -190,7 +198,7 @@ function play(st,hi,c){
   // Every side of the new stone that touches an enemy stone clashes with it: facing spikes break one for one,
   // and the side with spikes left over wins. Wins resolve first, then the new stone is taken by the enemy that beat it hardest.
   const n=st.n,me=st.turn,op=1-me,s=st.hands[me][hi].s.slice();
-  const ns={n,own:st.own.slice(),comp:st.comp.slice(),at:st.at.slice(),hands:st.hands.slice(),turn:op,taken:[],lost:null,broke:[]};
+  const ns={n,own:st.own.slice(),comp:st.comp.slice(),at:st.at.slice(),hands:st.hands.slice(),turn:op,taken:[],lost:null,broke:[],fights:[]};
   ns.hands[me]=st.hands[me].filter((_,i)=>i!==hi);
   ns.own[c]=me;ns.comp[c]=c;
   const fights=[];
@@ -201,7 +209,7 @@ function play(st,hi,c){
     if(!a&&!b)continue;
     const k=Math.min(a,b);
     if(k){s[d]-=k;const t=ns.at[q].s.slice();t[e]-=k;ns.at[q]={s:t};ns.broke.push([c,d,k],[q,e,k]);}
-    fights.push([q,a-b]);
+    fights.push([q,a-b]);ns.fights.push([q,d,a,b]);
   }
   ns.at[c]={s};
   const flip=(from,to,who)=>{const grp=[];for(let i=0;i<n*n;i++)if(ns.comp[i]===from){ns.own[i]=who;ns.comp[i]=to;grp.push(i);}return grp;};
@@ -269,7 +277,8 @@ if(typeof module!=='undefined')module.exports={DIRS,nb,deal,newGame,full,score,p
 <script>
 const $=s=>document.querySelector(s);
 const NAMES=['Blue','Red'];
-let cfg={mode:'normal',n:3};
+let cfg={mode:'normal',n:3,slow:false};
+const T=ms=>ms*(cfg.slow?4:1); // every move timing goes through T so slow-mo stretches the whole sequence
 try{Object.assign(cfg,JSON.parse(localStorage.getItem('chainstones-cfg')||'{}')||{});}catch(e){}
 let record={};
 try{record=JSON.parse(localStorage.getItem('chainstones-record')||'{}')||{};}catch(e){record={};}
@@ -380,7 +389,18 @@ function popGain(cell,text,bad){
   const C=$('#board').querySelectorAll('.cell')[cell];if(!C)return;
   const d=document.createElement('div');d.className='gain'+(bad?' bad':'');d.textContent=text;
   d.style.left=(C.offsetLeft+C.offsetWidth/2)+'px';d.style.top=(C.offsetTop+C.offsetHeight/2)+'px';
-  $('#board').appendChild(d);setTimeout(()=>d.remove(),1200);
+  $('.boardwrap').appendChild(d);setTimeout(()=>d.remove(),T(1200));
+}
+
+function showClashes(c,fights,me,ms){
+  // Slow-mo only: a badge on each fought edge, new stone's spikes first, the winning number underlined.
+  const cells=$('#board').querySelectorAll('.cell'),C=cells[c],col=p=>p===0?'var(--blue)':'var(--red)';
+  for(const [q,d,a,b] of fights){
+    const Q=cells[q],el=document.createElement('div');el.className='clash';
+    el.style.left=(C.offsetLeft+Q.offsetLeft+C.offsetWidth)/2+'px';el.style.top=(C.offsetTop+Q.offsetTop+C.offsetHeight)/2+'px';
+    el.innerHTML=`<span class="${a>b?'w':''}" style="color:${col(me)}">${a}</span><span class="vs">vs</span><span class="${b>a?'w':''}" style="color:${col(1-me)}">${b}</span>`;
+    $('.boardwrap').appendChild(el);timers.push(setTimeout(()=>el.remove(),ms));
+  }
 }
 
 function move(hi,c){
@@ -401,19 +421,20 @@ function move(hi,c){
   G=ns;sel=-1;hover=-1;last=c;fresh.add(c);brk=brkMap(ns.broke);
   render();
   const t0=ns.broke.length?380:120,depth=Math.max(0,...steps.map(s=>s[1]));
+  if(cfg.slow)showClashes(c,ns.fights,me,T(t0+depth*200+400));
   for(let k=1;k<=depth;k++)timers.push(setTimeout(()=>{
     for(const [i,s,who] of steps)if(s===k){disp[i]=who;flips.add(i);}
     renderBoard();renderScore();
-  },t0+k*200));
+  },T(t0+k*200)));
   const took=ns.taken.reduce((t,x)=>t+x.grp.length,0),lost=ns.lost?ns.lost.grp.length-took:0;
-  if(took)timers.push(setTimeout(()=>popGain(c,'+'+took),t0+140));
-  if(ns.lost)timers.push(setTimeout(()=>popGain(c,'\u2212'+(lost+took),true),t0+won*200+340));
+  if(took)timers.push(setTimeout(()=>popGain(c,'+'+took),T(t0+140)));
+  if(ns.lost)timers.push(setTimeout(()=>popGain(c,'\u2212'+(lost+took),true),T(t0+won*200+340)));
   const who=vsCpu()?(me===0?'You':'The computer'):NAMES[me];
   const chained=took-ns.taken.length,pl=k=>k>1?'s':'';
   let msg=took?`${who} took <b>${took}</b> stone${pl(took)}${chained>0?` (${chained} through chains)`:''}`:'';
   if(ns.lost)msg+=(msg?', then ':`${who} `)+`lost the clash and gave up <b>${lost+took}</b> stone${pl(lost+took)}`;
   setStatus(msg?msg+'.':ns.broke.length?`${who} broke spikes, no one won the clash.`:`${who} placed a stone.`);
-  timers.push(setTimeout(()=>{disp=null;busy=false;render();next(took>0||!!ns.lost);},t0+depth*200+(steps.length?520:260)));
+  timers.push(setTimeout(()=>{disp=null;busy=false;render();next(took>0||!!ns.lost);},T(t0+depth*200+(steps.length?520:260))));
 }
 
 function next(justTook){
@@ -422,7 +443,7 @@ function next(justTook){
   if(!human(p)){
     if(!justTook)setStatus('Computer is thinking…');
     renderHands();
-    timers.push(setTimeout(()=>{const [hi,c]=think(G,cfg.mode);move(hi,c);},justTook?700:450));
+    timers.push(setTimeout(()=>{const [hi,c]=think(G,cfg.mode);move(hi,c);},T(justTook?700:450)));
     return;
   }
   if(!justTook||!vsCpu()){
@@ -465,10 +486,13 @@ $('#board').addEventListener('pointermove',e=>{
 });
 $('#board').addEventListener('pointerleave',e=>{if(e.pointerType!=='mouse')return;hover=-1;if(sel>=0&&!busy)renderBoard();});
 addEventListener('keydown',e=>{
+  if((e.key==='s'||e.key==='S')&&!e.metaKey&&!e.ctrlKey)setSlow(!cfg.slow);
   if(e.key==='Escape'&&sel>=0){sel=-1;renderHands();renderBoard();}
   const k=+e.key;if(k>=1&&k<=9&&!busy&&human(G.turn)&&k<=G.hands[G.turn].length){sel=k-1;renderHands();renderBoard();}
 });
 addEventListener('resize',()=>renderLinks());
+const setSlow=v=>{cfg.slow=v;document.body.classList.toggle('slow',v);$('#bSlow').setAttribute('aria-pressed',v);save();};
+$('#bSlow').onclick=()=>setSlow(!cfg.slow);setSlow(!!cfg.slow);
 $('#bNew').onclick=start;$('#ovAgain').onclick=start;
 $('#mode').onchange=e=>{cfg.mode=e.target.value;save();starter=1;start();};
 $('#size').onchange=e=>{cfg.n=+e.target.value;save();starter=1;start();};
