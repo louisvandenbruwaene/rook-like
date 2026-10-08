@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Place sword stones, capture the enemy's, and watch whole chains flip. Free browser game.">
+<meta name="description" content="Place spiked stones, win clashes, and watch whole chains flip. Free browser game.">
 <title>Chain Stones</title>
 <meta name="theme-color" content="#162034">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -72,6 +72,11 @@ button.primary{background:var(--accent);color:#2a2410}
 .cell.open{cursor:pointer}
 .cell.open:hover{background:rgba(243,197,74,.16);box-shadow:inset 0 0 0 3px rgba(243,197,74,.55)}
 .cell .ghost{position:absolute;inset:0;opacity:.55;pointer-events:none}
+.cell.lose::after{content:"";position:absolute;inset:-4px;border-radius:16px;border:3px solid var(--red);animation:pulse .9s ease-in-out infinite;pointer-events:none}
+.cell.crack path.brk{opacity:.35;stroke-dasharray:3 2}
+.cell svg.stone{overflow:visible}
+.cell:not(.crack) path.brk{transform-box:fill-box;transform-origin:50% 100%;animation:shatter .45s ease-in forwards}
+.gain.bad{color:var(--red)}
 .cell.hit::after{content:"";position:absolute;inset:-4px;border-radius:16px;border:3px solid var(--accent);animation:pulse .9s ease-in-out infinite;pointer-events:none}
 .cell.new svg.stone{animation:drop .3s cubic-bezier(.3,1.5,.5,1)}
 .cell.flip svg.stone{animation:flip .38s ease-in-out}
@@ -89,11 +94,12 @@ details ul{margin:8px 0 0;padding-left:20px}
 details li{margin:4px 0}
 .record{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
 
+@keyframes shatter{0%{transform:none;opacity:1}35%{transform:scale(1.25);opacity:1}100%{transform:translateY(-6px) scale(.2) rotate(40deg);opacity:0}}
 @keyframes pulse{0%,100%{opacity:.35}50%{opacity:1}}
 @keyframes drop{0%{transform:scale(1.35);opacity:0}100%{transform:scale(1);opacity:1}}
 @keyframes flip{0%{transform:perspective(400px) rotateY(0)}50%{transform:perspective(400px) rotateY(90deg) scale(1.08)}100%{transform:perspective(400px) rotateY(0)}}
 @keyframes rise{0%{opacity:0;margin-top:10px}20%{opacity:1}100%{opacity:0;margin-top:-40px}}
-@media (prefers-reduced-motion:reduce){.cell.new svg.stone,.cell.flip svg.stone,.cell.hit::after,.gain{animation:none}}
+@media (prefers-reduced-motion:reduce){.cell:not(.crack) path.brk{animation:none;opacity:0}.cell.new svg.stone,.cell.flip svg.stone,.cell.hit::after,.gain{animation:none}}
 @media (max-width:820px){
   :root{--hs:min(64px,15vw)}
   .table{grid-template-columns:1fr;gap:14px}
@@ -111,13 +117,6 @@ details li{margin:4px 0}
     <linearGradient id="rock" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#cfc6b4"/><stop offset=".55" stop-color="#a99f8b"/><stop offset="1" stop-color="#857b69"/></linearGradient>
     <radialGradient id="gem0" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#d5ecff"/><stop offset=".45" stop-color="#4aa3ff"/><stop offset="1" stop-color="#1d4f9a"/></radialGradient>
     <radialGradient id="gem1" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#ffe0d6"/><stop offset=".45" stop-color="#ff6150"/><stop offset="1" stop-color="#9a2318"/></radialGradient>
-    <symbol id="sw" viewBox="-7 -15 14 30" overflow="visible">
-      <path d="M0 -14 L2.8 -9.5 L2.8 5 L-2.8 5 L-2.8 -9.5 Z" fill="#fbe7a4" stroke="#5a4210" stroke-width="1.3" stroke-linejoin="round"/>
-      <path d="M0 -12 V4" stroke="#fff6d6" stroke-width="1" opacity=".8"/>
-      <rect x="-6.5" y="5" width="13" height="3" rx="1.2" fill="#e0a92e" stroke="#5a4210" stroke-width="1.2"/>
-      <rect x="-1.5" y="8" width="3" height="4.5" fill="#7a4c22" stroke="#5a4210" stroke-width="1"/>
-      <circle cx="0" cy="13.6" r="2" fill="#e0a92e" stroke="#5a4210" stroke-width="1"/>
-    </symbol>
   </defs>
 </svg>
 <div class="wrap">
@@ -158,11 +157,11 @@ details li{margin:4px 0}
   <details id="rules">
     <summary>How to play</summary>
     <ul>
-      <li>Take turns placing a stone from your hand on an empty square. Every side of a stone has 0 to 3 swords.</li>
-      <li>If a side of your new stone has <b>more swords</b> than the side of an enemy stone it touches, you take that stone.</li>
-      <li><b>Chains:</b> a stone you take is chained to the stone that took it, and chained stones always have the same owner. If the enemy takes <i>any</i> stone in a chain, the whole chain goes over to them and joins the stone that took it. Chains only grow, so a big chain is a big prize.</li>
-      <li>When the board is full, count your stones on the board plus any still in your hand. Most stones wins.</li>
-      <li>Pick a stone, then hover over a square (or tap it once on a phone) to see which stones you would take.</li>
+      <li>Take turns placing a stone from your hand on an empty square. Every side of a stone has 0 to 3 spikes.</li>
+      <li><b>Clash:</b> each side of your new stone that touches an enemy stone fights it. Facing spikes break off one for one. The side with spikes left over wins and takes the other stone. That works both ways: a weak side against a strong one gets your new stone taken.</li>
+      <li><b>Chains:</b> a stone you take is chained to the stone that took it, and chained stones always have the same owner. If the enemy takes <i>any</i> stone in a chain, the whole chain goes over to them.</li>
+      <li>When the board is full, count your stones on the board plus any still in your hand. Most stones wins. On 4 × 4 the first player gets a spare stone, because the second player places last.</li>
+      <li>Pick a stone, then hover over a square (or tap it once on a phone): yellow stones you would take, red stones you would lose, faded spikes would break.</li>
     </ul>
     <p class="record" id="record"></p>
   </details>
@@ -175,33 +174,44 @@ const DIRS=[[0,-1],[1,0],[0,1],[-1,0]]; // top, right, bottom, left: matches a s
 function nb(n,c,d){const x=c%n+DIRS[d][0],y=(c/n|0)+DIRS[d][1];return x<0||y<0||x>=n||y>=n?-1:y*n+x;}
 function makeStone(total,rnd){const s=[0,0,0,0];while(total>0){const d=rnd()*4|0;if(s[d]<3){s[d]++;total--;}}return {s};}
 function deal(n,rnd=Math.random){
-  // Both hands get stones of the same total strength, with the swords spread differently.
+  // Both hands get stones of the same total strength, with the spikes spread differently.
   const k=n===3?5:8,totals=[];for(let i=0;i<k;i++)totals.push(3+(rnd()*6|0));
   totals.sort((a,b)=>b-a);
   return [totals.map(t=>makeStone(t,rnd)),totals.map(t=>makeStone(t,rnd))];
 }
-function newGame(n,first,rnd){return {n,own:new Int8Array(n*n).fill(-1),comp:new Int8Array(n*n).fill(-1),at:new Array(n*n).fill(null),hands:deal(n,rnd),turn:first};}
+function newGame(n,first,rnd){
+  // On 4 x 4 the second player places the last stone, so the first player gets a spare 6-spike stone (self-play: 20 wins to 22).
+  const hands=deal(n,rnd);if(n===4)hands[first].push(makeStone(6,rnd));
+  return {n,own:new Int8Array(n*n).fill(-1),comp:new Int8Array(n*n).fill(-1),at:new Array(n*n).fill(null),hands,turn:first};
+}
 function full(st){for(let i=0;i<st.own.length;i++)if(st.own[i]<0)return false;return true;}
 function score(st,p){let k=st.hands[p].length;for(let i=0;i<st.own.length;i++)if(st.own[i]===p)k++;return k;}
 function play(st,hi,c){
-  const n=st.n,me=st.turn,op=1-me,s=st.hands[me][hi];
-  const ns={n,own:st.own.slice(),comp:st.comp.slice(),at:st.at.slice(),hands:st.hands.slice(),turn:op,taken:[]};
+  // Every side of the new stone that touches an enemy stone clashes with it: facing spikes break one for one,
+  // and the side with spikes left over wins. Wins resolve first, then the new stone is taken by the enemy that beat it hardest.
+  const n=st.n,me=st.turn,op=1-me,s=st.hands[me][hi].s.slice();
+  const ns={n,own:st.own.slice(),comp:st.comp.slice(),at:st.at.slice(),hands:st.hands.slice(),turn:op,taken:[],lost:null,broke:[]};
   ns.hands[me]=st.hands[me].filter((_,i)=>i!==hi);
-  ns.own[c]=me;ns.comp[c]=c;ns.at[c]=s;
+  ns.own[c]=me;ns.comp[c]=c;
+  const fights=[];
   for(let d=0;d<4;d++){
     const q=nb(n,c,d);
-    if(q<0||ns.own[q]!==op||s.s[d]<=ns.at[q].s[(d+2)%4])continue;
-    const oc=ns.comp[q],grp=[];
-    for(let i=0;i<n*n;i++)if(ns.comp[i]===oc){ns.own[i]=me;ns.comp[i]=c;grp.push(i);}
-    ns.taken.push({q,grp});
+    if(q<0||ns.own[q]!==op)continue;
+    const e=(d+2)%4,a=s[d],b=ns.at[q].s[e];
+    if(!a&&!b)continue;
+    const k=Math.min(a,b);
+    if(k){s[d]-=k;const t=ns.at[q].s.slice();t[e]-=k;ns.at[q]={s:t};ns.broke.push([c,d,k],[q,e,k]);}
+    fights.push([q,a-b]);
   }
+  ns.at[c]={s};
+  const flip=(from,to,who)=>{const grp=[];for(let i=0;i<n*n;i++)if(ns.comp[i]===from){ns.own[i]=who;ns.comp[i]=to;grp.push(i);}return grp;};
+  for(const [q,m] of fights)if(m>0&&ns.own[q]===op)ns.taken.push({q,grp:flip(ns.comp[q],c,me)});
+  let w=null;for(const f of fights)if(f[1]<0&&ns.own[f[0]]===op&&(!w||f[1]<w[1]))w=f;
+  if(w)ns.lost={q:w[0],grp:flip(c,ns.comp[w[0]],op)};
   return ns;
 }
-function gain(st,hi,c){ // stones a move would take, without building the new state
-  const n=st.n,op=1-st.turn,s=st.hands[st.turn][hi],cs=[];
-  for(let d=0;d<4;d++){const q=nb(n,c,d);if(q>=0&&st.own[q]===op&&s.s[d]>st.at[q].s[(d+2)%4]&&!cs.includes(st.comp[q]))cs.push(st.comp[q]);}
-  if(!cs.length)return 0;
-  let k=0;for(let i=0;i<n*n;i++)if(cs.includes(st.comp[i]))k++;return k;
+function gain(st,hi,c){ // net stones a move wins for the mover (negative when the new stone gets taken)
+  const me=st.turn,ns=play(st,hi,c);return score(ns,me)-score(st,me);
 }
 function legal(st){
   const seen=new Set(),hs=[],cells=[];
@@ -265,29 +275,29 @@ let record={};
 try{record=JSON.parse(localStorage.getItem('chainstones-record')||'{}')||{};}catch(e){record={};}
 const save=()=>{try{localStorage.setItem('chainstones-cfg',JSON.stringify(cfg));localStorage.setItem('chainstones-record',JSON.stringify(record));}catch(e){}};
 
-let G=null,edges=[],sel=-1,busy=false,starter=1,disp=null,hover=-1,last=-1,fresh=new Set(),flips=new Set(),timers=[];
+let G=null,edges=[],sel=-1,busy=false,starter=1,disp=null,hover=-1,last=-1,fresh=new Set(),flips=new Set(),brk=new Map(),timers=[];
 const vsCpu=()=>cfg.mode!=='two';
 const human=p=>!vsCpu()||p===0;
 
-function stoneSVG(stone,owner,cls='stone'){
-  const pos=[[50],[40,60],[32,50,68]];
-  let sw='';
+function stoneSVG(stone,owner,cls='stone',brk){
+  // Spikes are little triangles on the outside of the square. brk[d] extra spikes on side d are drawn breaking off.
+  const pos=[[50],[41,59],[32,50,68]],col=owner===0?'#4aa3ff':'#ff6150',dark=owner===0?'#123a6e':'#6e1a12';
+  let sp='';
   for(let d=0;d<4;d++){
-    const k=stone.s[d];if(!k)continue;
-    sw+=`<g transform="rotate(${d*90} 50 50)">`+pos[k-1].map(x=>`<use href="#sw" x="${x-4.8}" y="6" width="9.6" height="20.6"/>`).join('')+'</g>';
+    const k=stone.s[d],b=brk?brk[d]:0;if(!k&&!b)continue;
+    sp+=`<g transform="rotate(${d*90} 50 50)">`+pos[k+b-1].map((x,j)=>`<path class="${j>=k?'brk':''}" d="M${x-7.5} 17 L${x} 2 L${x+7.5} 17 Z" fill="${col}" stroke="${dark}" stroke-width="1.6" stroke-linejoin="round"/>`).join('')+'</g>';
   }
-  const col=owner===0?'#4aa3ff':'#ff6150';
-  return `<svg class="${cls}" viewBox="0 0 100 100" aria-hidden="true"><rect x="3" y="3" width="94" height="94" rx="15" fill="url(#rock)" stroke="${col}" stroke-width="5"/>
-<rect x="9" y="9" width="82" height="82" rx="11" fill="none" stroke="rgba(60,50,35,.35)" stroke-width="1.5"/>
-<path d="M14 80 Q30 74 38 82 M66 18 Q74 26 86 20" stroke="rgba(70,60,45,.3)" stroke-width="1.6" fill="none"/>
-${sw}<circle cx="50" cy="50" r="12" fill="url(#gem${owner})" stroke="rgba(20,20,30,.55)" stroke-width="1.5"/><circle cx="46" cy="45" r="3.5" fill="#fff" opacity=".7"/></svg>`;
+  return `<svg class="${cls}" viewBox="0 0 100 100" aria-hidden="true">${sp}<rect x="15" y="15" width="70" height="70" rx="11" fill="url(#rock)" stroke="${col}" stroke-width="4.5"/>
+<rect x="20.5" y="20.5" width="59" height="59" rx="7" fill="none" stroke="rgba(60,50,35,.35)" stroke-width="1.5"/>
+<path d="M24 74 Q34 69 40 76 M62 26 Q69 31 77 27" stroke="rgba(70,60,45,.3)" stroke-width="1.6" fill="none"/>
+<circle cx="50" cy="50" r="11" fill="url(#gem${owner})" stroke="rgba(20,20,30,.55)" stroke-width="1.5"/><circle cx="46" cy="45" r="3.5" fill="#fff" opacity=".7"/></svg>`;
 }
 
 function start(){
   timers.forEach(clearTimeout);timers=[];
   starter=1-starter;
   G=newGame(cfg.n,starter,Math.random);
-  edges=[];sel=-1;busy=false;disp=null;hover=-1;last=-1;fresh=new Set();flips=new Set();
+  edges=[];sel=-1;busy=false;disp=null;hover=-1;last=-1;fresh=new Set();flips=new Set();brk=new Map();
   $('#ov').hidden=true;
   $('#mode').value=cfg.mode;$('#size').value=cfg.n;
   $('#sn0').textContent=vsCpu()?'You':'Blue';$('#sn1').textContent=vsCpu()?'Computer':'Red';
@@ -310,7 +320,7 @@ function renderHands(){
       const b=document.createElement('button');
       b.className='hstone'+(mine&&sel===i?' sel':'');
       b.disabled=!mine;
-      b.setAttribute('aria-label',`Stone with ${s.s[0]} up, ${s.s[1]} right, ${s.s[2]} down, ${s.s[3]} left`);
+      b.setAttribute('aria-label',`Stone with spikes ${s.s[0]} up, ${s.s[1]} right, ${s.s[2]} down, ${s.s[3]} left`);
       b.innerHTML=stoneSVG(s,p);
       b.onclick=()=>{sel=sel===i?-1:i;renderHands();renderBoard();};
       el.appendChild(b);
@@ -318,26 +328,31 @@ function renderHands(){
   }
 }
 
+function brkMap(broke){const m=new Map();for(const [i,d,k] of broke){if(!m.has(i))m.set(i,[0,0,0,0]);m.get(i)[d]+=k;}return m;}
+
 function renderBoard(){
   const b=$('#board'),n=G.n,own=disp||G.own;
   b.style.setProperty('--n',n);
   const canPlace=!busy&&sel>=0&&!full(G)&&human(G.turn);
-  const hits=new Set();
-  if(canPlace&&hover>=0&&G.own[hover]<0)for(const t of play(G,sel,hover).taken)t.grp.forEach(i=>hits.add(i));
+  // Preview: yellow = stones you would take, red = stones you would lose, faded spikes = spikes that would break.
+  let pv=null,crack=new Map();
+  if(canPlace&&hover>=0&&G.own[hover]<0){pv=play(G,sel,hover);crack=brkMap(pv.broke);}
   let html='';
   for(let i=0;i<n*n;i++){
     const o=own[i],cls=['cell'];
     if(o<0&&canPlace)cls.push('open');
-    if(hits.has(i))cls.push('hit');
+    if(pv&&G.own[i]===1-G.turn&&pv.own[i]===G.turn)cls.push('hit');
+    if(pv&&(G.own[i]===G.turn||i===hover)&&pv.own[i]===1-G.turn)cls.push('lose');
     if(fresh.has(i))cls.push('new');
     if(flips.has(i))cls.push('flip');
+    if(crack.has(i))cls.push('crack');
     if(i===last&&!busy)cls.push('last');
-    let inner=o>=0?stoneSVG(G.at[i],o):'';
-    if(o<0&&canPlace&&i===hover)inner=`<div class="ghost">${stoneSVG(G.hands[G.turn][sel],G.turn)}</div>`;
+    let inner=o>=0?stoneSVG(pv&&crack.has(i)?pv.at[i]:G.at[i],o,'stone',crack.get(i)||brk.get(i)):'';
+    if(pv&&i===hover)inner=`<div class="ghost">${stoneSVG(pv.at[i],G.turn,'stone',crack.get(i))}</div>`;
     html+=`<div class="${cls.join(' ')}" data-i="${i}">${inner}</div>`;
   }
   b.innerHTML=html+'<svg class="links"></svg>';
-  fresh.clear();flips.clear();
+  fresh.clear();flips.clear();brk.clear();
   renderLinks();
 }
 
@@ -350,7 +365,7 @@ function renderLinks(){
     const A=cells[a],C=cells[c];if(!A||!C)continue;
     const ax=A.offsetLeft+A.offsetWidth/2,ay=A.offsetTop+A.offsetHeight/2,cx=C.offsetLeft+C.offsetWidth/2,cy=C.offsetTop+C.offsetHeight/2;
     const mx=(ax+cx)/2,my=(ay+cy)/2,horiz=Math.abs(cx-ax)>Math.abs(cy-ay),col=own[a]===0?'#9fd0ff':own[a]===1?'#ffb0a6':'#ddd';
-    const u=Math.max(7,A.offsetWidth*.09);
+    const u=Math.max(6,A.offsetWidth*.075);
     out+=`<g transform="translate(${mx} ${my}) rotate(${horiz?0:90})">`;
     for(let k=-1;k<=1;k++){
       const w=k===0?u*1.9:u*2.2,h=k===0?u*.75:u*1.15;
@@ -361,9 +376,9 @@ function renderLinks(){
   svg.innerHTML=out;
 }
 
-function popGain(cell,text){
+function popGain(cell,text,bad){
   const C=$('#board').querySelectorAll('.cell')[cell];if(!C)return;
-  const d=document.createElement('div');d.className='gain';d.textContent=text;
+  const d=document.createElement('div');d.className='gain'+(bad?' bad':'');d.textContent=text;
   d.style.left=(C.offsetLeft+C.offsetWidth/2)+'px';d.style.top=(C.offsetTop+C.offsetHeight/2)+'px';
   $('#board').appendChild(d);setTimeout(()=>d.remove(),1200);
 }
@@ -372,26 +387,33 @@ function move(hi,c){
   if(busy)return;
   busy=true;
   const prev=G,me=G.turn,ns=play(G,hi,c),steps=[];
-  // Flip order: walk each taken chain outward along its links, so the takeover visibly ripples.
-  for(const {q,grp} of ns.taken){
+  // Flip order: walk each chain that changes hands outward along its links, so the takeover visibly ripples.
+  const ripple=(q,grp,t0,who)=>{
     const set=new Set(grp),dist=new Map([[q,1]]),queue=[q];
     while(queue.length){const x=queue.shift();for(const [a,b] of edges){const y=a===x?b:b===x?a:-1;if(y>=0&&set.has(y)&&!dist.has(y)){dist.set(y,dist.get(x)+1);queue.push(y);}}}
-    for(const i of grp)steps.push([i,dist.get(i)||1]);
-  }
+    for(const i of grp)steps.push([i,t0+(dist.get(i)||1),who]);
+  };
+  for(const {q,grp} of ns.taken)ripple(q,grp,0,me);
   for(const {q} of ns.taken)edges.push([c,q]);
+  const won=Math.max(0,...steps.map(s=>s[1]));
+  if(ns.lost){edges.push([ns.lost.q,c]);ripple(c,ns.lost.grp,won,1-me);}
   disp=prev.own.slice();disp[c]=me;
-  G=ns;sel=-1;hover=-1;last=c;fresh.add(c);
+  G=ns;sel=-1;hover=-1;last=c;fresh.add(c);brk=brkMap(ns.broke);
   render();
-  const total=steps.length,depth=Math.max(0,...steps.map(s=>s[1]));
+  const t0=ns.broke.length?380:120,depth=Math.max(0,...steps.map(s=>s[1]));
   for(let k=1;k<=depth;k++)timers.push(setTimeout(()=>{
-    for(const [i,s] of steps)if(s===k){disp[i]=G.own[i];flips.add(i);}
+    for(const [i,s,who] of steps)if(s===k){disp[i]=who;flips.add(i);}
     renderBoard();renderScore();
-  },120+k*200));
-  if(total)timers.push(setTimeout(()=>popGain(c,'+'+total),260));
+  },t0+k*200));
+  const took=ns.taken.reduce((t,x)=>t+x.grp.length,0),lost=ns.lost?ns.lost.grp.length-took:0;
+  if(took)timers.push(setTimeout(()=>popGain(c,'+'+took),t0+140));
+  if(ns.lost)timers.push(setTimeout(()=>popGain(c,'\u2212'+(lost+took),true),t0+won*200+340));
   const who=vsCpu()?(me===0?'You':'The computer'):NAMES[me];
-  const chained=total-ns.taken.length;
-  setStatus(total?`${who} took <b>${total}</b> stone${total>1?'s':''}${chained>0?` (${chained} through chains)`:''}.`:`${who} placed a stone.`);
-  timers.push(setTimeout(()=>{disp=null;busy=false;render();next(total>0);},depth*200+(total?520:260)));
+  const chained=took-ns.taken.length,pl=k=>k>1?'s':'';
+  let msg=took?`${who} took <b>${took}</b> stone${pl(took)}${chained>0?` (${chained} through chains)`:''}`:'';
+  if(ns.lost)msg+=(msg?', then ':`${who} `)+`lost the clash and gave up <b>${lost+took}</b> stone${pl(lost+took)}`;
+  setStatus(msg?msg+'.':ns.broke.length?`${who} broke spikes, no one won the clash.`:`${who} placed a stone.`);
+  timers.push(setTimeout(()=>{disp=null;busy=false;render();next(took>0||!!ns.lost);},t0+depth*200+(steps.length?520:260)));
 }
 
 function next(justTook){
@@ -429,7 +451,7 @@ $('#board').addEventListener('click',e=>{
   if(touchTap&&hover!==i){ // touch has no hover: the first tap previews, a second tap on the same square places
     hover=i;renderBoard();
     const k=gain(G,sel,i);
-    setStatus(`${k?`Takes <b>${k}</b> stone${k>1?'s':''}. `:''}Tap again to place.`);
+    setStatus(`${k>0?`Wins <b>${k}</b> stone${k>1?'s':''}. `:k<0?`Loses <b>${-k}</b> stone${k<-1?'s':''}. `:''}Tap again to place.`);
     return;
   }
   move(sel,i);
