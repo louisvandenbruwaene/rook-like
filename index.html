@@ -206,7 +206,7 @@ body.slow{--t:4}
     <li>A run is <b>20 matches</b>. Lose one and the run is over. Match 20 is the boss.</li>
     <li>Take turns placing a stone from your hand on an empty square of the 4 × 4 board. You never see the opponent's hand.</li>
     <li>Every stone is a character with its own spikes. Your stones face up the board, the opponent's are turned round and face down. Each level adds a spike to every side that has some (up to 5).</li>
-    <li><b>Clash:</b> each side of your new stone that touches an enemy stone fights it. Facing spikes break off one for one, and the side with spikes left over wins and takes the other stone. That works both ways: lose any clash and your new stone is taken.</li>
+    <li><b>Clash:</b> each side of your new stone that touches an enemy stone fights it. Facing spikes break off one for one, and the side with spikes left over wins and takes the other stone. A spike that hits is used up, so the winner always loses at least one spike: 2 against 1 ends 1 against 0, and 1 against 0 ends 0 against 0. That works both ways: lose any clash and your new stone is taken.</li>
     <li><b>Chain:</b> after the new stone has fought, the fights spread outwards from every stone that changed colour. Each line between stones of different colour with spikes on it, next to a stone that changed, fights the same way, closest to the new stone first. Each line fights at most once per move.</li>
     <li>When the board is full, count your stones. The dude with crown counts as 3. Most points wins. A draw is replayed.</li>
     <li>After a win, pick one of three stones to level up for the rest of the run. A stone keeps its character, it only gets more spikes. When a run ends, keep one stone you upgraded: it stays in your starting hand for good.</li>
@@ -236,90 +236,113 @@ const PIECES={
   Q:{name:'Pretty lady',base:[2,2,2,2],val:1,text:'two on every side'},
   K:{name:'Dude with crown',base:[1,1,1,1],val:3,text:'every side, and he counts as 3'},
 };
+const turnAround=s=>[s[DOWN],s[LEFT],s[UP],s[RIGHT]];
 function mkStone(t,l,f){
   // f is the facing: 0 points up the board (you), 1 points down (the opponent), so the pattern turns half way round.
   const s=PIECES[t].base.map(x=>x?Math.min(MAXL,x+l-1):0);
-  return {t,l,f,s:f?[s[2],s[3],s[0],s[1]]:s};
+  return {t,l,f,s:f?turnAround(s):s};
 }
 function neighbour(n,cell,side){
   const x=cell%n+STEP[side][0],y=(cell/n|0)+STEP[side][1];
   return x<0||y<0||x>=n||y>=n?-1:y*n+x;
 }
 const distance=(n,a,b)=>Math.abs(a%n-b%n)+Math.abs((a/n|0)-(b/n|0));
+const lineKey=(n,a,b)=>Math.min(a,b)*n*n+Math.max(a,b); // one number per line between two squares
 function newGame(n,hands,first){return {n,own:new Int8Array(n*n).fill(-1),at:new Array(n*n).fill(null),hands,turn:first};}
 const full=g=>!g.own.includes(-1);
 function score(g,p){let k=0;for(let i=0;i<g.own.length;i++)if(g.own[i]===p)k+=PIECES[g.at[i].t].val;return k;}
 
+/* ---------- One fight ---------- */
+// Facing spikes break off one for one, and a spike that hits is gone: the winner always spends at least one spike.
+// So 2 v 1 ends 1 v 0, 1 v 0 ends 0 v 0 and 2 v 2 ends 0 v 0.
+const spent=(mine,theirs)=>mine>theirs?Math.max(theirs,1):Math.min(mine,theirs);
+function breakSpikes(g,cell,side,count,step){
+  if(!count)return;
+  const s=g.at[cell].s.slice();s[side]-=count;
+  g.at[cell]={...g.at[cell],s};
+  g.broke.push([cell,side,count,step]);
+}
 function fight(g,i,side,q,step){
-  // The stones on i and q meet across one line. Facing spikes break off one for one; returns [spikes of i, spikes of q].
-  const a=g.at[i].s[side],b=g.at[q].s[opposite(side)],k=Math.min(a,b);
-  if(k){
-    for(const [cell,sd] of [[i,side],[q,opposite(side)]]){
-      const s=g.at[cell].s.slice();s[sd]-=k;g.at[cell]={...g.at[cell],s};g.broke.push([cell,sd,k,step]);
-    }
-  }
+  // The stones on i and q meet across one line. Returns the spikes before the fight, [spikes of i, spikes of q].
+  const a=g.at[i].s[side],b=g.at[q].s[opposite(side)];
+  breakSpikes(g,i,side,spent(a,b),step);
+  breakSpikes(g,q,opposite(side),spent(b,a),step);
   return [a,b];
 }
+
+/* ---------- One move ---------- */
 function play(g,handIndex,cell){
   // Returns the game after the player to move puts stone handIndex on cell. Besides the board it records, per step
   // (step 0 is the new stone's own fights, then one step per fight of the chain):
   // lines: every fight as [from, to, spikes from, spikes to, step]; flips: colour changes as [cell, new owner, step];
   // broke: spikes broken as [cell, side, count, step].
-  const n=g.n,me=g.turn,op=1-me;
-  const a={n,own:g.own.slice(),at:g.at.slice(),hands:g.hands.slice(),turn:op,lines:[],flips:[],broke:[]};
+  const me=g.turn;
+  const a={n:g.n,own:g.own.slice(),at:g.at.slice(),hands:g.hands.slice(),turn:1-me,lines:[],flips:[],broke:[]};
   a.hands[me]=g.hands[me].filter((_,i)=>i!==handIndex);
   a.own[cell]=me;a.at[cell]=g.hands[me][handIndex];
-  const changed=new Set([cell]); // stones placed or changed colour in this move: fights only spread from these
-  const flip=(c,p,step)=>{a.own[c]=p;a.flips.push([c,p,step]);changed.add(c);};
-
-  // 1. The new stone fights every enemy neighbour at once. Each win takes that stone;
-  //    losing any of these fights gets the new stone taken.
-  const fought=new Set(),lineKey=(x,y)=>Math.min(x,y)*n*n+Math.max(x,y);
-  let won=[],lost=false;
+  const move={cell,fought:new Set(),changed:new Set([cell])}; // fights only spread from squares placed or changed
+  newStoneFights(a,move);
+  spreadFights(a,move);
+  return a;
+}
+function flip(a,move,c,owner,step){a.own[c]=owner;a.flips.push([c,owner,step]);move.changed.add(c);}
+function newStoneFights(a,move){
+  // Step 0: the new stone fights every enemy neighbour at once. Each win takes that stone;
+  // losing any of these fights gets the new stone taken.
+  const {cell}=move,me=a.own[cell],won=[];
+  let lost=false;
   for(let side=0;side<4;side++){
-    const q=neighbour(n,cell,side);
-    if(q<0||a.own[q]!==op)continue;
+    const q=neighbour(a.n,cell,side);
+    if(q<0||a.own[q]!==1-me)continue;
     const [x,y]=fight(a,cell,side,q,0);
     if(!x&&!y)continue;
-    fought.add(lineKey(cell,q));
+    move.fought.add(lineKey(a.n,cell,q));
     a.lines.push([cell,q,x,y,0]);
     if(x>y)won.push(q);
     if(x<y)lost=true;
   }
-  for(const q of won)flip(q,me,0);
-  if(lost)flip(cell,op,0);
-
-  // 2. The fights spread outwards from what changed: a line between two stones of different colour with spikes on it
-  //    fights if one of its stones was placed or changed colour in this move, the line closest to the new stone first.
-  //    Each line fights at most once per move, so a move always ends. Lines of the new stone that did not fight in
-  //    step 1 stay open, so a new stone that was taken can be hit back.
+  for(const q of won)flip(a,move,q,me,0);
+  if(lost)flip(a,move,cell,1-me,0);
+}
+function spreadFights(a,move){
+  // Then the fights spread outwards from what changed: a line between two stones of different colour with spikes on it
+  // fights if one of its stones was placed or changed colour in this move, the line closest to the new stone first.
+  // Each line fights at most once per move, so a move always ends. Lines of the new stone that did not fight in
+  // step 0 stay open, so a new stone that was taken can be hit back.
   for(let step=1;;step++){
-    const line=closestOpenLine(a,cell,fought,lineKey,changed);
-    if(!line)break;
+    const line=closestOpenLine(a,move);
+    if(!line)return;
     const [,i,side,q]=line;
-    fought.add(lineKey(i,q));
+    move.fought.add(lineKey(a.n,i,q));
     const [x,y]=fight(a,i,side,q,step);
     a.lines.push([i,q,x,y,step]);
-    if(x>y)flip(q,a.own[i],step);
-    if(y>x)flip(i,a.own[q],step);
+    if(x>y)flip(a,move,q,a.own[i],step);
+    if(y>x)flip(a,move,i,a.own[q],step);
   }
-  return a;
 }
-function closestOpenLine(g,cell,fought,lineKey,changed){
-  // Lines are checked to the right and downwards from every stone, so each line is seen once.
+function isOpen(g,move,i,side,q){
+  return q>=0&&g.own[q]>=0&&g.own[q]!==g.own[i]                 // two stones of different colour
+    &&(g.at[i].s[side]>0||g.at[q].s[opposite(side)]>0)         // with spikes on the line
+    &&!move.fought.has(lineKey(g.n,i,q))                       // that did not fight yet in this move
+    &&(move.changed.has(i)||move.changed.has(q));              // next to a stone that changed
+}
+function closestOpenLine(g,move){
+  // Lines are checked to the right and downwards from every stone, so each line is seen once; the first of
+  // equally close lines wins, which is row by row from the top left.
   let best=null;
   for(let i=0;i<g.own.length;i++){
     if(g.own[i]<0)continue;
     for(const side of [RIGHT,DOWN]){
       const q=neighbour(g.n,i,side);
-      if(q<0||g.own[q]<0||g.own[q]===g.own[i]||fought.has(lineKey(i,q))||!(changed.has(i)||changed.has(q)))continue;
-      if(!g.at[i].s[side]&&!g.at[q].s[opposite(side)])continue;
-      const dist=Math.min(distance(g.n,i,cell),distance(g.n,q,cell));
+      if(!isOpen(g,move,i,side,q))continue;
+      const dist=Math.min(distance(g.n,i,move.cell),distance(g.n,q,move.cell));
       if(!best||dist<best[0])best=[dist,i,side,q];
     }
   }
   return best;
 }
+
+/* ---------- Helpers for the computer player ---------- */
 const gain=(g,h,c)=>score(play(g,h,c),g.turn)-score(g,g.turn);
 function legal(g){
   // Stones with the same piece and level play alike, so only the first of each is tried.
@@ -392,12 +415,12 @@ const later=(ms,fn)=>timers.push(setTimeout(fn,T(ms)));
 
 /* Opponents. Each brings a fixed deck, an early, middle and late version (matches 1-6, 7-13, 14-19). The boss plays match 20. */
 const FOES=[
-  {name:'Pawnbroker Pete',line:'Everything has a price. Mostly weak guys.',decks:['P2 P2 P1 P1 P1 P1 N1 K1','P3 P3 P3 P2 P2 N3 N2 K3','P4 P4 P4 N3 N3 N3 Q3 K4'],face:'pete'},
+  {name:'Pawnbroker Pete',line:'Everything has a price. Mostly weak guys.',decks:['P2 P2 P1 P1 P1 P1 N1 K1','P3 P3 P3 P2 P2 N3 N2 K2','P4 P4 P4 N3 N3 N3 Q3 K4'],face:'pete'},
   {name:'Sir Neighsalot',line:'Hold your horses. All of them.',decks:['N1 N1 P1 P1 P1 P1 P1 K1','N2 N2 N2 N1 P2 P1 R2 K3','N4 N3 N3 N3 Q2 P3 R3 K4'],face:'neigh'},
   {name:'Madame Swerve',line:'Darling, I never take the straight road.',decks:['B1 B1 P1 P1 P1 P1 P1 K1','B2 B2 B2 P2 P1 P1 N1 K3','B4 B4 B3 B2 P2 P2 N3 K4'],face:'swerve'},
-  {name:'Blocky Barb',line:'Square deal. Square face. Square loss.',decks:['R1 P1 P1 P1 P1 P1 P1 K1','R2 R2 R1 P2 P1 P1 N2 K3','R3 R3 R3 R3 Q3 P2 N3 K4'],face:'barb'},
-  {name:'Lady Lux',line:'I brought my sisters. You brought weak guys.',decks:['B1 B1 P1 P1 P1 P1 P1 P1','Q2 P1 P1 P1 P1 P1 P1 K2','Q3 Q2 Q2 P2 P2 N2 B3 K3'],face:'lux'},
-  {name:'Uncle Gambit',line:'I sacrifice. You suffer.',decks:['N1 B1 R1 P1 P1 P1 P1 P1','N3 B2 R2 Q1 P2 P1 P1 P1','N3 B3 R3 Q3 Q2 P2 P2 K3'],face:'gambit'},
+  {name:'Blocky Barb',line:'Square deal. Square face. Square loss.',decks:['R1 P1 P1 P1 P1 P1 P1 K1','R2 R2 R1 P2 P1 P1 N2 K2','R3 R3 R3 R3 Q3 P2 N3 K3'],face:'barb'},
+  {name:'Lady Lux',line:'I brought my sisters. You brought weak guys.',decks:['B1 B1 P1 P1 P1 P1 P1 P1','Q2 P1 P1 P1 P1 P1 P1 K3','Q3 Q2 Q2 P2 P2 N2 B3 K3'],face:'lux'},
+  {name:'Uncle Gambit',line:'I sacrifice. You suffer.',decks:['N1 B1 R1 P1 P1 P1 P1 P1','N3 B2 R2 Q2 P2 P1 P1 P1','N3 B3 R3 Q3 Q2 P2 P2 K3'],face:'gambit'},
 ];
 const BOSS={name:'The Obsidian Monarch',line:'Nineteen boards behind you. One crown ahead.',decks:['Q4 Q4 R3 B3 N3 N3 K5 P3'],face:'boss',boss:true};
 
@@ -543,7 +566,7 @@ function brokenBySquare(broke){
   return m;
 }
 function stoneShown(i){
-  // The stone on square i as it looks now: its final spikes plus the ones that only break in a later wave.
+  // The stone on square i as it looks now: its final spikes plus the ones that only break in a later step.
   const s=game.at[i].s.slice();let later=false;
   for(const [c,side,k,w] of pending)if(c===i&&w>stepNow){s[side]+=k;later=true;}
   return later?{...game.at[i],s}:game.at[i];
@@ -630,11 +653,16 @@ function setStatus(html){$('#status').innerHTML=html;}
 
 /* ---------- Effects on the board ---------- */
 function cellBox(cell){const C=$('#board').querySelectorAll('.cell')[cell];return {x:C.offsetLeft+C.offsetWidth/2,y:C.offsetTop+C.offsetHeight/2,size:C.offsetHeight};}
-function place(el,x,y,ms){el.style.left=x+'px';el.style.top=y+'px';$('.boardwrap').appendChild(el);timers.push(setTimeout(()=>el.remove(),ms));}
+function place(el,x,y,ms){
+  // Puts an effect on the board at (x, y). With ms it removes itself after that time.
+  el.style.left=x+'px';el.style.top=y+'px';$('.boardwrap').appendChild(el);
+  if(ms)timers.push(setTimeout(()=>el.remove(),ms));
+  return el;
+}
 function pop(cell,text,cls,ms,dy=0){
   const {x,y}=cellBox(cell),el=document.createElement('div');el.className=cls;el.textContent=text;place(el,x,y+dy,ms);
 }
-function onLine(from,to,el,ms){const a=cellBox(from),b=cellBox(to);place(el,(a.x+b.x)/2,(a.y+b.y)/2,ms);}
+function onLine(from,to,el,ms){const a=cellBox(from),b=cellBox(to);return place(el,(a.x+b.x)/2,(a.y+b.y)/2,ms);}
 function sparks(lines){
   // A burst on every line that fights, so each hit is visible even at full speed.
   for(const [from,to] of lines){
@@ -649,8 +677,7 @@ function showClashes(lines){
   return lines.map(([from,to,a,b])=>{
     const el=document.createElement('div');el.className='clash';
     el.innerHTML=`<span class="${a>b?'w':''}" style="color:${col(shown[from])}">${a}</span><span class="vs">vs</span><span class="${b>a?'w':''}" style="color:${col(shown[to])}">${b}</span>`;
-    const A=cellBox(from),B=cellBox(to);el.style.left=(A.x+B.x)/2+'px';el.style.top=(A.y+B.y)/2+'px';$('.boardwrap').appendChild(el);
-    return el;
+    return onLine(from,to,el);
   });
 }
 
@@ -672,10 +699,10 @@ function move(h,cell){
 function animate(a){
   // Plays the steps one after another: sparks on the line, spikes shatter, and a stone turns over only if it changes colour.
   // A stone can change colour more than once in a chain, so every flip carries the owner it turns to. Returns the end time.
-  const last=Math.max(0,...a.lines.map(l=>l[4]),...a.flips.map(f=>f[2]));
+  const lastStep=Math.max(0,...a.lines.map(l=>l[4]),...a.flips.map(f=>f[2]));
   let t=FIRST_MS;
   const badges=[];
-  for(let k=0;k<=last;k++){
+  for(let k=0;k<=lastStep;k++){
     const lines=a.lines.filter(l=>l[4]===k),turns=a.flips.filter(f=>f[2]===k),breaks=a.broke.filter(b=>b[3]===k);
     if(!lines.length&&!turns.length)continue;
     later(t,()=>{
@@ -691,6 +718,7 @@ function animate(a){
   later(t+400,()=>badges.forEach(el=>el.remove()));
   return t;
 }
+const called=t=>t==='R'?'Steve':'a '+PIECES[t].name.toLowerCase(); // Steve is a name, the others take 'a'
 function report(before,a,cell,me,stone,end){
   // The status line and the +/- pop: what the move won and lost, counting the new stone as the mover's.
   const won=[],lost=[];
@@ -700,7 +728,7 @@ function report(before,a,cell,me,stone,end){
   const who=me===0?'You':foe.name,stones=k=>`<b>${k}</b> stone${k>1?'s':''}`;
   let msg=won.length?`${who} took ${stones(won.length)}`:'';
   if(lost.length)msg+=(msg?', but lost ':`${who} lost `)+stones(lost.length);
-  if(!msg)msg=a.broke.length&&!turns?`${who} broke spikes, no one won the clash`:`${who} placed ${stone.t==='R'?'Steve':'a '+PIECES[stone.t].name.toLowerCase()}`;
+  if(!msg)msg=a.broke.length&&!turns?`${who} broke spikes, no one won the clash`:`${who} placed ${called(stone.t)}`;
   if(turns>1)msg+=`, in a chain of ${turns} turns`;
   setStatus(msg+'.');
 }
@@ -720,7 +748,7 @@ function next(justActed){
 
 /* ---------- Run flow: intro, match, reward or end of run ---------- */
 function modal(html,wire){$('#mcard').innerHTML=html;$('#modal').hidden=false;wire&&wire();}
-const close=()=>{$('#modal').hidden=true;};
+const closeModal=()=>{$('#modal').hidden=true;};
 const deckRow=codes=>codes.map(c=>stoneSVG(stoneOf(c,0),0,'')).join('');
 const upgrade=(from,to)=>`<span class="arrow">${stoneSVG(stoneOf(from,0),0,'')}<span>→</span>${stoneSVG(stoneOf(to,0),0,'')}</span>`;
 function intro(rematch){
@@ -730,7 +758,7 @@ function intro(rematch){
 <div class="big${foe.boss?' boss':''}">${faceSVG(foe)}</div><h2>${foe.name}</h2><q>${foe.line}</q>
 <p>${firstOf(m)===0?'You place first.':`${foe.name} places first.`} Their 8 stones stay hidden until played.</p>
 <p class="kicker" style="color:var(--muted)">Your stones</p><div class="deckrow">${deckRow(r.deck)}</div><div><button class="primary" id="go">Fight</button></div>`,
-  ()=>{$('#go').onclick=()=>{close();begin();};$('#go').focus();});
+  ()=>{$('#go').onclick=()=>{closeModal();begin();};$('#go').focus();});
 }
 function begin(){
   const r=save.run,m=r.m,order='PNBRQK';
@@ -766,7 +794,7 @@ function rewards(a,b){
 ${os.length?`<div class="picks">${os.map((o,k)=>`<button class="pick" data-k="${k}">${upgrade(d[o.i],o.to)}Level up<small>${nameOf(o.to)}</small></button>`).join('')}</div>`
   :`<p>Every stone is already at its best.</p><div><button class="primary" id="go">Next match</button></div>`}`,
   ()=>{
-    const on=()=>{save.run.m++;store();close();intro();};
+    const on=()=>{save.run.m++;store();closeModal();intro();};
     if($('#go'))$('#go').onclick=on; // nothing left to upgrade
     document.querySelectorAll('.pick').forEach(el=>el.onclick=()=>{
       const o=os[+el.dataset.k],r=save.run;
@@ -782,16 +810,17 @@ function endRun(won,text){
 <div class="picks">${keep.map(i=>`<button class="pick" data-i="${i}">${upgrade(save.meta[i],r.deck[i])}${nameOf(r.deck[i])}</button>`).join('')}</div>`
     :`<div><button class="primary" id="again">New run</button></div>`;
   modal(`<div class="kicker">${won?'Champion':`Run over at match ${r.m}`}</div><h2>${won?'You took the crown!':'Defeated'}</h2><p>${text}</p>${pick}`,()=>{
-    const go=()=>{newRun();close();intro();};
+    const go=()=>{newRun();closeModal();intro();};
     if($('#again'))$('#again').onclick=go;
     document.querySelectorAll('.pick').forEach(el=>el.onclick=()=>{save.meta[+el.dataset.i]=r.deck[+el.dataset.i];go();});
   });
   r.over=true;store();
 }
+const pieceGuide=()=>[...'PNBRQK'].map(t=>`<div>${stoneSVG(mkStone(t,1,0),0,'')}${stoneSVG(mkStone(t,3,0),0,'')}<p style="margin:0"><b>${PIECES[t].name}</b><span>Level 1 and 3: ${PIECES[t].text}.</span></p></div>`).join('');
 function rules(){
   // The rules sit on their own layer, over the board or over a card between matches.
   $('#rcard').innerHTML=$('#rulesT').innerHTML;$('#rmodal').hidden=false;
-  $('#dex').innerHTML=[...'PNBRQK'].map(t=>`<div>${stoneSVG(mkStone(t,1,0),0,'')}${stoneSVG(mkStone(t,3,0),0,'')}<p style="margin:0"><b>${PIECES[t].name}</b><span>Level 1 and 3: ${PIECES[t].text}.</span></p></div>`).join('');
+  $('#dex').innerHTML=pieceGuide();
   renderLadder();
   $('#bClose').onclick=()=>{$('#rmodal').hidden=true;};
   $('#bQuit').onclick=()=>{
