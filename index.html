@@ -207,7 +207,7 @@ body.slow{--t:4}
     <li><b>Clash:</b> each side of your new stone that touches an enemy stone fights it. Facing spikes break off one for one, and the side with spikes left over wins and takes the other stone. That works both ways: lose any clash and your new stone is taken.</li>
     <li><b>Chain:</b> after the new stone has fought, the fights spread outwards. Every line between two stones of different colour with spikes on it fights the same way, closest to the new stone first. Each line fights at most once per move.</li>
     <li>When the board is full, count your stones. The dude with crown counts as 3. Most points wins. A draw is replayed.</li>
-    <li>After a win, pick one of three upgrades for the rest of the run. When a run ends, keep one stone you upgraded: it stays in your starting hand for good.</li>
+    <li>After a win, pick one of three stones to level up for the rest of the run. A stone keeps its character, it only gets more spikes. When a run ends, keep one stone you upgraded: it stays in your starting hand for good.</li>
     <li>Every opponent always brings the same stones, and they get stronger as the run goes on. Remember what they play.</li>
     <li>Pick a stone, then hover over a square (or tap it once on a phone): yellow stones you would take, red stones you would lose, faded spikes would break. Slow-mo (or S) shows every clash as a score.</li>
   </ul>
@@ -389,14 +389,14 @@ const later=(ms,fn)=>timers.push(setTimeout(fn,T(ms)));
 
 /* Opponents. Each brings a fixed deck, an early, middle and late version (matches 1-6, 7-13, 14-19). The boss plays match 20. */
 const FOES=[
-  {name:'Pawnbroker Pete',line:'Everything has a price. Mostly weak guys.',decks:['P2 P2 P1 P1 P1 P1 N1 K1','P3 P3 P3 P2 P2 N2 N2 K2','P4 P4 P4 N3 N3 N3 Q3 K3'],face:'pete'},
-  {name:'Sir Neighsalot',line:'Hold your horses. All of them.',decks:['N1 N1 P1 P1 P1 P1 P1 K1','N2 N2 N2 N1 P2 P1 R1 K2','N4 N3 N3 N3 Q2 P3 R3 K3'],face:'neigh'},
-  {name:'Madame Swerve',line:'Darling, I never take the straight road.',decks:['B1 B1 P1 P1 P1 P1 P1 K1','B2 B2 B2 P2 P1 P1 N1 K2','B3 B3 B3 B2 P2 P2 N3 K3'],face:'swerve'},
-  {name:'Blocky Barb',line:'Square deal. Square face. Square loss.',decks:['R1 P1 P1 P1 P1 P1 P1 K1','R2 R2 R1 P2 P1 P1 N2 K2','R3 R3 R3 R3 Q2 P2 N3 K3'],face:'barb'},
-  {name:'Lady Lux',line:'I brought my sisters. You brought weak guys.',decks:['B1 B1 P1 P1 P1 P1 P1 P1','Q2 P1 P1 P1 P1 P1 P1 K1','Q2 Q2 Q2 P2 P2 N2 B3 K2'],face:'lux'},
-  {name:'Uncle Gambit',line:'I sacrifice. You suffer.',decks:['N1 B1 R1 P1 P1 P1 P1 P1','N3 B2 R2 Q1 P2 P1 P1 P1','N3 B3 R3 Q2 Q1 P2 P2 K2'],face:'gambit'},
+  {name:'Pawnbroker Pete',line:'Everything has a price. Mostly weak guys.',decks:['P2 P2 P1 P1 P1 P1 N1 K1','P3 P3 P3 P2 P2 N3 N2 K3','P4 P4 P4 N3 N3 N3 Q3 K4'],face:'pete'},
+  {name:'Sir Neighsalot',line:'Hold your horses. All of them.',decks:['N1 N1 P1 P1 P1 P1 P1 K1','N2 N2 N2 N1 P2 P1 R2 K3','N4 N3 N3 N3 Q2 P3 R3 K4'],face:'neigh'},
+  {name:'Madame Swerve',line:'Darling, I never take the straight road.',decks:['B1 B1 P1 P1 P1 P1 P1 K1','B2 B2 B2 P2 P1 P1 N1 K3','B4 B4 B3 B2 P2 P2 N3 K4'],face:'swerve'},
+  {name:'Blocky Barb',line:'Square deal. Square face. Square loss.',decks:['R1 P1 P1 P1 P1 P1 P1 K1','R2 R2 R1 P2 P1 P1 N2 K3','R3 R3 R3 R3 Q3 P2 N3 K4'],face:'barb'},
+  {name:'Lady Lux',line:'I brought my sisters. You brought weak guys.',decks:['B1 B1 P1 P1 P1 P1 P1 P1','Q2 P1 P1 P1 P1 P1 P1 K2','Q3 Q2 Q2 P2 P2 N2 B3 K3'],face:'lux'},
+  {name:'Uncle Gambit',line:'I sacrifice. You suffer.',decks:['N1 B1 R1 P1 P1 P1 P1 P1','N3 B2 R2 Q1 P2 P1 P1 P1','N3 B3 R3 Q3 Q2 P2 P2 K3'],face:'gambit'},
 ];
-const BOSS={name:'The Obsidian Monarch',line:'Nineteen boards behind you. One crown ahead.',decks:['Q3 Q3 R3 B3 N3 N3 K4 P3'],face:'boss',boss:true};
+const BOSS={name:'The Obsidian Monarch',line:'Nineteen boards behind you. One crown ahead.',decks:['Q4 Q4 R3 B3 N3 N3 K5 P3'],face:'boss',boss:true};
 
 // Decks are lists of codes like 'N2': piece letter, then level.
 const levelOf=code=>+code.slice(1);
@@ -728,20 +728,20 @@ function finish(){
   store();rewards(a,b);
 }
 function offers(){
-  // Three different upgrades from: a level up, a weak guy promoted, and from match 6 on a promotion to pretty lady.
-  const d=save.run.deck,pool=[];
-  d.forEach((c,i)=>{if(levelOf(c)<MAXL)pool.push({i,to:c[0]+(levelOf(c)+1),kind:'Level up'});});
-  d.forEach((c,i)=>{if(c[0]==='P')for(const t of 'NBR')pool.push({i,to:t+levelOf(c),kind:'Promote'});});
-  if(save.run.m>=6)d.forEach((c,i)=>{if('NBR'.includes(c[0])&&Math.random()<.35)pool.push({i,to:'Q'+levelOf(c),kind:'Promote'});});
-  shuffle(pool);
-  const out=[],seen=new Set();
-  for(const o of pool){const k=d[o.i]+'>'+o.to;if(seen.has(k))continue;seen.add(k);out.push(o);if(out.length===3)break;}
+  // Up to three different stones from your hand, each offered one level higher. A stone keeps its character.
+  const d=save.run.deck,out=[],seen=new Set();
+  for(const i of shuffle([...d.keys()])){
+    const c=d[i];
+    if(levelOf(c)>=MAXL||seen.has(c))continue;
+    seen.add(c);out.push({i,to:c[0]+(levelOf(c)+1)});
+    if(out.length===3)break;
+  }
   return out;
 }
 function rewards(a,b){
   const os=offers(),d=save.run.deck;
   modal(`<div class="kicker">Won ${a} to ${b}</div><h2>Pick an upgrade</h2><p>It lasts for the rest of this run.</p>
-${os.length?`<div class="picks">${os.map((o,k)=>`<button class="pick" data-k="${k}">${upgrade(d[o.i],o.to)}${o.kind}<small>${nameOf(o.to)}</small></button>`).join('')}</div>`
+${os.length?`<div class="picks">${os.map((o,k)=>`<button class="pick" data-k="${k}">${upgrade(d[o.i],o.to)}Level up<small>${nameOf(o.to)}</small></button>`).join('')}</div>`
   :`<p>Every stone is already at its best.</p><div><button class="primary" id="go">Next match</button></div>`}`,
   ()=>{
     const on=()=>{save.run.m++;store();close();intro();};
