@@ -21,16 +21,17 @@ body{margin:0}
 
 /* One column: the opponent on top, the board, your hand below. Your pieces face up the board, theirs face down. */
 :root{
+  --c:clamp(56px,min(calc((100vh - 250px)/4.4),calc((100vw - 120px)/9.2)),128px);--gap:calc(var(--c)*.13);
   --bg:#162034; --panel:#212d45; --panel2:#2c3b59; --ink:#eef2fb; --muted:#9eadc8; --line:#3a4a6a;
   --accent:#f3c54a; --blue:#4aa3ff; --red:#ff6150;
   --grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
   --f-display:"Fredoka", "Avenir Next Rounded", system-ui, sans-serif;
   --f-body:"Nunito", system-ui, sans-serif;
-  --hs:78px;--t:1;
+  --t:1;
   color-scheme:dark;
 }
 body{background:radial-gradient(ellipse at 50% -10%,#2b3d66 0%,var(--bg) 60%) fixed var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;min-height:100vh;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-.wrap{max-width:620px;margin:0 auto;padding:max(14px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) 40px max(14px,env(safe-area-inset-left));display:grid;gap:12px}
+.wrap{max-width:1300px;margin:0 auto;padding:max(10px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) 10px max(14px,env(safe-area-inset-left));display:grid;gap:10px;min-height:100vh;align-content:start}
 .top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 14px}
 .title{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;min-width:0}
 .back{color:var(--muted);text-decoration:none;font-family:var(--f-display);font-size:14px;width:100%}
@@ -45,6 +46,7 @@ button.primary{background:var(--accent);color:#2a2410}
 #bSlow[aria-pressed="true"]{background:var(--accent);color:#2a2410}
 
 /* Run ladder: twenty pips, the last one is the boss. */
+.run{flex:1;min-width:200px;max-width:520px}
 .ladder{display:flex;gap:4px;align-items:center}
 .ladder i{flex:1;height:10px;border-radius:3px;background:rgba(10,14,26,.55);box-shadow:inset 0 1px 2px rgba(0,0,0,.5)}
 .ladder i.done{background:linear-gradient(#ffe08a,#e0a92e)}
@@ -54,29 +56,31 @@ button.primary{background:var(--accent);color:#2a2410}
 .ladder i.boss.done{background:linear-gradient(#e2b6ff,#8b4fd6)}
 .runline{display:flex;justify-content:space-between;font-family:var(--f-display);font-size:13px;color:var(--muted);margin-top:4px}
 
-.side{display:flex;align-items:center;gap:12px;padding:8px 12px;border-radius:14px;background:rgba(33,45,69,.6);border:2px solid transparent;transition:border-color .2s}
-.side.turn{border-color:currentColor}
-.side .who{display:flex;align-items:center;gap:10px;min-width:0}
-.side .nm{font-family:var(--f-display);font-weight:600;font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.side .pts{font-family:var(--f-display);font-weight:700;font-size:26px;font-variant-numeric:tabular-nums;margin-left:auto;min-width:1.5em;text-align:right}
+.scores{display:grid;grid-template-columns:1fr minmax(120px,3fr) 1fr;gap:14px;align-items:center;max-width:calc(var(--c)*8.6 + 80px);width:100%;justify-self:center}
+.who{display:flex;align-items:center;gap:10px;min-width:0;padding:4px 10px;border-radius:14px;border:2px solid transparent;transition:border-color .2s}
+.who.turn{border-color:currentColor}
+.who.p1{flex-direction:row-reverse;text-align:right}
+.who .nm{font-family:var(--f-display);font-weight:600;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.who .pts{font-family:var(--f-display);font-weight:700;font-size:28px;font-variant-numeric:tabular-nums}
 .p0{color:var(--blue)}.p1{color:var(--red)}
-.face{width:48px;height:48px;flex:none;border-radius:50%;overflow:hidden;box-shadow:0 0 0 2px currentColor}
+.face{width:44px;height:44px;flex:none;border-radius:50%;overflow:hidden;box-shadow:0 0 0 2px currentColor}
 .face svg{width:100%;height:100%;display:block}
-.backs{display:flex;gap:4px;flex-wrap:wrap}
-.backs svg{width:24px;height:24px;display:block;filter:drop-shadow(0 2px 1px rgba(0,0,0,.4))}
-
-.hand{display:flex;flex-wrap:wrap;gap:6px 8px;justify-content:center;min-height:var(--hs)}
-.hstone{width:var(--hs);height:var(--hs);padding:0;background:none;box-shadow:none;border-radius:14px;transition:transform .15s,filter .15s,opacity .15s}
+.table{display:grid;grid-template-columns:auto auto auto;gap:calc(var(--c)*.3);justify-content:center;align-items:center}
+.mid{display:grid;gap:8px}
+.hand{display:grid;grid-template-columns:repeat(2,var(--c));gap:var(--gap);align-content:center;min-height:calc(var(--c)*4 + var(--gap)*3)}
+.hstone{width:var(--c);height:var(--c);padding:0;background:none;box-shadow:none;border-radius:14px;transition:transform .15s,filter .15s,opacity .15s}
 .hstone:hover{filter:brightness(1.1)}
 .hstone.sel{transform:translateY(-6px) scale(1.06);background:radial-gradient(circle,rgba(243,197,74,.4) 0%,rgba(243,197,74,0) 70%)}
 .hstone:disabled{cursor:default}
-.hand:not(.active) .hstone{opacity:.6;filter:saturate(.8)}
+.hand:not(.active) .hstone{opacity:.55;filter:saturate(.8)}
+.backs .back{width:var(--c);height:var(--c);filter:drop-shadow(0 4px 3px rgba(0,0,0,.45))}
+.backs .back svg{width:100%;height:100%;display:block}
 .hstone:disabled:hover{filter:none}
 .hstone svg,.cell svg.stone{width:100%;height:100%;display:block;overflow:visible;filter:drop-shadow(0 4px 3px rgba(0,0,0,.45))}
-#info{min-height:1.5em;text-align:center;font-size:15px;color:var(--muted)}
+#info{min-height:1.5em;max-width:calc(var(--c)*4.4);justify-self:center;text-align:center;font-size:15px;color:var(--muted)}
 #info b{font-family:var(--f-display);font-weight:600;color:var(--ink)}
 #info .lvl{color:var(--accent);font-family:var(--f-display);font-weight:600}
-#status{font-family:var(--f-display);font-size:17px;color:var(--muted);min-height:1.4em;text-align:center}
+#status{font-family:var(--f-display);font-size:17px;max-width:calc(var(--c)*4.4);justify-self:center;color:var(--muted);min-height:1.4em;text-align:center}
 #status b{color:var(--accent);font-weight:600}
 
 .tug{display:flex;height:8px;border-radius:99px;background:rgba(10,14,26,.5);overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,.5)}
@@ -84,10 +88,10 @@ button.primary{background:var(--accent);color:#2a2410}
 .tug .t0{background:linear-gradient(90deg,#2f7fe0,var(--blue))}
 .tug .t1{background:linear-gradient(90deg,var(--red),#d8402f);margin-left:auto}
 
-.boardwrap{position:relative;width:min(100%,480px);justify-self:center}
-.board{position:relative;display:grid;grid-template-columns:repeat(var(--n),1fr);gap:var(--gap);padding:var(--gap);border-radius:20px;
+.boardwrap{position:relative}
+.board{position:relative;display:grid;grid-template-columns:repeat(var(--n),var(--c));gap:var(--gap);padding:var(--gap);border-radius:20px;
   background:var(--grain),linear-gradient(160deg,#5d6880 0%,#454f68 50%,#363f56 100%);background-blend-mode:overlay,normal;
-  box-shadow:0 10px 0 #20283a,0 22px 40px rgba(0,0,0,.5),inset 0 2px 0 rgba(255,255,255,.18),inset 0 -3px 0 rgba(0,0,0,.25);--gap:14px}
+  box-shadow:0 10px 0 #20283a,0 22px 40px rgba(0,0,0,.5),inset 0 2px 0 rgba(255,255,255,.18),inset 0 -3px 0 rgba(0,0,0,.25)}
 .board::before{content:"";position:absolute;inset:-26px;z-index:-1;border-radius:50%;background:radial-gradient(closest-side,rgba(243,197,74,.10),transparent);pointer-events:none}
 .cell{position:relative;aspect-ratio:1;border-radius:14px;background:radial-gradient(circle at 50% 40%,rgba(30,38,58,.35),rgba(10,14,26,.6));
   box-shadow:inset 0 4px 10px rgba(0,0,0,.55),inset 0 -1px 0 rgba(255,255,255,.08),0 1px 0 rgba(255,255,255,.1)}
@@ -136,12 +140,11 @@ body.slow{--t:4}
 .deckrow{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
 .deckrow svg{width:52px;height:52px;overflow:visible}
 
-details{background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:12px 16px;line-height:1.5}
-summary{font-family:var(--f-display);font-weight:600;font-size:17px;cursor:pointer}
-details ul{margin:8px 0 0;padding-left:20px}
-details li{margin:4px 0}
+.card.rules{text-align:left;width:min(760px,100%);line-height:1.5}
+.rules ul{margin:0;padding-left:20px}
+.rules li{margin:4px 0}
 .dex{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin-top:10px}
-.dex div{display:grid;grid-template-columns:50px 46px 1fr;gap:8px;align-items:center;background:var(--panel2);border-radius:12px;padding:8px}
+.dex div{display:grid;grid-template-columns:52px 52px 1fr;gap:8px;align-items:center;background:var(--panel2);border-radius:12px;padding:8px}
 .dex svg{width:100%;height:auto;overflow:visible}
 .dex b{font-family:var(--f-display);font-weight:600;display:block}
 .dex span{font-size:13px;color:var(--muted)}
@@ -157,7 +160,13 @@ details li{margin:4px 0}
 @keyframes spark{0%{opacity:1;transform:rotate(var(--r)) translateY(0) scaleY(1)}100%{opacity:0;transform:rotate(var(--r)) translateY(-16px) scaleY(.4)}}
 @keyframes flash{0%{opacity:1;transform:scale(.4)}100%{opacity:0;transform:scale(1.5)}}
 @media (prefers-reduced-motion:reduce){.cell:not(.crack) .brk{animation:none;opacity:0}.cell.new svg.stone,.cell.flip svg.stone,.cell.hit::after,.gain,.tag,.card{animation:none}.spark{display:none}}
-@media (max-width:560px){:root{--hs:min(58px,14vw)}h1{font-size:23px}.board{--gap:9px}.side .nm{font-size:16px}button{font-size:14px;padding:8px 11px}}
+@media (max-width:760px){
+  :root{--c:calc((100vw - 60px)/4.5)}
+  .table{grid-template-columns:1fr}
+  .hand{grid-template-columns:repeat(4,var(--c));min-height:0;justify-content:center}
+  .backs{order:-1;display:flex;justify-content:center;gap:4px}.backs .back{width:calc(var(--c)*.4);height:calc(var(--c)*.4)}
+  h1{font-size:23px}button{font-size:14px;padding:8px 11px}.who .nm{font-size:15px}
+}
 </style>
 </head>
 <body>
@@ -171,98 +180,84 @@ details li{margin:4px 0}
 <div class="wrap">
   <div class="top">
     <div class="title"><a class="back" href="../index.html">← All games</a><h1>Chain Stones</h1></div>
-    <div class="controls"><button id="bSlow" aria-pressed="false" title="Slow motion (S)">Slow-mo</button></div>
+    <div class="run"><div class="ladder" id="ladder"></div><div class="runline"><span id="runNow"></span><span id="runBest"></span></div></div>
+    <div class="controls"><button id="bRules">How to play</button><button id="bSlow" aria-pressed="false" title="Slow motion (S)">Slow-mo</button></div>
   </div>
-  <div>
-    <div class="ladder" id="ladder"></div>
-    <div class="runline"><span id="runNow"></span><span id="runBest"></span></div>
+  <div class="scores">
+    <div class="who p0" id="side0"><span class="nm">You</span><span class="pts" id="s0">0</span></div>
+    <div class="tug" aria-hidden="true"><div class="t0" id="tug0"></div><div class="t1" id="tug1"></div></div>
+    <div class="who p1" id="side1"><div class="face" id="foeFace"></div><span class="nm" id="foeName"></span><span class="pts" id="s1">0</span></div>
   </div>
-  <div class="side p1" id="side1">
-    <div class="who"><div class="face" id="foeFace"></div><div><div class="nm" id="foeName"></div><div class="backs" id="backs"></div></div></div>
-    <div class="pts" id="s1">0</div>
-  </div>
-  <div class="tug" aria-hidden="true"><div class="t0" id="tug0"></div><div class="t1" id="tug1"></div></div>
-  <div class="boardwrap"><div class="board" id="board"></div></div>
-  <div id="status" aria-live="polite"></div>
-  <div class="side p0" id="side0">
+  <div class="table">
     <div class="hand" id="hand"></div>
-    <div class="pts" id="s0">0</div>
+    <div class="mid">
+      <div class="boardwrap"><div class="board" id="board"></div></div>
+      <div id="status" aria-live="polite"></div>
+      <div id="info"></div>
+    </div>
+    <div class="hand backs" id="backs"></div>
   </div>
-  <div id="info"></div>
-  <details id="rules">
-    <summary>How to play</summary>
-    <ul>
-      <li>A run is <b>20 matches</b>. Lose one and the run is over. Match 20 is the boss.</li>
-      <li>Take turns placing a stone from your hand on an empty square of the 4 × 4 board. Your stones face up the board, the opponent's face down. You never see the opponent's hand.</li>
-      <li>Every stone is a chess piece. Each of its directions has spikes, one per level (up to 5).</li>
-      <li><b>Clash:</b> your new stone fights every enemy stone it reaches or that reaches it. Facing spikes break off one for one, and the side with spikes left over wins and takes the other stone. A side with no spikes always loses to one with spikes. Lose any clash and your new stone is taken.</li>
-      <li>Your own stones block lines. When the board is full, count your stones. The dude with crown counts as 3. Most points wins. A draw is replayed.</li>
-      <li>After a win, pick one of three upgrades for the rest of the run. When a run ends, keep one stone you upgraded: it stays in your starting hand for good.</li>
-      <li>Every opponent always brings the same stones, and they get stronger as the run goes on. Remember what they play.</li>
-      <li>Pick a stone, then hover over a square (or tap it once on a phone): yellow stones you would take, red stones you would lose, faded spikes would break. Slow-mo (or S) shows every clash as a score.</li>
-    </ul>
-    <div class="dex" id="dex"></div>
-    <p class="record" id="record"></p>
-    <button class="linkbtn" id="bQuit">Give up this run</button>
-  </details>
 </div>
+<template id="rulesT">
+  <h2>How to play</h2>
+  <ul>
+    <li>A run is <b>20 matches</b>. Lose one and the run is over. Match 20 is the boss.</li>
+    <li>Take turns placing a stone from your hand on an empty square of the 4 × 4 board. You never see the opponent's hand.</li>
+    <li>Every stone is a character with its own spikes. Your stones face up the board, the opponent's are turned round and face down. Each level adds a spike to every side that has some (up to 5).</li>
+    <li><b>Clash:</b> each side of your new stone that touches an enemy stone fights it. Facing spikes break off one for one, and the side with spikes left over wins and takes the other stone. That works both ways: lose any clash and your new stone is taken.</li>
+    <li>When the board is full, count your stones. The dude with crown counts as 3. Most points wins. A draw is replayed.</li>
+    <li>After a win, pick one of three upgrades for the rest of the run. When a run ends, keep one stone you upgraded: it stays in your starting hand for good.</li>
+    <li>Every opponent always brings the same stones, and they get stronger as the run goes on. Remember what they play.</li>
+    <li>Pick a stone, then hover over a square (or tap it once on a phone): yellow stones you would take, red stones you would lose, faded spikes would break. Slow-mo (or S) shows every clash as a score.</li>
+  </ul>
+  <div class="dex" id="dex"></div>
+  <p class="record" id="record"></p>
+  <div style="display:flex;justify-content:space-between;align-items:center"><button class="linkbtn" id="bQuit">Give up this run</button><button class="primary" id="bClose">Back to the game</button></div>
+</template>
 <div class="modal" id="modal" hidden><div class="card" id="mcard"></div></div>
+<div class="modal" id="rmodal" hidden style="z-index:11"><div class="card rules" id="rcard"></div></div>
 
 <script id="core">
 /* Rules engine, shared by the game and the computer player. Cells are indexed row by row.
-   own[i]: -1 empty, 0 you, 1 opponent. at[i]: the stone on square i.
-   Directions 0-7 are the eight neighbours clockwise from up, 8-15 the eight knight jumps clockwise from up-right. */
-const DX=[0,1,1,1,0,-1,-1,-1,1,2,2,1,-1,-2,-2,-1],DY=[-1,-1,0,1,1,1,0,-1,-2,-1,1,2,2,1,-1,-2];
-const OPP=d=>d<8?(d+4)%8:8+(d-4)%8;
-// Pieces, like chess. f is the facing: 0 points up the board (you), 1 points down (the opponent). Sliders reach any distance.
+   own[i]: -1 empty, 0 you, 1 opponent. at[i]: the stone on square i. s[] holds its spikes top, right, bottom, left. */
+const DIRS=[[0,-1],[1,0],[0,1],[-1,0]];
+// Every piece has its own spike pattern, drawn facing up. Each level adds a spike to every side that has some, up to 5.
 const PIECES={
-  P:{name:'Weak guy',dirs:f=>f?[3,5]:[1,7],slide:false,val:1,text:'strikes the two squares diagonally ahead'},
-  N:{name:'Horsey',dirs:()=>[8,9,10,11,12,13,14,15],slide:false,val:1,text:'jumps: strikes every square an L away'},
-  B:{name:'Curvy lady',dirs:()=>[1,3,5,7],slide:true,val:1,text:'strikes diagonally, any distance'},
-  R:{name:'Steve',dirs:()=>[0,2,4,6],slide:true,val:1,text:'strikes straight, any distance'},
-  Q:{name:'Pretty lady',dirs:()=>[0,1,2,3,4,5,6,7],slide:true,val:1,text:'strikes straight and diagonally, any distance'},
-  K:{name:'Dude with crown',dirs:()=>[0,1,2,3,4,5,6,7],slide:false,val:3,text:'strikes all eight squares around him and counts as 3'},
+  P:{name:'Weak guy',base:[1,0,0,0],val:1,text:'spikes only forward'},
+  N:{name:'Horsey',base:[2,1,0,0],val:1,text:'an L: two forward, one to the right'},
+  B:{name:'Curvy lady',base:[0,2,0,2],val:1,text:'spikes on both hips'},
+  R:{name:'Steve',base:[1,1,1,1],val:1,text:'the same on every side'},
+  Q:{name:'Pretty lady',base:[2,2,2,2],val:1,text:'two on every side'},
+  K:{name:'Dude with crown',base:[1,1,1,1],val:3,text:'every side, and he counts as 3'},
 };
 const MAXL=5;
-function mkStone(t,l,f){const s=new Array(16).fill(0);for(const d of PIECES[t].dirs(f))s[d]=l;return {t,l,f,s};}
-const GEO={};
-function geo(n){
-  if(GEO[n])return GEO[n];
-  const on=(x,y)=>x>=0&&y>=0&&x<n&&y<n,ray=[],jump=[];
-  for(let c=0;c<n*n;c++){
-    const x=c%n,y=c/n|0;ray.push([]);jump.push([]);
-    for(let d=0;d<8;d++){const r=[];for(let k=1;on(x+DX[d]*k,y+DY[d]*k);k++)r.push((y+DY[d]*k)*n+x+DX[d]*k);ray[c].push(r);}
-    for(let d=8;d<16;d++)jump[c].push(on(x+DX[d],y+DY[d])?(y+DY[d])*n+x+DX[d]:-1);
-  }
-  return GEO[n]={ray,jump};
+function mkStone(t,l,f){
+  // f is the facing: 0 points up the board (you), 1 points down (the opponent), so the pattern turns half way round.
+  const s=PIECES[t].base.map(x=>x?Math.min(5,x+l-1):0);
+  return {t,l,f,s:f?[s[2],s[3],s[0],s[1]]:s};
 }
+function nb(n,c,d){const x=c%n+DIRS[d][0],y=(c/n|0)+DIRS[d][1];return x<0||y<0||x>=n||y>=n?-1:y*n+x;}
 function newGame(n,hands,first){return {n,own:new Int8Array(n*n).fill(-1),at:new Array(n*n).fill(null),hands,turn:first};}
 function full(st){for(let i=0;i<st.own.length;i++)if(st.own[i]<0)return false;return true;}
 function score(st,p){let k=0;for(let i=0;i<st.own.length;i++)if(st.own[i]===p)k+=PIECES[st.at[i].t].val;return k;}
-function targets(st,c){
-  // The first stone along each line from c, and the stones a knight's jump away: [cell, direction, distance].
-  const G=geo(st.n),out=[];
-  for(let d=0;d<8;d++){const r=G.ray[c][d];for(let j=0;j<r.length;j++)if(st.own[r[j]]>=0){out.push([r[j],d,j+1]);break;}}
-  for(let d=8;d<16;d++){const q=G.jump[c][d-8];if(q>=0&&st.own[q]>=0)out.push([q,d,1]);}
-  return out;
-}
 function play(st,hi,c){
-  // The new stone clashes with every enemy stone it reaches or that reaches it: facing spikes break one for one,
-  // and the side with spikes left over wins. A win takes that stone; losing any clash gets the new stone taken.
-  const me=st.turn,op=1-me,h=st.hands[me][hi],s=h.s.slice();
-  const ns={n:st.n,own:st.own.slice(),at:st.at.slice(),hands:st.hands.slice(),turn:op,taken:[],lost:-1,broke:[],fights:[]};
+  // Every side of the new stone that touches an enemy stone clashes with it: facing spikes break one for one,
+  // and the side with spikes left over wins. A win takes that one stone; losing any clash gets the new stone taken.
+  const n=st.n,me=st.turn,op=1-me,h=st.hands[me][hi],s=h.s.slice();
+  const ns={n,own:st.own.slice(),at:st.at.slice(),hands:st.hands.slice(),turn:op,taken:[],lost:-1,broke:[],fights:[]};
   ns.hands[me]=st.hands[me].filter((_,i)=>i!==hi);
+  ns.own[c]=me;
   const fights=[];
-  for(const [q,d,k] of targets(st,c)){
-    if(ns.own[q]!==op)continue;
-    const B=ns.at[q],e=OPP(d),far=d<8&&k>1;
-    const a=far&&!PIECES[h.t].slide?0:s[d],b=far&&!PIECES[B.t].slide?0:B.s[e];
+  for(let d=0;d<4;d++){
+    const q=nb(n,c,d);
+    if(q<0||ns.own[q]!==op)continue;
+    const B=ns.at[q],e=(d+2)%4,a=s[d],b=B.s[e];
     if(!a&&!b)continue;
-    const m=Math.min(a,b);
-    if(m){s[d]-=m;const t=B.s.slice();t[e]-=m;ns.at[q]={t:B.t,l:B.l,f:B.f,s:t};ns.broke.push([c,d,m],[q,e,m]);}
+    const k=Math.min(a,b);
+    if(k){s[d]-=k;const t=B.s.slice();t[e]-=k;ns.at[q]={t:B.t,l:B.l,f:B.f,s:t};ns.broke.push([c,d,k],[q,e,k]);}
     fights.push([q,a-b]);ns.fights.push([q,d,a,b]);
   }
-  ns.own[c]=me;ns.at[c]={t:h.t,l:h.l,f:h.f,s};
+  ns.at[c]={t:h.t,l:h.l,f:h.f,s};
   for(const [q,m] of fights)if(m>0){ns.own[q]=me;ns.taken.push(q);}
   let w=null;for(const f of fights)if(f[1]<0&&(!w||f[1]<w[1]))w=f;
   if(w){ns.own[c]=op;ns.lost=w[0];}
@@ -309,7 +304,7 @@ function think(st,ms,rnd=Math.random,maxD=99){
     aborted=false;nodes=0;
     let a=-1e9;const scored=[];
     for(const m of [first,...ms0.filter(m=>m!==first)]){
-      const v=-nega(play(st,m[0],m[1]),d-1,-1e9,-(a-1));
+      const v=-nega(play(st,m[0],m[1]),d-1,-1e9,-(a-1)); // window keeps ties exact so we can pick among them
       if(aborted)break;
       scored.push([m,v]);if(v>a)a=v;
     }
@@ -318,7 +313,7 @@ function think(st,ms,rnd=Math.random,maxD=99){
   }
   return best;
 }
-if(typeof module!=='undefined')module.exports={PIECES,MAXL,mkStone,geo,newGame,full,score,play,gain,legal,think,targets,OPP};
+if(typeof module!=='undefined')module.exports={PIECES,MAXL,mkStone,newGame,full,score,play,gain,legal,think};
 </script>
 
 <script>
@@ -330,14 +325,14 @@ const T=ms=>ms*(cfg.slow?4:1); // every move timing goes through T so slow-mo st
 
 /* Opponents. Each brings a fixed deck, an early, middle and late version (matches 1-6, 7-13, 14-19). The boss plays match 20. */
 const FOES=[
-  {name:'Pawnbroker Pete',line:'Everything has a price. Mostly weak guys.',decks:['P1 P1 P1 P1 P1 P1 N1 K1','P3 P3 P2 P2 P2 N2 N2 K2','P4 P4 P4 N3 N3 N3 Q2 K4'],face:'pete'},
-  {name:'Sir Neighsalot',line:'Hold your horses. All of them.',decks:['N1 N1 P1 P1 P1 P1 P1 K1','N2 N2 N2 P2 P1 P1 R1 K2','N4 N4 N4 N3 Q2 P3 R3 K3'],face:'neigh'},
-  {name:'Madame Swerve',line:'Darling, I never take the straight road.',decks:['B1 B1 P1 P1 P1 P1 P1 K1','B2 B2 B2 P2 P2 P1 N2 K2','B4 B4 B3 Q3 N3 N3 P3 K4'],face:'swerve'},
-  {name:'Blocky Barb',line:'Square deal. Square face. Square loss.',decks:['R1 R1 P1 P1 P1 P1 P1 K1','R2 R2 R2 P1 P1 P1 N1 K2','R4 R4 R4 Q3 N3 P2 P2 K4'],face:'barb'},
-  {name:'Lady Lux',line:'I brought my sisters. You brought pawns.',decks:['Q1 P1 P1 P1 P1 P1 P1 K1','Q2 Q2 P2 P1 P1 P1 N1 K2','Q3 Q3 Q3 P2 P2 N3 B3 K3'],face:'lux'},
-  {name:'Uncle Gambit',line:'I sacrifice. You suffer.',decks:['N1 B1 R1 P1 P1 P1 P1 P1','N2 B2 R2 Q2 P2 P1 P1 P1','N4 B3 R3 Q3 Q3 N3 P3 K3'],face:'gambit'},
+  {name:'Pawnbroker Pete',line:'Everything has a price. Mostly weak guys.',decks:['P2 P2 P1 P1 P1 P1 N1 K1','P3 P3 P3 P2 P2 N2 N2 K2','P4 P4 P4 N3 N3 N3 Q2 K4'],face:'pete'},
+  {name:'Sir Neighsalot',line:'Hold your horses. All of them.',decks:['N1 N1 N1 P1 P1 P1 P1 K1','N2 N2 N2 N2 P2 P1 R1 K2','N4 N4 N4 N3 Q2 P3 R3 K3'],face:'neigh'},
+  {name:'Madame Swerve',line:'Darling, I never take the straight road.',decks:['B1 B1 P1 P1 P1 P1 P1 K1','B2 B2 B2 P2 P1 P1 N1 K2','B3 B3 B3 B3 P2 P2 N3 K3'],face:'swerve'},
+  {name:'Blocky Barb',line:'Square deal. Square face. Square loss.',decks:['R1 R1 P1 P1 P1 P1 P1 K1','R2 R2 R2 P2 P2 P1 N2 K2','R3 R3 R3 R3 Q2 P2 N3 K3'],face:'barb'},
+  {name:'Lady Lux',line:'I brought my sisters. You brought pawns.',decks:['Q1 P1 P1 P1 P1 P1 P1 P1','Q2 Q1 P2 P1 P1 P1 N1 K2','Q3 Q3 Q2 P2 P2 N2 B2 K2'],face:'lux'},
+  {name:'Uncle Gambit',line:'I sacrifice. You suffer.',decks:['N1 B1 R1 P1 P1 P1 P1 P1','N2 B2 R2 Q1 P2 P1 P1 P1','N3 B3 R3 Q2 Q2 P2 P2 K2'],face:'gambit'},
 ];
-const BOSS={name:'The Obsidian Monarch',line:'Nineteen boards behind you. One crown ahead.',decks:['Q3 Q3 R3 B3 N3 N3 K4 P3'],face:'boss',boss:true};
+const BOSS={name:'The Obsidian Monarch',line:'Nineteen boards behind you. One crown ahead.',decks:['Q4 Q3 R3 B3 N3 N3 K3 P3'],face:'boss',boss:true};
 
 let save={meta:BASE.split(' '),best:0,runs:0,champs:0,run:null};
 try{Object.assign(save,JSON.parse(localStorage.getItem('chainstones-run')||'{}')||{});}catch(e){}
@@ -354,7 +349,6 @@ const parse=(code,f)=>mkStone(code[0],+code.slice(1),f);
 
 /* ---------- Drawing ---------- */
 const STONE=[{lite:'#bfe0ff',mid:'#5aa6f5',dark:'#123a6e'},{lite:'#ffd0c4',mid:'#f06a55',dark:'#6e1a12'}];
-const ANG=[0,45,90,135,180,225,270,315,26.57,63.43,116.57,153.43,206.57,243.43,296.57,333.43];
 const INK='#2a1e1a',SKIN='#f2c9a0';
 // Characters drawn in a 56 x 56 box that sits on the stone's face.
 const ART={
@@ -407,37 +401,23 @@ function spike(x,base,hw,tip,cls,P){
   return `<g${cls}><path d="M${x-hw} ${base} L${x} ${tip} L${x} ${base}Z" fill="${P.lite}"/><path d="M${x} ${tip} L${x+hw} ${base} L${x} ${base}Z" fill="${P.mid}"/><path d="M${x-hw} ${base} L${x} ${tip} L${x+hw} ${base}" fill="none" stroke="${P.dark}" stroke-width="1.8" stroke-linejoin="round"/></g>`;
 }
 function stoneSVG(stone,owner,cls='stone',brk){
-  // Straight sides carry a row of spikes, corners and knight jumps a fan. Sliders have long lances, the others short teeth.
-  // brk[d] extra spikes in direction d are drawn breaking off.
-  const P=STONE[owner],sl=PIECES[stone.t].slide;
+  // Spikes are faceted triangles outside the square, light half and dark half; the character sits on top.
+  // brk[d] extra spikes on side d are drawn breaking off.
+  const P=STONE[owner];
   let sp='';
-  for(let d=0;d<16;d++){
+  for(let d=0;d<4;d++){
     const k=stone.s[d],tot=k+(brk?brk[d]:0);if(!tot)continue;
-    let g='';
-    for(let j=0;j<tot;j++){
-      const c=j>=k?' class="brk"':'';
-      if(d<8&&d%2===0){const w=Math.min(14,58/tot);g+=spike(50+(j-(tot-1)/2)*w,17,Math.min(7,w/2),sl?-4:5,c,P);}
-      else{const base=d<8?13:17,a=(j-(tot-1)/2)*(d<8?17:13);g+=`<g transform="rotate(${a} 50 ${base})">${spike(50,base,d<8?6:5.5,d<8?(sl?-11:-3):-1,c,P)}</g>`;}
-    }
-    sp+=`<g transform="rotate(${ANG[d]} 50 50)">${g}</g>`;
+    const w=tot<=3?18:tot===4?14.5:12,hw=tot<=3?7.5:w/2;
+    let g='';for(let j=0;j<tot;j++)g+=spike(50+(j-(tot-1)/2)*w,17,hw,1,j>=k?' class="brk"':'',P);
+    sp+=`<g transform="rotate(${d*90} 50 50)">${g}</g>`;
   }
   return `<svg class="${cls}" viewBox="0 0 100 100" aria-hidden="true">${sp}
-<rect x="16" y="20" width="68" height="68" rx="13" fill="${P.dark}"/>
-<rect x="16" y="16" width="68" height="68" rx="13" fill="url(#body${owner})" stroke="${P.dark}" stroke-width="2.5"/>
-<rect x="19" y="19" width="62" height="62" rx="10" fill="url(#sheen)"/>
-<g transform="translate(22 22)">${ART[stone.t]}</g>${lvlBadge(stone.l,P)}</svg>`;
+<rect x="15" y="19" width="70" height="70" rx="12" fill="${P.dark}"/>
+<rect x="15" y="15" width="70" height="70" rx="12" fill="url(#body${owner})" stroke="${P.dark}" stroke-width="2.5"/>
+<rect x="18" y="18" width="64" height="64" rx="9" fill="url(#sheen)"/>
+<g transform="translate(18.5 17) scale(1.13)">${ART[stone.t]}</g></svg>`;
 }
-const lvlBadge=(l,P)=>`<g transform="translate(77 77)"><circle r="9" fill="#0e1422" stroke="${P.mid}" stroke-width="2"/><text y="4.2" text-anchor="middle" font-family="Fredoka,system-ui" font-weight="700" font-size="12" fill="#fff">${l}</text></g>`;
-const backSVG=()=>`<svg viewBox="0 0 100 100"><rect x="8" y="8" width="84" height="84" rx="16" fill="url(#body1)" stroke="#6e1a12" stroke-width="5"/><text x="50" y="68" text-anchor="middle" font-family="Fredoka,system-ui" font-weight="700" font-size="52" fill="#ffe0d6" opacity=".9">?</text></svg>`;
-function reachSVG(t){
-  // A 5 x 5 board with the piece in the middle, facing up, and every square it reaches marked.
-  const mark=new Set();
-  for(const d of PIECES[t].dirs(0)){
-    for(let k=1;k<5;k++){const x=2+DX[d]*k,y=2+DY[d]*k;if(x<0||y<0||x>4||y>4)break;mark.add(y*5+x);if(d>=8||!PIECES[t].slide)break;}
-  }
-  let g='';for(let i=0;i<25;i++){const x=i%5*20,y=(i/5|0)*20;g+=`<rect x="${x+1}" y="${y+1}" width="18" height="18" rx="3" fill="${i===12?'#4aa3ff':mark.has(i)?'#f3c54a':'rgba(10,14,26,.5)'}"/>`;}
-  return `<svg viewBox="0 0 100 100">${g}</svg>`;
-}
+const backSVG=()=>`<svg viewBox="0 0 100 100"><rect x="15" y="19" width="70" height="70" rx="12" fill="#6e1a12"/><rect x="15" y="15" width="70" height="70" rx="12" fill="url(#body1)" stroke="#6e1a12" stroke-width="2.5"/><rect x="18" y="18" width="64" height="64" rx="9" fill="url(#sheen)"/><text x="50" y="66" text-anchor="middle" font-family="Fredoka,system-ui" font-weight="700" font-size="44" fill="#ffe0d6" opacity=".85">?</text></svg>`;
 const FACES={
   pete:`<rect width="100" height="100" fill="#6b5a3e"/><path d="M14 100 Q16 74 50 70 Q84 74 86 100Z" fill="#3a2f2a"/><path d="M42 72 L50 84 L58 72Z" fill="#fff"/><path d="M40 80 L50 76 L60 80 L60 86 L50 82 L40 86Z" fill="#c43c3c"/>
 <ellipse cx="50" cy="46" rx="25" ry="28" fill="#f0c49a" stroke="${INK}" stroke-width="2.5"/><ellipse cx="42" cy="26" rx="10" ry="4" fill="#fff" opacity=".35"/>
@@ -491,13 +471,14 @@ function renderLadder(){
   $('#ladder').innerHTML=h;
   $('#runNow').textContent=r.m===RUN?'Match 20: the boss':`Match ${r.m} of ${RUN}`;
   $('#runBest').textContent=save.champs?`Crowns won: ${save.champs}`:`Best run: ${save.best?`match ${save.best}`:'none yet'}`;
-  $('#record').textContent=`Runs: ${save.runs}. Best: ${save.best?'match '+save.best:'none'}. Crowns: ${save.champs}.`;
+  if($('#record'))$('#record').textContent=`Runs: ${save.runs}. Best: ${save.best?'match '+save.best:'none'}. Crowns: ${save.champs}.`;
 }
 function renderSides(){
   const pts=[score(G,0),score(G,1)],tot=pts[0]+pts[1]+G.hands[0].reduce((a,s)=>a+PIECES[s.t].val,0)+G.hands[1].reduce((a,s)=>a+PIECES[s.t].val,0);
   for(const p of [0,1]){$('#s'+p).textContent=pts[p];$('#tug'+p).style.width=(100*pts[p]/(tot||1))+'%';$('#side'+p).classList.toggle('turn',!full(G)&&G.turn===p);}
   $('#foeFace').innerHTML=faceSVG(foe);$('#foeName').textContent=foe.name;
-  $('#backs').innerHTML=G.hands[1].map(backSVG).join('');
+  $('#backs').innerHTML=G.hands[1].map(()=>`<div class="back">${backSVG()}</div>`).join('');
+  $('#backs').classList.toggle('active',!full(G)&&G.turn===1);
 }
 function describe(s){return `<b>${PIECES[s.t].name}</b> <span class="lvl">Lv ${s.l}</span> · ${PIECES[s.t].text}`;}
 function setInfo(){
@@ -517,7 +498,7 @@ function renderHand(){
     el.appendChild(b);
   });
 }
-function brkMap(broke){const m=new Map();for(const [i,d,k] of broke){if(!m.has(i))m.set(i,new Array(16).fill(0));m.get(i)[d]+=k;}return m;}
+function brkMap(broke){const m=new Map();for(const [i,d,k] of broke){if(!m.has(i))m.set(i,[0,0,0,0]);m.get(i)[d]+=k;}return m;}
 function renderBoard(){
   const b=$('#board'),own=disp||G.own;
   b.style.setProperty('--n',N);
@@ -575,7 +556,7 @@ function move(hi,c){
   disp=G.own.slice();disp[c]=me;
   G=ns;sel=-1;hover=-1;last=c;fresh.add(c);brk=brkMap(ns.broke);
   render();setInfo();
-  pop(c,PIECES[placed.t].name,'tag p'+me,T(1300),-56);
+  pop(c,PIECES[placed.t].name,'tag p'+me,T(1300),-at(c)[2].offsetHeight*.62);
   // Spikes break first, then the stones it won flip, then the new stone flips if it lost a clash.
   const t0=ns.broke.length?380:120,took=ns.taken.length,lost=ns.lost>=0,steps=(took?1:0)+(lost?1:0);
   const flipAt=(cells,k)=>timers.push(setTimeout(()=>{for(const i of cells){disp[i]=G.own[i];flips.add(i);}renderBoard();renderSides();},T(t0+k*200)));
@@ -688,16 +669,22 @@ $('#board').addEventListener('pointermove',e=>{
 });
 $('#board').addEventListener('pointerleave',e=>{if(e.pointerType!=='mouse')return;hover=-1;if(G&&sel>=0&&!busy)renderBoard();if(G)setInfo();});
 addEventListener('keydown',e=>{
-  if(!$('#modal').hidden)return;
+  if(!$('#modal').hidden||!$('#rmodal').hidden)return;
   if((e.key==='s'||e.key==='S')&&!e.metaKey&&!e.ctrlKey)setSlow(!cfg.slow);
   if(e.key==='Escape'&&sel>=0){sel=-1;renderHand();renderBoard();setInfo();}
   const k=+e.key;if(G&&k>=1&&k<=9&&!busy&&G.turn===0&&k<=G.hands[0].length){sel=k-1;renderHand();renderBoard();setInfo();}
 });
 const setSlow=v=>{cfg.slow=v;document.body.classList.toggle('slow',v);$('#bSlow').setAttribute('aria-pressed',v);store();};
 $('#bSlow').onclick=()=>setSlow(!cfg.slow);setSlow(!!cfg.slow);
-$('#bQuit').onclick=()=>{if(!confirm('Give up this run? You still get to keep one upgraded stone.'))return;timers.forEach(clearTimeout);timers=[];busy=true;endRun(false,'You gave up.');};
-$('#dex').innerHTML='PNBRQK'.split('').map(t=>`<div>${stoneSVG(mkStone(t,2,0),0,'')}${reachSVG(t)}<p style="margin:0"><b>${PIECES[t].name}</b><span>${PIECES[t].text[0].toUpperCase()+PIECES[t].text.slice(1)}.</span></p></div>`).join('');
-try{if(!localStorage.getItem('chainstones-seen2')){$('#rules').open=true;localStorage.setItem('chainstones-seen2','1');}}catch(e){$('#rules').open=true;}
+function rules(){
+  // The rules sit on their own layer, over the board or over a card between matches.
+  $('#rcard').innerHTML=$('#rulesT').innerHTML;$('#rmodal').hidden=false;
+  $('#dex').innerHTML='PNBRQK'.split('').map(t=>`<div>${stoneSVG(mkStone(t,1,0),0,'')}${stoneSVG(mkStone(t,3,0),0,'')}<p style="margin:0"><b>${PIECES[t].name}</b><span>Level 1 and 3: ${PIECES[t].text}.</span></p></div>`).join('');
+  renderLadder();
+  $('#bClose').onclick=()=>{$('#rmodal').hidden=true;};
+  $('#bQuit').onclick=()=>{if(!confirm('Give up this run? You still get to keep one upgraded stone.'))return;$('#rmodal').hidden=true;timers.forEach(clearTimeout);timers=[];busy=true;endRun(false,'You gave up.');};
+}
+$('#bRules').onclick=rules;
 if(!save.run||save.run.over)newRun();
 foe=foeOf(save.run.m);G=newGame(N,[[],[]],0);render();
 intro();
