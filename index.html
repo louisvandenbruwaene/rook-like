@@ -205,7 +205,7 @@ body.slow{--t:4}
     <li>Take turns placing a stone from your hand on an empty square of the 4 × 4 board. You never see the opponent's hand.</li>
     <li>Every stone is a character with its own spikes. Your stones face up the board, the opponent's are turned round and face down. Each level adds a spike to every side that has some (up to 5).</li>
     <li><b>Clash:</b> each side of your new stone that touches an enemy stone fights it. Facing spikes break off one for one, and the side with spikes left over wins and takes the other stone. That works both ways: lose any clash and your new stone is taken.</li>
-    <li><b>Chain:</b> a stone that changes colour fights its new enemy neighbours the same way, and so on. Each stone changes colour at most once per move.</li>
+    <li><b>Chain:</b> after the new stone has fought, the fights spread outwards. Every line between two stones of different colour with spikes on it fights the same way, closest to the new stone first. Each line fights at most once per move.</li>
     <li>When the board is full, count your stones. The dude with crown counts as 3. Most points wins. A draw is replayed.</li>
     <li>After a win, pick one of three upgrades for the rest of the run. When a run ends, keep one stone you upgraded: it stays in your starting hand for good.</li>
     <li>Every opponent always brings the same stones, and they get stronger as the run goes on. Remember what they play.</li>
@@ -262,24 +262,34 @@ function play(st,hi,c){
   for(const [q,m] of fights)if(m>0){ns.own[q]=me;ns.taken.push(q);}
   let w=null;for(const f of fights)if(f[1]<0&&(!w||f[1]<w[1]))w=f;
   if(w){ns.own[c]=op;ns.lost=w[0];}
-  // Chain: a stone that changed colour fights its new enemy neighbours by the same rule, wave after wave.
-  // Every stone changes colour at most once per move, so a stone caught between two spikes can't flip forever.
-  const locked=new Set(ns.taken);if(w)locked.add(c);
-  let wave=[...locked];ns.waves=wave.length?[wave]:[];ns.chain=[];
-  while(wave.length){
-    const nxt=[];
-    for(const f of wave)for(let d=0;d<4;d++){
-      const q=nb(n,f,d);
-      if(q<0||ns.own[q]<0||ns.own[q]===ns.own[f])continue;
-      const A=ns.at[f],B=ns.at[q],e=(d+2)%4,a=A.s[d],b=B.s[e];
-      if(!a&&!b)continue;
-      const k=Math.min(a,b);
-      if(k){const sa=A.s.slice(),sb=B.s.slice();sa[d]-=k;sb[e]-=k;ns.at[f]={t:A.t,l:A.l,f:A.f,s:sa};ns.at[q]={t:B.t,l:B.l,f:B.f,s:sb};ns.broke.push([f,d,k],[q,e,k]);}
-      ns.chain.push([f,q,a,b,ns.waves.length]);
-      if(a>b&&!locked.has(q)){ns.own[q]=ns.own[f];locked.add(q);nxt.push(q);}
+  // Then the fights spread outwards: every line between two stones of different colour with spikes on it fights,
+  // the line closest to the new stone first. Each line fights at most once per move, so a move always ends.
+  const n2=n*n,md=i=>Math.abs(i%n-c%n)+Math.abs((i/n|0)-(c/n|0)),fought=new Set();
+  for(let d=0;d<4;d++){const q=nb(n,c,d);if(q>=0)fought.add(Math.min(c,q)*n2+Math.max(c,q));}
+  const first=[...ns.taken.map(q=>[q,me])];if(w)first.push([c,op]);
+  ns.waves=[first];ns.chain=[]; // wave 0 is the new stone's own fights, then one wave per distance
+  let wd=-1;
+  for(;;){
+    let best=null;
+    for(let i=0;i<n2;i++){
+      if(ns.own[i]<0)continue;
+      for(const d of [1,2]){
+        const q=nb(n,i,d);
+        if(q<0||ns.own[q]<0||ns.own[q]===ns.own[i]||fought.has(i*n2+q))continue;
+        const a=ns.at[i].s[d],b=ns.at[q].s[d+2];
+        if(!a&&!b)continue;
+        const dist=Math.min(md(i),md(q));
+        if(!best||dist<best[0])best=[dist,i,q,d,a,b];
+      }
     }
-    if(nxt.length)ns.waves.push(nxt);
-    wave=nxt;
+    if(!best)break;
+    const [dist,i,q,d,a,b]=best,e=d+2,k=Math.min(a,b);
+    fought.add(i*n2+q);
+    if(k){const A=ns.at[i],B=ns.at[q],sa=A.s.slice(),sb=B.s.slice();sa[d]-=k;sb[e]-=k;ns.at[i]={t:A.t,l:A.l,f:A.f,s:sa};ns.at[q]={t:B.t,l:B.l,f:B.f,s:sb};ns.broke.push([i,d,k],[q,e,k]);}
+    const lose=a>b?q:b>a?i:-1;
+    if(dist!==wd){ns.waves.push([]);wd=dist;}
+    if(lose>=0){ns.own[lose]=ns.own[lose===q?i:q];ns.waves[ns.waves.length-1].push([lose,ns.own[lose]]);}
+    ns.chain.push([i,q,a,b,ns.waves.length-1]);
   }
   return ns;
 }
@@ -578,10 +588,15 @@ function move(hi,c){
   render();setInfo();
   pop(c,PIECES[placed.t].name,'tag p'+me,T(1300),-at(c)[2].offsetHeight*.62);
   // Spikes break first, then each wave of the chain flips in turn, 220 ms apart.
-  const t0=ns.broke.length?380:120,steps=ns.waves.length,gap=220,end=t0+steps*gap;
-  ns.waves.forEach((w,k)=>timers.push(setTimeout(()=>{for(const i of w){disp[i]=G.own[i];flips.add(i);}renderBoard();renderSides();},T(t0+(k+1)*gap))));
+  const t0=ns.broke.length?380:120,steps=ns.waves.length,flipped=ns.waves.filter(w=>w.length).length,gap=220,end=t0+steps*gap;
+  // A stone can change colour more than once in a chain, so every flip carries the colour it turns.
+  ns.waves.forEach((w,k)=>{
+    const ch=ns.chain.filter(x=>x[4]===k&&x[2]&&x[3]);
+    if(ch.length)timers.push(setTimeout(()=>{for(const [f,q,a,b] of ch)sparks(f,[[q,0,a,b]]);},T(t0+(k+1)*gap-60)));
+    if(w.length)timers.push(setTimeout(()=>{for(const [i,o] of w){disp[i]=o;flips.add(i);}renderBoard();},T(t0+(k+1)*gap)));
+  });
+  timers.push(setTimeout(renderSides,T(end)));
   if(ns.fights.some(f=>f[2]&&f[3]))timers.push(setTimeout(()=>sparks(c,ns.fights),T(160)));
-  ns.waves.forEach((_,k)=>{const ch=ns.chain.filter(x=>x[4]===k+1);if(ch.length)timers.push(setTimeout(()=>{for(const [f,q,a,b] of ch)sparks(f,[[q,0,a,b]]);},T(t0+(k+1)*gap-60)));});
   if(cfg.slow)showClashes(c,ns.fights,me,T(end+400));
   // Net result for the mover, counting the new stone as theirs: what the chain won minus what it lost.
   const before=score(prev,me)+PIECES[placed.t].val,net=score(ns,me)-before;
@@ -590,9 +605,9 @@ function move(hi,c){
   const who=me===0?'You':foe.name,pl=k=>`<b>${k}</b> stone${k>1?'s':''}`;
   let msg=won.length?`${who} took ${pl(won.length)}`:'';
   if(gone.length)msg+=(msg?', but lost ':`${who} lost `)+pl(gone.length);
-  if(steps>1)msg+=` in a chain of ${steps}`;
+  if(flipped>1)msg+=` in a chain of ${flipped}`;
   setStatus(msg?msg+'.':ns.broke.length?`${who} broke spikes, no one won the clash.`:`${who} placed a ${PIECES[placed.t].name.toLowerCase()}.`);
-  timers.push(setTimeout(()=>{disp=null;busy=false;render();next(steps>0);},T(end+(steps?560:300))));
+  timers.push(setTimeout(()=>{disp=null;busy=false;render();next(flipped>0);},T(end+(flipped?560:300))));
 }
 function next(justActed){
   if(full(G))return timers.push(setTimeout(finish,T(500)));
