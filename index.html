@@ -728,12 +728,17 @@ function offers(){
 function rewards(a,b){
   const os=offers(),d=save.run.deck;
   modal(`<div class="kicker">Won ${a} to ${b}</div><h2>Pick an upgrade</h2><p>It lasts for the rest of this run.</p>
-<div class="picks">${os.map((o,k)=>`<button class="pick" data-k="${k}">${upgrade(d[o.i],o.to)}${o.kind}<small>${nameOf(o.to)}</small></button>`).join('')}</div>`,
-  ()=>document.querySelectorAll('.pick').forEach(el=>el.onclick=()=>{
-    const o=os[+el.dataset.k],r=save.run;
-    r.deck[o.i]=o.to;if(!r.changed.includes(o.i))r.changed.push(o.i);
-    r.m++;store();close();intro();
-  }));
+${os.length?`<div class="picks">${os.map((o,k)=>`<button class="pick" data-k="${k}">${upgrade(d[o.i],o.to)}${o.kind}<small>${nameOf(o.to)}</small></button>`).join('')}</div>`
+  :`<p>Every stone is already at its best.</p><div><button class="primary" id="go">Next match</button></div>`}`,
+  ()=>{
+    const on=()=>{save.run.m++;store();close();intro();};
+    if($('#go'))$('#go').onclick=on; // nothing left to upgrade
+    document.querySelectorAll('.pick').forEach(el=>el.onclick=()=>{
+      const o=os[+el.dataset.k],r=save.run;
+      r.deck[o.i]=o.to;if(!r.changed.includes(o.i))r.changed.push(o.i);
+      on();
+    });
+  });
 }
 function endRun(won,text){
   // Offer every stone this run upgraded; the one picked replaces its slot in the starting hand for good.
