@@ -219,9 +219,12 @@ body.slow{--t:4}
 <div class="modal" id="rmodal" hidden style="z-index:11"><div class="card rules" id="rcard"></div></div>
 
 <script id="core">
-/* Rules engine, shared by the game and the computer player. Cells are indexed row by row.
-   own[i]: -1 empty, 0 you, 1 opponent. at[i]: the stone on square i. s[] holds its spikes top, right, bottom, left. */
-const DIRS=[[0,-1],[1,0],[0,1],[-1,0]];
+/* Rules engine, shared by the game and the computer player.
+   Squares are numbered row by row. own[i] is -1 (empty), 0 (you) or 1 (the opponent); at[i] is the stone on it.
+   A stone is {t: piece letter, l: level, f: facing, s: spikes [top, right, bottom, left]}. */
+const UP=0,RIGHT=1,DOWN=2,LEFT=3,STEP=[[0,-1],[1,0],[0,1],[-1,0]];
+const opposite=side=>(side+2)%4;
+const MAXL=5;
 // Every piece has its own spike pattern, drawn facing up. Each level adds a spike to every side that has some, up to 5.
 const PIECES={
   P:{name:'Weak guy',base:[1,0,0,0],val:1,text:'spikes only forward'},
@@ -231,115 +234,141 @@ const PIECES={
   Q:{name:'Pretty lady',base:[2,2,2,2],val:1,text:'two on every side'},
   K:{name:'Dude with crown',base:[1,1,1,1],val:3,text:'every side, and he counts as 3'},
 };
-const MAXL=5;
 function mkStone(t,l,f){
   // f is the facing: 0 points up the board (you), 1 points down (the opponent), so the pattern turns half way round.
-  const s=PIECES[t].base.map(x=>x?Math.min(5,x+l-1):0);
+  const s=PIECES[t].base.map(x=>x?Math.min(MAXL,x+l-1):0);
   return {t,l,f,s:f?[s[2],s[3],s[0],s[1]]:s};
 }
-function nb(n,c,d){const x=c%n+DIRS[d][0],y=(c/n|0)+DIRS[d][1];return x<0||y<0||x>=n||y>=n?-1:y*n+x;}
-function newGame(n,hands,first){return {n,own:new Int8Array(n*n).fill(-1),at:new Array(n*n).fill(null),hands,turn:first};}
-function full(st){for(let i=0;i<st.own.length;i++)if(st.own[i]<0)return false;return true;}
-function score(st,p){let k=0;for(let i=0;i<st.own.length;i++)if(st.own[i]===p)k+=PIECES[st.at[i].t].val;return k;}
-function play(st,hi,c){
-  // Every side of the new stone that touches an enemy stone clashes with it: facing spikes break one for one,
-  // and the side with spikes left over wins. A win takes that one stone; losing any clash gets the new stone taken.
-  const n=st.n,me=st.turn,op=1-me,h=st.hands[me][hi],s=h.s.slice();
-  const ns={n,own:st.own.slice(),at:st.at.slice(),hands:st.hands.slice(),turn:op,taken:[],lost:-1,broke:[],fights:[]};
-  ns.hands[me]=st.hands[me].filter((_,i)=>i!==hi);
-  ns.own[c]=me;
-  const fights=[];
-  for(let d=0;d<4;d++){
-    const q=nb(n,c,d);
-    if(q<0||ns.own[q]!==op)continue;
-    const B=ns.at[q],e=(d+2)%4,a=s[d],b=B.s[e];
-    if(!a&&!b)continue;
-    const k=Math.min(a,b);
-    if(k){s[d]-=k;const t=B.s.slice();t[e]-=k;ns.at[q]={t:B.t,l:B.l,f:B.f,s:t};ns.broke.push([c,d,k],[q,e,k]);}
-    fights.push([q,a-b]);ns.fights.push([q,d,a,b]);
-  }
-  ns.at[c]={t:h.t,l:h.l,f:h.f,s};
-  for(const [q,m] of fights)if(m>0){ns.own[q]=me;ns.taken.push(q);}
-  let w=null;for(const f of fights)if(f[1]<0&&(!w||f[1]<w[1]))w=f;
-  if(w){ns.own[c]=op;ns.lost=w[0];}
-  // Then the fights spread outwards: every line between two stones of different colour with spikes on it fights,
-  // the line closest to the new stone first. Each line fights at most once per move, so a move always ends.
-  const n2=n*n,md=i=>Math.abs(i%n-c%n)+Math.abs((i/n|0)-(c/n|0)),fought=new Set();
-  for(let d=0;d<4;d++){const q=nb(n,c,d);if(q>=0)fought.add(Math.min(c,q)*n2+Math.max(c,q));}
-  const first=[...ns.taken.map(q=>[q,me])];if(w)first.push([c,op]);
-  ns.waves=[first];ns.chain=[]; // wave 0 is the new stone's own fights, then one wave per distance
-  let wd=-1;
-  for(;;){
-    let best=null;
-    for(let i=0;i<n2;i++){
-      if(ns.own[i]<0)continue;
-      for(const d of [1,2]){
-        const q=nb(n,i,d);
-        if(q<0||ns.own[q]<0||ns.own[q]===ns.own[i]||fought.has(i*n2+q))continue;
-        const a=ns.at[i].s[d],b=ns.at[q].s[d+2];
-        if(!a&&!b)continue;
-        const dist=Math.min(md(i),md(q));
-        if(!best||dist<best[0])best=[dist,i,q,d,a,b];
-      }
-    }
-    if(!best)break;
-    const [dist,i,q,d,a,b]=best,e=d+2,k=Math.min(a,b);
-    fought.add(i*n2+q);
-    if(k){const A=ns.at[i],B=ns.at[q],sa=A.s.slice(),sb=B.s.slice();sa[d]-=k;sb[e]-=k;ns.at[i]={t:A.t,l:A.l,f:A.f,s:sa};ns.at[q]={t:B.t,l:B.l,f:B.f,s:sb};ns.broke.push([i,d,k],[q,e,k]);}
-    const lose=a>b?q:b>a?i:-1;
-    if(dist!==wd){ns.waves.push([]);wd=dist;}
-    if(lose>=0){ns.own[lose]=ns.own[lose===q?i:q];ns.waves[ns.waves.length-1].push([lose,ns.own[lose]]);}
-    ns.chain.push([i,q,a,b,ns.waves.length-1]);
-  }
-  return ns;
+function neighbour(n,cell,side){
+  const x=cell%n+STEP[side][0],y=(cell/n|0)+STEP[side][1];
+  return x<0||y<0||x>=n||y>=n?-1:y*n+x;
 }
-function gain(st,hi,c){const me=st.turn,ns=play(st,hi,c);return score(ns,me)-score(st,me);}
-function legal(st){
-  const seen=new Set(),hs=[],cells=[];
-  st.hands[st.turn].forEach((s,i)=>{const key=s.t+s.l;if(!seen.has(key)){seen.add(key);hs.push(i);}});
-  for(let i=0;i<st.own.length;i++)if(st.own[i]<0)cells.push(i);
-  const m=[];for(const hi of hs)for(const c of cells)m.push([hi,c]);return m;
+const distance=(n,a,b)=>Math.abs(a%n-b%n)+Math.abs((a/n|0)-(b/n|0));
+function newGame(n,hands,first){return {n,own:new Int8Array(n*n).fill(-1),at:new Array(n*n).fill(null),hands,turn:first};}
+const full=g=>!g.own.includes(-1);
+function score(g,p){let k=0;for(let i=0;i<g.own.length;i++)if(g.own[i]===p)k+=PIECES[g.at[i].t].val;return k;}
+
+function fight(g,i,side,q){
+  // The stones on i and q meet across one line. Facing spikes break off one for one; returns [spikes of i, spikes of q].
+  const a=g.at[i].s[side],b=g.at[q].s[opposite(side)],k=Math.min(a,b);
+  if(k){
+    for(const [cell,sd] of [[i,side],[q,opposite(side)]]){
+      const s=g.at[cell].s.slice();s[sd]-=k;g.at[cell]={...g.at[cell],s};g.broke.push([cell,sd,k]);
+    }
+  }
+  return [a,b];
+}
+function play(g,handIndex,cell){
+  // Returns the game after the player to move puts stone handIndex on cell. Besides the board it records
+  // lines: every fight as [from, to, spikes from, spikes to, wave]; waves: per wave the flips as [cell, new owner];
+  // broke: spikes broken as [cell, side, count].
+  const n=g.n,me=g.turn,op=1-me;
+  const a={n,own:g.own.slice(),at:g.at.slice(),hands:g.hands.slice(),turn:op,lines:[],waves:[[]],broke:[]};
+  a.hands[me]=g.hands[me].filter((_,i)=>i!==handIndex);
+  a.own[cell]=me;a.at[cell]=g.hands[me][handIndex];
+  const flip=(c,p,wave)=>{a.own[c]=p;a.waves[wave].push([c,p]);};
+
+  // 1. The new stone fights every enemy neighbour at once. Each win takes that stone;
+  //    losing any of these fights gets the new stone taken.
+  const fought=new Set(),lineKey=(x,y)=>Math.min(x,y)*n*n+Math.max(x,y);
+  let won=[],lost=false;
+  for(let side=0;side<4;side++){
+    const q=neighbour(n,cell,side);
+    if(q<0)continue;
+    fought.add(lineKey(cell,q));
+    if(a.own[q]!==op)continue;
+    const [x,y]=fight(a,cell,side,q);
+    if(!x&&!y)continue;
+    a.lines.push([cell,q,x,y,0]);
+    if(x>y)won.push(q);
+    if(x<y)lost=true;
+  }
+  for(const q of won)flip(q,me,0);
+  if(lost)flip(cell,op,0);
+
+  // 2. The fights spread outwards: every line between two stones of different colour with spikes on it fights,
+  //    the line closest to the new stone first. Each line fights at most once per move, so a move always ends.
+  let waveDist=-1;
+  for(;;){
+    const line=closestOpenLine(a,cell,fought,lineKey);
+    if(!line)break;
+    const [dist,i,side,q]=line;
+    fought.add(lineKey(i,q));
+    if(dist!==waveDist){a.waves.push([]);waveDist=dist;}
+    const wave=a.waves.length-1,[x,y]=fight(a,i,side,q);
+    a.lines.push([i,q,x,y,wave]);
+    if(x>y)flip(q,a.own[i],wave);
+    if(y>x)flip(i,a.own[q],wave);
+  }
+  return a;
+}
+function closestOpenLine(g,cell,fought,lineKey){
+  // Lines are checked to the right and downwards from every stone, so each line is seen once.
+  let best=null;
+  for(let i=0;i<g.own.length;i++){
+    if(g.own[i]<0)continue;
+    for(const side of [RIGHT,DOWN]){
+      const q=neighbour(g.n,i,side);
+      if(q<0||g.own[q]<0||g.own[q]===g.own[i]||fought.has(lineKey(i,q)))continue;
+      if(!g.at[i].s[side]&&!g.at[q].s[opposite(side)])continue;
+      const dist=Math.min(distance(g.n,i,cell),distance(g.n,q,cell));
+      if(!best||dist<best[0])best=[dist,i,side,q];
+    }
+  }
+  return best;
+}
+const gain=(g,h,c)=>score(play(g,h,c),g.turn)-score(g,g.turn);
+function legal(g){
+  // Stones with the same piece and level play alike, so only the first of each is tried.
+  const seen=new Set(),moves=[];
+  g.hands[g.turn].forEach((s,h)=>{
+    if(seen.has(s.t+s.l))return;seen.add(s.t+s.l);
+    for(let c=0;c<g.own.length;c++)if(g.own[c]<0)moves.push([h,c]);
+  });
+  return moves;
 }
 
 /* Computer player: negamax with alpha-beta and iterative deepening. Scores are point differences x100. */
 let deadline=0,aborted=false,nodes=0;
 const now=()=>typeof performance!=='undefined'?performance.now():Date.now();
-function ordered(st){return legal(st).map(m=>[m,gain(st,m[0],m[1])]).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);}
-function evaluate(st){
-  const d=(score(st,st.turn)-score(st,1-st.turn))*100;
-  if(full(st))return d;
-  let best=0;for(const [hi,c] of legal(st)){const g=gain(st,hi,c);if(g>best)best=g;}
-  return d+60*best; // the side to move can cash in its best capture next
+const lead=g=>(score(g,g.turn)-score(g,1-g.turn))*100;
+function ordered(g){return legal(g).map(m=>[m,gain(g,...m)]).sort((x,y)=>y[1]-x[1]).map(x=>x[0]);}
+function evaluate(g){
+  if(full(g))return lead(g);
+  let best=0;for(const m of legal(g))best=Math.max(best,gain(g,...m));
+  return lead(g)+60*best; // the side to move can cash in its best capture next
 }
-function nega(st,depth,a,b){
+function nega(g,depth,alpha,beta){
   if((++nodes&255)===0&&now()>deadline)aborted=true;
   if(aborted)return 0;
-  if(full(st))return (score(st,st.turn)-score(st,1-st.turn))*100;
-  if(depth===0)return evaluate(st);
+  if(full(g))return lead(g);
+  if(depth===0)return evaluate(g);
   let best=-1e9;
-  for(const [hi,c] of ordered(st)){
-    const v=-nega(play(st,hi,c),depth-1,-b,-a);
+  for(const m of ordered(g)){
+    const v=-nega(play(g,...m),depth-1,-beta,-alpha);
     if(aborted)return 0;
-    if(v>best)best=v;if(v>a)a=v;if(a>=b)break;
+    best=Math.max(best,v);alpha=Math.max(alpha,v);
+    if(alpha>=beta)break;
   }
   return best;
 }
-function think(st,ms,rnd=Math.random,maxD=99){
-  const ms0=ordered(st),pick=list=>list[rnd()*list.length|0];
-  const g=ms0.map(m=>gain(st,m[0],m[1])),top=Math.max(...g);
-  let best=pick(ms0.filter((_,i)=>g[i]===top)),first=best;
+function think(g,ms,rnd=Math.random,maxDepth=99){
+  // Starts from a greedy move, then searches one move deeper each round until the time is up.
+  const moves=ordered(g),pick=list=>list[rnd()*list.length|0];
+  const gains=moves.map(m=>gain(g,...m)),top=Math.max(...gains);
+  let best=pick(moves.filter((_,i)=>gains[i]===top));
   deadline=now()+ms;
-  const empties=st.own.filter(o=>o<0).length;
-  for(let d=1;d<=Math.min(maxD,empties);d++){
+  const empties=g.own.filter(o=>o<0).length;
+  for(let depth=1;depth<=Math.min(maxDepth,empties);depth++){
     aborted=false;nodes=0;
-    let a=-1e9;const scored=[];
-    for(const m of [first,...ms0.filter(m=>m!==first)]){
-      const v=-nega(play(st,m[0],m[1]),d-1,-1e9,-(a-1)); // window keeps ties exact so we can pick among them
+    let alpha=-1e9;const scored=[];
+    for(const m of [best,...moves.filter(m=>m!==best)]){
+      const v=-nega(play(g,...m),depth-1,-1e9,-(alpha-1)); // the window keeps ties exact so we can pick among them
       if(aborted)break;
-      scored.push([m,v]);if(v>a)a=v;
+      scored.push([m,v]);alpha=Math.max(alpha,v);
     }
     if(aborted)break;
-    best=pick(scored.filter(x=>x[1]>=a).map(x=>x[0]));first=best;
+    best=pick(scored.filter(x=>x[1]>=alpha).map(x=>x[0]));
   }
   return best;
 }
@@ -349,24 +378,30 @@ if(typeof module!=='undefined')module.exports={PIECES,MAXL,mkStone,newGame,full,
 <script>
 const $=s=>document.querySelector(s);
 const N=4,RUN=20,BASE='P1 P1 P1 P1 N1 B1 R1 K1';
-let cfg={slow:false};
-try{Object.assign(cfg,JSON.parse(localStorage.getItem('chainstones-cfg')||'{}')||{});}catch(e){}
-const T=ms=>ms*(cfg.slow?4:1); // every move timing goes through T so slow-mo stretches the whole sequence
+
+/* Settings and the saved run live in localStorage. */
+function load(key,fallback){try{return Object.assign(fallback,JSON.parse(localStorage.getItem(key)||'{}'));}catch(e){return fallback;}}
+const cfg=load('chainstones-cfg',{slow:false});
+const save=load('chainstones-run',{meta:BASE.split(' '),best:0,runs:0,champs:0,run:null});
+function store(){try{localStorage.setItem('chainstones-run',JSON.stringify(save));localStorage.setItem('chainstones-cfg',JSON.stringify(cfg));}catch(e){}}
+const T=ms=>ms*(cfg.slow?4:1); // every timing goes through T so slow-mo stretches the whole move
+const later=(ms,fn)=>timers.push(setTimeout(fn,T(ms)));
 
 /* Opponents. Each brings a fixed deck, an early, middle and late version (matches 1-6, 7-13, 14-19). The boss plays match 20. */
 const FOES=[
-  {name:'Pawnbroker Pete',line:'Everything has a price. Mostly weak guys.',decks:['P2 P2 P1 P1 P1 P1 N1 K1','P3 P3 P3 P2 P2 N2 N2 K2','P4 P4 P3 N3 N3 N3 Q2 K3'],face:'pete'},
-  {name:'Sir Neighsalot',line:'Hold your horses. All of them.',decks:['N1 N1 N1 P1 P1 P1 P1 K1','N2 N2 N2 N1 P2 P1 R1 K1','N4 N4 N3 N3 Q2 P3 R2 K3'],face:'neigh'},
+  {name:'Pawnbroker Pete',line:'Everything has a price. Mostly weak guys.',decks:['P2 P2 P1 P1 P1 P1 N1 K1','P3 P3 P3 P2 P2 N2 N2 K2','P4 P4 P4 N3 N3 N3 Q2 K4'],face:'pete'},
+  {name:'Sir Neighsalot',line:'Hold your horses. All of them.',decks:['N1 N1 N1 P1 P1 P1 P1 K1','N2 N2 N2 N1 P2 P1 R1 K2','N4 N4 N4 N3 Q2 P3 R3 K3'],face:'neigh'},
   {name:'Madame Swerve',line:'Darling, I never take the straight road.',decks:['B1 B1 P1 P1 P1 P1 P1 K1','B2 B2 B2 P2 P1 P1 N1 K2','B3 B3 B3 B2 P2 P2 N3 K3'],face:'swerve'},
   {name:'Blocky Barb',line:'Square deal. Square face. Square loss.',decks:['R1 P1 P1 P1 P1 P1 P1 K1','R2 R2 R1 P2 P1 P1 N2 K2','R3 R3 R3 R3 Q2 P2 N3 K3'],face:'barb'},
-  {name:'Lady Lux',line:'I brought my sisters. You brought weak guys.',decks:['B1 B1 P1 P1 P1 P1 P1 P1','Q2 Q1 P1 P1 P1 P1 N1 K1','Q3 Q2 Q2 P2 P2 N2 B2 K2'],face:'lux'},
+  {name:'Lady Lux',line:'I brought my sisters. You brought weak guys.',decks:['B1 B1 P1 P1 P1 P1 P1 P1','Q2 P1 P1 P1 P1 P1 N1 K1','Q2 Q2 Q2 P2 P2 N2 B2 K2'],face:'lux'},
   {name:'Uncle Gambit',line:'I sacrifice. You suffer.',decks:['N1 B1 R1 P1 P1 P1 P1 P1','N2 B2 R2 Q1 P2 P1 P1 P1','N3 B3 R3 Q2 Q1 P2 P2 K2'],face:'gambit'},
 ];
 const BOSS={name:'The Obsidian Monarch',line:'Nineteen boards behind you. One crown ahead.',decks:['Q3 Q3 R3 B3 N3 N3 K4 P3'],face:'boss',boss:true};
 
-let save={meta:BASE.split(' '),best:0,runs:0,champs:0,run:null};
-try{Object.assign(save,JSON.parse(localStorage.getItem('chainstones-run')||'{}')||{});}catch(e){}
-const store=()=>{try{localStorage.setItem('chainstones-run',JSON.stringify(save));localStorage.setItem('chainstones-cfg',JSON.stringify(cfg));}catch(e){}};
+// Decks are lists of codes like 'N2': piece letter, then level.
+const levelOf=code=>+code.slice(1);
+const stoneOf=(code,facing)=>mkStone(code[0],levelOf(code),facing);
+const nameOf=code=>`${PIECES[code[0]].name} Lv ${levelOf(code)}`;
 const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]];}return a;};
 function newRun(){
   // Each of the six regulars shows up three times in a random order, plus one extra, then the boss.
@@ -375,7 +410,7 @@ function newRun(){
 }
 const foeOf=m=>m===RUN?BOSS:FOES[save.run.order[m-1]];
 const phase=m=>m===RUN?0:m<=6?0:m<=13?1:2;
-const parse=(code,f)=>mkStone(code[0],+code.slice(1),f);
+const firstOf=m=>m===RUN?1:(m+(save.run.rematch||0))%2?0:1; // you place first in odd matches, the boss always first
 
 /* ---------- Drawing ---------- */
 const STONE=[{lite:'#bfe0ff',mid:'#5aa6f5',dark:'#123a6e'},{lite:'#ffd0c4',mid:'#f06a55',dark:'#6e1a12'}];
@@ -490,10 +525,20 @@ const FACES={
 };
 const faceSVG=f=>`<svg viewBox="0 0 100 100" aria-hidden="true">${FACES[f.face]}</svg>`;
 
-/* ---------- Match ---------- */
-let G=null,foe=null,sel=-1,busy=true,hover=-1,last=-1,disp=null,fresh=new Set(),flips=new Set(),brk=new Map(),timers=[];
-const human=p=>p===0;
+/* ---------- Match state ---------- */
+let game=null,foe=null,timers=[];
+let sel=-1,hover=-1,last=-1,busy=true; // selected hand stone, square under the mouse, last square played
+// While a move plays out, the board shows `shown` owners instead of the final ones, and marks fresh, flipped and broken stones.
+let shown=null,fresh=new Set(),flips=new Set(),broken=new Map();
+const yourTurn=()=>!busy&&!full(game)&&game.turn===0;
+const handValue=hand=>hand.reduce((a,s)=>a+PIECES[s.t].val,0);
+function brokenBySquare(broke){
+  const m=new Map();
+  for(const [i,side,k] of broke){if(!m.has(i))m.set(i,[0,0,0,0]);m.get(i)[side]+=k;}
+  return m;
+}
 
+/* ---------- Rendering ---------- */
 function render(){renderSides();renderHand();renderBoard();}
 function renderLadder(){
   const r=save.run;let h='';
@@ -504,118 +549,133 @@ function renderLadder(){
   if($('#record'))$('#record').textContent=`Runs: ${save.runs}. Best: ${save.best?'match '+save.best:'none'}. Crowns: ${save.champs}.`;
 }
 function renderSides(){
-  const pts=[score(G,0),score(G,1)],tot=pts[0]+pts[1]+G.hands[0].reduce((a,s)=>a+PIECES[s.t].val,0)+G.hands[1].reduce((a,s)=>a+PIECES[s.t].val,0);
-  for(const p of [0,1]){$('#s'+p).textContent=pts[p];$('#tug'+p).style.width=(100*pts[p]/(tot||1))+'%';$('#side'+p).classList.toggle('turn',!full(G)&&G.turn===p);}
+  const pts=[score(game,0),score(game,1)];
+  const total=pts[0]+pts[1]+handValue(game.hands[0])+handValue(game.hands[1])||1;
+  for(const p of [0,1]){
+    $('#s'+p).textContent=pts[p];
+    $('#tug'+p).style.width=100*pts[p]/total+'%';
+    $('#side'+p).classList.toggle('turn',!full(game)&&game.turn===p);
+  }
   $('#foeFace').innerHTML=faceSVG(foe);$('#foeName').textContent=foe.name;
-  $('#backs').innerHTML=G.hands[1].map(()=>`<div class="back">${backSVG()}</div>`).join('');
-  $('#backs').classList.toggle('active',!full(G)&&G.turn===1);
+  $('#backs').innerHTML=game.hands[1].map(()=>`<div class="back">${backSVG()}</div>`).join('');
+  $('#backs').classList.toggle('active',!full(game)&&game.turn===1);
 }
-function describe(s){return `<b>${PIECES[s.t].name}</b> <span class="lvl">Lv ${s.l}</span> · ${PIECES[s.t].text}`;}
-function setInfo(){
-  const s=hover>=0&&G.own[hover]>=0?G.at[hover]:sel>=0?G.hands[0][sel]:null;
-  $('#info').innerHTML=s?describe(s):'';
+function showInfo(){
+  // Under the board: the stone under the mouse, or else the one selected in your hand.
+  const s=hover>=0&&game.own[hover]>=0?game.at[hover]:sel>=0?game.hands[0][sel]:null;
+  $('#info').innerHTML=s?`<b>${PIECES[s.t].name}</b> <span class="lvl">Lv ${s.l}</span> · ${PIECES[s.t].text}`:'';
 }
 function renderHand(){
-  const el=$('#hand'),mine=!busy&&!full(G)&&G.turn===0;
-  el.classList.toggle('active',!full(G)&&G.turn===0);
+  const el=$('#hand');
+  el.classList.toggle('active',!full(game)&&game.turn===0);
   el.innerHTML='';
-  G.hands[0].forEach((s,i)=>{
+  game.hands[0].forEach((s,i)=>{
     const b=document.createElement('button');
-    b.className='hstone'+(mine&&sel===i?' sel':'');b.disabled=!mine;
+    b.className='hstone'+(yourTurn()&&sel===i?' sel':'');b.disabled=!yourTurn();
     b.setAttribute('aria-label',`${PIECES[s.t].name}, level ${s.l}`);
     b.innerHTML=stoneSVG(s,0);
-    b.onclick=()=>{sel=sel===i?-1:i;renderHand();renderBoard();setInfo();};
+    b.onclick=()=>{sel=sel===i?-1:i;renderHand();renderBoard();showInfo();};
     el.appendChild(b);
   });
 }
-function brkMap(broke){const m=new Map();for(const [i,d,k] of broke){if(!m.has(i))m.set(i,[0,0,0,0]);m.get(i)[d]+=k;}return m;}
 function renderBoard(){
-  const b=$('#board'),own=disp||G.own;
-  b.style.setProperty('--n',N);
-  const canPlace=!busy&&sel>=0&&!full(G)&&G.turn===0;
-  // Preview: yellow = stones you would take, red = stones you would lose, faded spikes = spikes that would break.
-  let pv=null,crack=new Map();
-  if(canPlace&&hover>=0&&G.own[hover]<0){pv=play(G,sel,hover);crack=brkMap(pv.broke);}
+  const own=shown||game.own,canPlace=yourTurn()&&sel>=0;
+  // Preview of the selected stone on the hovered square: yellow = stones you would take,
+  // red = stones you would lose, faded spikes = spikes that would break.
+  const pv=canPlace&&hover>=0&&game.own[hover]<0?play(game,sel,hover):null,crack=pv?brokenBySquare(pv.broke):new Map();
   let html='';
   for(let i=0;i<N*N;i++){
-    const o=own[i],cls=['cell'];
-    if(o<0&&canPlace)cls.push('open');
-    if(pv&&G.own[i]===1&&pv.own[i]===0)cls.push('hit');
-    if(pv&&(G.own[i]===0||i===hover)&&pv.own[i]===1)cls.push('lose');
+    const cls=['cell'];
+    if(own[i]<0&&canPlace)cls.push('open');
+    if(pv&&game.own[i]===1&&pv.own[i]===0)cls.push('hit');
+    if(pv&&(game.own[i]===0||i===hover)&&pv.own[i]===1)cls.push('lose');
     if(fresh.has(i))cls.push('new');
     if(flips.has(i))cls.push('flip');
     if(crack.has(i))cls.push('crack');
     if(i===last&&!busy)cls.push('last');
-    let inner=o>=0?stoneSVG(pv&&crack.has(i)?pv.at[i]:G.at[i],o,'stone',crack.get(i)||brk.get(i)):'';
+    let inner=own[i]>=0?stoneSVG(crack.has(i)?pv.at[i]:game.at[i],own[i],'stone',crack.get(i)||broken.get(i)):'';
     if(pv&&i===hover)inner=`<div class="ghost">${stoneSVG(pv.at[i],0,'stone',crack.get(i))}</div>`;
     html+=`<div class="${cls.join(' ')}" data-i="${i}">${inner}</div>`;
   }
-  b.innerHTML=html;
-  fresh.clear();flips.clear();brk.clear();
+  $('#board').style.setProperty('--n',N);
+  $('#board').innerHTML=html;
+  fresh.clear();flips.clear();broken.clear();
 }
 function setStatus(html){$('#status').innerHTML=html;}
-function at(cell){const C=$('#board').querySelectorAll('.cell')[cell];return [C.offsetLeft+C.offsetWidth/2,C.offsetTop+C.offsetHeight/2,C];}
+
+/* ---------- Effects on the board ---------- */
+function cellBox(cell){const C=$('#board').querySelectorAll('.cell')[cell];return {x:C.offsetLeft+C.offsetWidth/2,y:C.offsetTop+C.offsetHeight/2,size:C.offsetHeight};}
+function place(el,x,y,ms){el.style.left=x+'px';el.style.top=y+'px';$('.boardwrap').appendChild(el);timers.push(setTimeout(()=>el.remove(),ms));}
 function pop(cell,text,cls,ms,dy=0){
-  const [x,y]=at(cell),d=document.createElement('div');d.className=cls;d.textContent=text;
-  d.style.left=x+'px';d.style.top=(y+dy)+'px';$('.boardwrap').appendChild(d);timers.push(setTimeout(()=>d.remove(),ms));
+  const {x,y}=cellBox(cell),el=document.createElement('div');el.className=cls;el.textContent=text;place(el,x,y+dy,ms);
 }
-function edge(c,q,el){const [x1,y1]=at(c),[x2,y2]=at(q);el.style.left=(x1+x2)/2+'px';el.style.top=(y1+y2)/2+'px';$('.boardwrap').appendChild(el);}
-function sparks(c,fights){
+function onLine(from,to,el,ms){const a=cellBox(from),b=cellBox(to);place(el,(a.x+b.x)/2,(a.y+b.y)/2,ms);}
+function sparks(lines){
   // A burst on every line where spikes met, so each clash is visible even at full speed.
-  for(const [q,,a,b] of fights){
+  for(const [from,to,a,b] of lines){
     if(!a||!b)continue;
     const el=document.createElement('div');el.className='spark';
     el.innerHTML='<b></b>'+[0,45,90,135,180,225,270,315].map(r=>`<i style="--r:${r+20*Math.random()}deg"></i>`).join('');
-    edge(c,q,el);timers.push(setTimeout(()=>el.remove(),T(520)));
+    onLine(from,to,el,T(520));
   }
 }
-function showClashes(c,fights,me,ms){
-  // Slow-mo only: a badge on each fought line, new stone's spikes first, the winning number underlined.
+function showClashes(lines,me,ms){
+  // Slow-mo only: a badge on each line the new stone fought, its spikes first, the winning number underlined.
   const col=p=>p===0?'var(--blue)':'var(--red)';
-  for(const [q,,a,b] of fights){
+  for(const [from,to,a,b] of lines){
     const el=document.createElement('div');el.className='clash';
     el.innerHTML=`<span class="${a>b?'w':''}" style="color:${col(me)}">${a}</span><span class="vs">vs</span><span class="${b>a?'w':''}" style="color:${col(1-me)}">${b}</span>`;
-    edge(c,q,el);timers.push(setTimeout(()=>el.remove(),ms));
+    onLine(from,to,el,ms);
   }
 }
 
-function move(hi,c){
-  if(busy&&G.turn===0)return;
+/* ---------- A move ---------- */
+const GAP=220,startOf=a=>a.broke.length?380:120,endOf=a=>startOf(a)+a.waves.length*GAP;
+function move(h,cell){
+  if(busy&&game.turn===0)return;
   busy=true;
-  const prev=G,me=G.turn,placed=G.hands[me][hi],ns=play(G,hi,c);
-  disp=G.own.slice();disp[c]=me;
-  G=ns;sel=-1;hover=-1;last=c;fresh.add(c);brk=brkMap(ns.broke);
-  render();setInfo();
-  pop(c,PIECES[placed.t].name,'tag p'+me,T(1300),-at(c)[2].offsetHeight*.62);
-  // Spikes break first, then each wave of the chain flips in turn, 220 ms apart.
-  const t0=ns.broke.length?380:120,steps=ns.waves.length,flipped=ns.waves.filter(w=>w.length).length,gap=220,end=t0+steps*gap;
-  // A stone can change colour more than once in a chain, so every flip carries the colour it turns.
-  ns.waves.forEach((w,k)=>{
-    const ch=ns.chain.filter(x=>x[4]===k&&x[2]&&x[3]);
-    if(ch.length)timers.push(setTimeout(()=>{for(const [f,q,a,b] of ch)sparks(f,[[q,0,a,b]]);},T(t0+(k+1)*gap-60)));
-    if(w.length)timers.push(setTimeout(()=>{for(const [i,o] of w){disp[i]=o;flips.add(i);}renderBoard();},T(t0+(k+1)*gap)));
+  const before=game,me=game.turn,stone=game.hands[me][h],after=play(game,h,cell);
+  shown=before.own.slice();shown[cell]=me;
+  game=after;sel=-1;hover=-1;last=cell;fresh.add(cell);broken=brokenBySquare(after.broke);
+  render();showInfo();
+  pop(cell,PIECES[stone.t].name,'tag p'+me,T(1300),-cellBox(cell).size*.62);
+  const flipped=animate(after,cell,me);
+  report(before,after,cell,me,stone);
+  later(endOf(after)+(flipped?560:300),()=>{shown=null;busy=false;render();next(flipped);});
+}
+function animate(a,cell,me){
+  // Spikes break first, then wave after wave the stones change colour, GAP ms apart.
+  // A stone can change colour more than once in a chain, so every flip carries the owner it turns to.
+  const first=a.lines.filter(l=>l[4]===0);
+  if(first.some(l=>l[2]&&l[3]))later(160,()=>sparks(first));
+  a.waves.forEach((wave,k)=>{
+    const t=startOf(a)+(k+1)*GAP,chain=k?a.lines.filter(l=>l[4]===k&&l[2]&&l[3]):[];
+    if(chain.length)later(t-60,()=>sparks(chain));
+    if(wave.length)later(t,()=>{for(const [i,o] of wave){shown[i]=o;flips.add(i);}renderBoard();});
   });
-  timers.push(setTimeout(renderSides,T(end)));
-  if(ns.fights.some(f=>f[2]&&f[3]))timers.push(setTimeout(()=>sparks(c,ns.fights),T(160)));
-  if(cfg.slow)showClashes(c,ns.fights,me,T(end+400));
-  // Net result for the mover, counting the new stone as theirs: what the chain won minus what it lost.
-  const before=score(prev,me)+PIECES[placed.t].val,net=score(ns,me)-before;
-  const won=[],gone=[];for(let i=0;i<N*N;i++)if(ns.own[i]>=0&&(i===c?me:prev.own[i])!==ns.own[i])(ns.own[i]===me?won:gone).push(i);
-  if(net)timers.push(setTimeout(()=>pop(c,(net>0?'+':'\u2212')+Math.abs(net),net>0?'gain':'gain bad',T(1200)),T(end+140)));
-  const who=me===0?'You':foe.name,pl=k=>`<b>${k}</b> stone${k>1?'s':''}`;
-  let msg=won.length?`${who} took ${pl(won.length)}`:'';
-  if(gone.length)msg+=(msg?', but lost ':`${who} lost `)+pl(gone.length);
-  if(flipped>1)msg+=` in a chain of ${flipped}`;
-  setStatus(msg?msg+'.':ns.broke.length?`${who} broke spikes, no one won the clash.`:`${who} placed a ${PIECES[placed.t].name.toLowerCase()}.`);
-  timers.push(setTimeout(()=>{disp=null;busy=false;render();next(flipped>0);},T(end+(flipped?560:300))));
+  later(endOf(a),renderSides);
+  if(cfg.slow)showClashes(first,me,T(endOf(a)+400));
+  return a.waves.some(w=>w.length);
+}
+function report(before,a,cell,me,stone){
+  // The status line and the +/- pop: what the move won and lost, counting the new stone as the mover's.
+  const won=[],lost=[];
+  for(let i=0;i<N*N;i++){const was=i===cell?me:before.own[i];if(a.own[i]>=0&&a.own[i]!==was)(a.own[i]===me?won:lost).push(i);}
+  const net=score(a,me)-score(before,me)-PIECES[stone.t].val,chain=a.waves.filter(w=>w.length).length;
+  if(net)later(endOf(a)+140,()=>pop(cell,(net>0?'+':'−')+Math.abs(net),net>0?'gain':'gain bad',T(1200)));
+  const who=me===0?'You':foe.name,stones=k=>`<b>${k}</b> stone${k>1?'s':''}`;
+  let msg=won.length?`${who} took ${stones(won.length)}`:'';
+  if(lost.length)msg+=(msg?', but lost ':`${who} lost `)+stones(lost.length);
+  if(chain>1)msg+=` in a chain of ${chain}`;
+  setStatus(msg?msg+'.':a.broke.length?`${who} broke spikes, no one won the clash.`:`${who} placed a ${PIECES[stone.t].name.toLowerCase()}.`);
 }
 function next(justActed){
-  if(full(G))return timers.push(setTimeout(finish,T(500)));
-  if(G.turn===1){
+  if(full(game))return later(500,finish);
+  if(game.turn===1){
     busy=true;
     if(!justActed)setStatus(`${foe.name} is thinking…`);
     renderHand();
-    timers.push(setTimeout(()=>{const [hi,c]=think(G,foe.boss?1600:1000);move(hi,c);},T(justActed?700:350)));
+    later(justActed?700:350,()=>move(...think(game,foe.boss?1600:1000)));
     return;
   }
   busy=false;
@@ -623,30 +683,31 @@ function next(justActed){
   renderHand();renderBoard();
 }
 
-/* ---------- Run flow ---------- */
+/* ---------- Run flow: intro, match, reward or end of run ---------- */
 function modal(html,wire){$('#mcard').innerHTML=html;$('#modal').hidden=false;wire&&wire();}
 const close=()=>{$('#modal').hidden=true;};
+const deckRow=codes=>codes.map(c=>stoneSVG(stoneOf(c,0),0,'')).join('');
+const upgrade=(from,to)=>`<span class="arrow">${stoneSVG(stoneOf(from,0),0,'')}<span>→</span>${stoneSVG(stoneOf(to,0),0,'')}</span>`;
 function intro(rematch){
   const r=save.run,m=r.m;foe=foeOf(m);
   save.best=Math.max(save.best,m);store();renderLadder();
-  const deck=r.deck.map(c=>stoneSVG(parse(c,0),0,'')).join('');
   modal(`<div class="kicker">${rematch?'Draw. Rematch':m===RUN?'Final match':`Match ${m} of ${RUN}`}</div>
 <div class="big${foe.boss?' boss':''}">${faceSVG(foe)}</div><h2>${foe.name}</h2><q>${foe.line}</q>
 <p>${firstOf(m)===0?'You place first.':`${foe.name} places first.`} Their 8 stones stay hidden until played.</p>
-<p class="kicker" style="color:var(--muted)">Your stones</p><div class="deckrow">${deck}</div><div><button class="primary" id="go">Fight</button></div>`,()=>{$('#go').onclick=()=>{close();begin();};$('#go').focus();});
+<p class="kicker" style="color:var(--muted)">Your stones</p><div class="deckrow">${deckRow(r.deck)}</div><div><button class="primary" id="go">Fight</button></div>`,
+  ()=>{$('#go').onclick=()=>{close();begin();};$('#go').focus();});
 }
-const firstOf=m=>m===RUN?1:(m+(save.run.rematch||0))%2?0:1;
 function begin(){
-  const r=save.run,m=r.m,f=foeOf(m);
-  const mine=r.deck.map(c=>parse(c,0)).sort((a,b)=>'PNBRQK'.indexOf(a.t)-'PNBRQK'.indexOf(b.t)||a.l-b.l);
-  const theirs=shuffle(f.decks[phase(m)].split(' ').map(c=>parse(c,1)));
-  G=newGame(N,[mine,theirs],firstOf(m));
-  sel=-1;hover=-1;last=-1;disp=null;busy=false;
-  render();setInfo();next();
+  const r=save.run,m=r.m,order='PNBRQK';
+  const mine=r.deck.map(c=>stoneOf(c,0)).sort((a,b)=>order.indexOf(a.t)-order.indexOf(b.t)||a.l-b.l);
+  const theirs=shuffle(foeOf(m).decks[phase(m)].split(' ').map(c=>stoneOf(c,1)));
+  game=newGame(N,[mine,theirs],firstOf(m));
+  sel=-1;hover=-1;last=-1;shown=null;busy=false;
+  render();showInfo();next();
 }
 function finish(){
   busy=true;render();
-  const a=score(G,0),b=score(G,1),r=save.run;
+  const a=score(game,0),b=score(game,1),r=save.run;
   if(a===b){r.rematch=(r.rematch||0)+1;store();return intro(true);}
   r.rematch=0;
   if(a<b)return endRun(false,`${foe.name} wins ${b} to ${a}.`);
@@ -654,77 +715,82 @@ function finish(){
   store();rewards(a,b);
 }
 function offers(){
-  // Three different upgrades: a level up, a promotion of a weak guy, and later in the run a promotion to pretty lady.
+  // Three different upgrades from: a level up, a weak guy promoted, and from match 6 on a promotion to pretty lady.
   const d=save.run.deck,pool=[];
-  d.forEach((c,i)=>{if(+c[1]<MAXL)pool.push({i,to:c[0]+(+c[1]+1),kind:'Level up'});});
-  d.forEach((c,i)=>{if(c[0]==='P')for(const t of 'NBR')pool.push({i,to:t+c[1],kind:'Promote'});});
-  if(save.run.m>=6)d.forEach((c,i)=>{if('NBR'.includes(c[0])&&Math.random()<.35)pool.push({i,to:'Q'+c[1],kind:'Promote'});});
-  shuffle(pool);const out=[],used=new Set();
-  for(const o of pool){const k=d[o.i]+'>'+o.to;if(used.has(k))continue;used.add(k);out.push(o);if(out.length===3)break;}
+  d.forEach((c,i)=>{if(levelOf(c)<MAXL)pool.push({i,to:c[0]+(levelOf(c)+1),kind:'Level up'});});
+  d.forEach((c,i)=>{if(c[0]==='P')for(const t of 'NBR')pool.push({i,to:t+levelOf(c),kind:'Promote'});});
+  if(save.run.m>=6)d.forEach((c,i)=>{if('NBR'.includes(c[0])&&Math.random()<.35)pool.push({i,to:'Q'+levelOf(c),kind:'Promote'});});
+  shuffle(pool);
+  const out=[],seen=new Set();
+  for(const o of pool){const k=d[o.i]+'>'+o.to;if(seen.has(k))continue;seen.add(k);out.push(o);if(out.length===3)break;}
   return out;
 }
 function rewards(a,b){
   const os=offers(),d=save.run.deck;
   modal(`<div class="kicker">Won ${a} to ${b}</div><h2>Pick an upgrade</h2><p>It lasts for the rest of this run.</p>
-<div class="picks">${os.map((o,k)=>`<button class="pick" data-k="${k}"><span class="arrow">${stoneSVG(parse(d[o.i],0),0,'')}<span>→</span>${stoneSVG(parse(o.to,0),0,'')}</span>${o.kind}<small>${PIECES[o.to[0]].name} Lv ${o.to[1]}</small></button>`).join('')}</div>`,
+<div class="picks">${os.map((o,k)=>`<button class="pick" data-k="${k}">${upgrade(d[o.i],o.to)}${o.kind}<small>${nameOf(o.to)}</small></button>`).join('')}</div>`,
   ()=>document.querySelectorAll('.pick').forEach(el=>el.onclick=()=>{
-    const o=os[+el.dataset.k],r=save.run;r.deck[o.i]=o.to;if(!r.changed.includes(o.i))r.changed.push(o.i);
+    const o=os[+el.dataset.k],r=save.run;
+    r.deck[o.i]=o.to;if(!r.changed.includes(o.i))r.changed.push(o.i);
     r.m++;store();close();intro();
   }));
 }
 function endRun(won,text){
+  // Offer every stone this run upgraded; the one picked replaces its slot in the starting hand for good.
   const r=save.run,keep=r.changed.filter(i=>r.deck[i]!==save.meta[i]);
   const pick=keep.length?`<p>Keep one stone. It replaces the one it grew from in your starting hand, for good.</p>
-<div class="picks">${keep.map(i=>`<button class="pick" data-i="${i}"><span class="arrow">${stoneSVG(parse(save.meta[i],0),0,'')}<span>→</span>${stoneSVG(parse(r.deck[i],0),0,'')}</span>${PIECES[r.deck[i][0]].name} Lv ${r.deck[i][1]}</button>`).join('')}</div>`
+<div class="picks">${keep.map(i=>`<button class="pick" data-i="${i}">${upgrade(save.meta[i],r.deck[i])}${nameOf(r.deck[i])}</button>`).join('')}</div>`
     :`<div><button class="primary" id="again">New run</button></div>`;
   modal(`<div class="kicker">${won?'Champion':`Run over at match ${r.m}`}</div><h2>${won?'You took the crown!':'Defeated'}</h2><p>${text}</p>${pick}`,()=>{
     const go=()=>{newRun();close();intro();};
     if($('#again'))$('#again').onclick=go;
-    document.querySelectorAll('.pick').forEach(el=>el.onclick=()=>{const i=+el.dataset.i;save.meta[i]=r.deck[i];go();});
+    document.querySelectorAll('.pick').forEach(el=>el.onclick=()=>{save.meta[+el.dataset.i]=r.deck[+el.dataset.i];go();});
   });
   r.over=true;store();
 }
+function rules(){
+  // The rules sit on their own layer, over the board or over a card between matches.
+  $('#rcard').innerHTML=$('#rulesT').innerHTML;$('#rmodal').hidden=false;
+  $('#dex').innerHTML=[...'PNBRQK'].map(t=>`<div>${stoneSVG(mkStone(t,1,0),0,'')}${stoneSVG(mkStone(t,3,0),0,'')}<p style="margin:0"><b>${PIECES[t].name}</b><span>Level 1 and 3: ${PIECES[t].text}.</span></p></div>`).join('');
+  renderLadder();
+  $('#bClose').onclick=()=>{$('#rmodal').hidden=true;};
+  $('#bQuit').onclick=()=>{
+    if(!confirm('Give up this run? You still get to keep one upgraded stone.'))return;
+    $('#rmodal').hidden=true;timers.forEach(clearTimeout);timers=[];busy=true;endRun(false,'You gave up.');
+  };
+}
 
 /* ---------- Input ---------- */
+let touchTap=false;
 $('#board').addEventListener('click',e=>{
-  const c=e.target.closest('.cell');if(!c||busy||full(G)||G.turn!==0)return;
-  const i=+c.dataset.i;if(G.own[i]>=0)return;
+  const c=e.target.closest('.cell');if(!c||!yourTurn())return;
+  const i=+c.dataset.i;if(game.own[i]>=0)return;
   if(sel<0){setStatus('Pick a stone from your hand first.');return;}
   if(touchTap&&hover!==i){ // touch has no hover: the first tap previews, a second tap on the same square places
     hover=i;renderBoard();
-    const k=gain(G,sel,i);
+    const k=gain(game,sel,i);
     setStatus(`${k>0?`Wins <b>${k}</b> point${k>1?'s':''}. `:k<0?`Loses <b>${-k}</b> point${k<-1?'s':''}. `:''}Tap again to place.`);
     return;
   }
   move(sel,i);
 });
-let touchTap=false;
 $('#board').addEventListener('pointerdown',e=>{touchTap=e.pointerType!=='mouse';});
-$('#board').addEventListener('pointermove',e=>{
-  if(e.pointerType!=='mouse')return; // phones send a fake hover with every tap
-  const c=e.target.closest('.cell'),i=c?+c.dataset.i:-1;
-  if(i!==hover){hover=i;if(G&&sel>=0&&!busy)renderBoard();if(G)setInfo();}
-});
-$('#board').addEventListener('pointerleave',e=>{if(e.pointerType!=='mouse')return;hover=-1;if(G&&sel>=0&&!busy)renderBoard();if(G)setInfo();});
+function hoverOn(i){if(i===hover||!game)return;hover=i;if(sel>=0&&!busy)renderBoard();showInfo();}
+$('#board').addEventListener('pointermove',e=>{if(e.pointerType==='mouse'){const c=e.target.closest('.cell');hoverOn(c?+c.dataset.i:-1);}}); // phones send a fake hover with every tap
+$('#board').addEventListener('pointerleave',e=>{if(e.pointerType==='mouse')hoverOn(-1);});
 addEventListener('keydown',e=>{
   if(!$('#modal').hidden||!$('#rmodal').hidden)return;
   if((e.key==='s'||e.key==='S')&&!e.metaKey&&!e.ctrlKey)setSlow(!cfg.slow);
-  if(e.key==='Escape'&&sel>=0){sel=-1;renderHand();renderBoard();setInfo();}
-  const k=+e.key;if(G&&k>=1&&k<=9&&!busy&&G.turn===0&&k<=G.hands[0].length){sel=k-1;renderHand();renderBoard();setInfo();}
+  if(e.key==='Escape'&&sel>=0){sel=-1;renderHand();renderBoard();showInfo();}
+  const k=+e.key;if(game&&k>=1&&yourTurn()&&k<=game.hands[0].length){sel=k-1;renderHand();renderBoard();showInfo();}
 });
-const setSlow=v=>{cfg.slow=v;document.body.classList.toggle('slow',v);$('#bSlow').setAttribute('aria-pressed',v);store();};
-$('#bSlow').onclick=()=>setSlow(!cfg.slow);setSlow(!!cfg.slow);
-function rules(){
-  // The rules sit on their own layer, over the board or over a card between matches.
-  $('#rcard').innerHTML=$('#rulesT').innerHTML;$('#rmodal').hidden=false;
-  $('#dex').innerHTML='PNBRQK'.split('').map(t=>`<div>${stoneSVG(mkStone(t,1,0),0,'')}${stoneSVG(mkStone(t,3,0),0,'')}<p style="margin:0"><b>${PIECES[t].name}</b><span>Level 1 and 3: ${PIECES[t].text}.</span></p></div>`).join('');
-  renderLadder();
-  $('#bClose').onclick=()=>{$('#rmodal').hidden=true;};
-  $('#bQuit').onclick=()=>{if(!confirm('Give up this run? You still get to keep one upgraded stone.'))return;$('#rmodal').hidden=true;timers.forEach(clearTimeout);timers=[];busy=true;endRun(false,'You gave up.');};
-}
+function setSlow(v){cfg.slow=v;document.body.classList.toggle('slow',v);$('#bSlow').setAttribute('aria-pressed',v);store();}
+$('#bSlow').onclick=()=>setSlow(!cfg.slow);
 $('#bRules').onclick=rules;
+setSlow(!!cfg.slow);
+
 if(!save.run||save.run.over)newRun();
-foe=foeOf(save.run.m);G=newGame(N,[[],[]],0);render();
+foe=foeOf(save.run.m);game=newGame(N,[[],[]],0);render();
 intro();
 </script>
 </body>
