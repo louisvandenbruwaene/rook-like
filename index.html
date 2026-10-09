@@ -205,6 +205,7 @@ body.slow{--t:4}
     <li>Take turns placing a stone from your hand on an empty square of the 4 × 4 board. You never see the opponent's hand.</li>
     <li>Every stone is a character with its own spikes. Your stones face up the board, the opponent's are turned round and face down. Each level adds a spike to every side that has some (up to 5).</li>
     <li><b>Clash:</b> each side of your new stone that touches an enemy stone fights it. Facing spikes break off one for one, and the side with spikes left over wins and takes the other stone. That works both ways: lose any clash and your new stone is taken.</li>
+    <li><b>Chain:</b> a stone that changes colour fights its new enemy neighbours the same way, and so on. Each stone changes colour at most once per move.</li>
     <li>When the board is full, count your stones. The dude with crown counts as 3. Most points wins. A draw is replayed.</li>
     <li>After a win, pick one of three upgrades for the rest of the run. When a run ends, keep one stone you upgraded: it stays in your starting hand for good.</li>
     <li>Every opponent always brings the same stones, and they get stronger as the run goes on. Remember what they play.</li>
@@ -261,6 +262,25 @@ function play(st,hi,c){
   for(const [q,m] of fights)if(m>0){ns.own[q]=me;ns.taken.push(q);}
   let w=null;for(const f of fights)if(f[1]<0&&(!w||f[1]<w[1]))w=f;
   if(w){ns.own[c]=op;ns.lost=w[0];}
+  // Chain: a stone that changed colour fights its new enemy neighbours by the same rule, wave after wave.
+  // Every stone changes colour at most once per move, so a stone caught between two spikes can't flip forever.
+  const locked=new Set(ns.taken);if(w)locked.add(c);
+  let wave=[...locked];ns.waves=wave.length?[wave]:[];ns.chain=[];
+  while(wave.length){
+    const nxt=[];
+    for(const f of wave)for(let d=0;d<4;d++){
+      const q=nb(n,f,d);
+      if(q<0||ns.own[q]<0||ns.own[q]===ns.own[f])continue;
+      const A=ns.at[f],B=ns.at[q],e=(d+2)%4,a=A.s[d],b=B.s[e];
+      if(!a&&!b)continue;
+      const k=Math.min(a,b);
+      if(k){const sa=A.s.slice(),sb=B.s.slice();sa[d]-=k;sb[e]-=k;ns.at[f]={t:A.t,l:A.l,f:A.f,s:sa};ns.at[q]={t:B.t,l:B.l,f:B.f,s:sb};ns.broke.push([f,d,k],[q,e,k]);}
+      ns.chain.push([f,q,a,b,ns.waves.length]);
+      if(a>b&&!locked.has(q)){ns.own[q]=ns.own[f];locked.add(q);nxt.push(q);}
+    }
+    if(nxt.length)ns.waves.push(nxt);
+    wave=nxt;
+  }
   return ns;
 }
 function gain(st,hi,c){const me=st.turn,ns=play(st,hi,c);return score(ns,me)-score(st,me);}
@@ -325,14 +345,14 @@ const T=ms=>ms*(cfg.slow?4:1); // every move timing goes through T so slow-mo st
 
 /* Opponents. Each brings a fixed deck, an early, middle and late version (matches 1-6, 7-13, 14-19). The boss plays match 20. */
 const FOES=[
-  {name:'Pawnbroker Pete',line:'Everything has a price. Mostly weak guys.',decks:['P2 P2 P1 P1 P1 P1 N1 K1','P3 P3 P3 P2 P2 N2 N2 K2','P4 P4 P4 N3 N3 N3 Q2 K4'],face:'pete'},
-  {name:'Sir Neighsalot',line:'Hold your horses. All of them.',decks:['N1 N1 N1 P1 P1 P1 P1 K1','N2 N2 N2 N2 P2 P1 R1 K2','N4 N4 N4 N3 Q2 P3 R3 K3'],face:'neigh'},
-  {name:'Madame Swerve',line:'Darling, I never take the straight road.',decks:['B1 B1 P1 P1 P1 P1 P1 K1','B2 B2 B2 P2 P1 P1 N1 K2','B3 B3 B3 B3 P2 P2 N3 K3'],face:'swerve'},
-  {name:'Blocky Barb',line:'Square deal. Square face. Square loss.',decks:['R1 R1 P1 P1 P1 P1 P1 K1','R2 R2 R2 P2 P2 P1 N2 K2','R3 R3 R3 R3 Q2 P2 N3 K3'],face:'barb'},
-  {name:'Lady Lux',line:'I brought my sisters. You brought pawns.',decks:['Q1 P1 P1 P1 P1 P1 P1 P1','Q2 Q1 P2 P1 P1 P1 N1 K2','Q3 Q3 Q2 P2 P2 N2 B2 K2'],face:'lux'},
-  {name:'Uncle Gambit',line:'I sacrifice. You suffer.',decks:['N1 B1 R1 P1 P1 P1 P1 P1','N2 B2 R2 Q1 P2 P1 P1 P1','N3 B3 R3 Q2 Q2 P2 P2 K2'],face:'gambit'},
+  {name:'Pawnbroker Pete',line:'Everything has a price. Mostly weak guys.',decks:['P2 P2 P1 P1 P1 P1 N1 K1','P3 P3 P3 P2 P2 N2 N2 K2','P4 P4 P3 N3 N3 N3 Q2 K3'],face:'pete'},
+  {name:'Sir Neighsalot',line:'Hold your horses. All of them.',decks:['N1 N1 N1 P1 P1 P1 P1 K1','N2 N2 N2 N1 P2 P1 R1 K1','N4 N4 N3 N3 Q2 P3 R2 K3'],face:'neigh'},
+  {name:'Madame Swerve',line:'Darling, I never take the straight road.',decks:['B1 B1 P1 P1 P1 P1 P1 K1','B2 B2 B2 P2 P1 P1 N1 K2','B3 B3 B3 B2 P2 P2 N3 K3'],face:'swerve'},
+  {name:'Blocky Barb',line:'Square deal. Square face. Square loss.',decks:['R1 P1 P1 P1 P1 P1 P1 K1','R2 R2 R1 P2 P1 P1 N2 K2','R3 R3 R3 R3 Q2 P2 N3 K3'],face:'barb'},
+  {name:'Lady Lux',line:'I brought my sisters. You brought weak guys.',decks:['B1 B1 P1 P1 P1 P1 P1 P1','Q2 Q1 P1 P1 P1 P1 N1 K1','Q3 Q2 Q2 P2 P2 N2 B2 K2'],face:'lux'},
+  {name:'Uncle Gambit',line:'I sacrifice. You suffer.',decks:['N1 B1 R1 P1 P1 P1 P1 P1','N2 B2 R2 Q1 P2 P1 P1 P1','N3 B3 R3 Q2 Q1 P2 P2 K2'],face:'gambit'},
 ];
-const BOSS={name:'The Obsidian Monarch',line:'Nineteen boards behind you. One crown ahead.',decks:['Q4 Q3 R3 B3 N3 N3 K3 P3'],face:'boss',boss:true};
+const BOSS={name:'The Obsidian Monarch',line:'Nineteen boards behind you. One crown ahead.',decks:['Q3 Q3 R3 B3 N3 N3 K4 P3'],face:'boss',boss:true};
 
 let save={meta:BASE.split(' '),best:0,runs:0,champs:0,run:null};
 try{Object.assign(save,JSON.parse(localStorage.getItem('chainstones-run')||'{}')||{});}catch(e){}
@@ -552,24 +572,27 @@ function showClashes(c,fights,me,ms){
 function move(hi,c){
   if(busy&&G.turn===0)return;
   busy=true;
-  const me=G.turn,placed=G.hands[me][hi],ns=play(G,hi,c);
+  const prev=G,me=G.turn,placed=G.hands[me][hi],ns=play(G,hi,c);
   disp=G.own.slice();disp[c]=me;
   G=ns;sel=-1;hover=-1;last=c;fresh.add(c);brk=brkMap(ns.broke);
   render();setInfo();
   pop(c,PIECES[placed.t].name,'tag p'+me,T(1300),-at(c)[2].offsetHeight*.62);
-  // Spikes break first, then the stones it won flip, then the new stone flips if it lost a clash.
-  const t0=ns.broke.length?380:120,took=ns.taken.length,lost=ns.lost>=0,steps=(took?1:0)+(lost?1:0);
-  const flipAt=(cells,k)=>timers.push(setTimeout(()=>{for(const i of cells){disp[i]=G.own[i];flips.add(i);}renderBoard();renderSides();},T(t0+k*200)));
-  if(ns.broke.length)timers.push(setTimeout(()=>sparks(c,ns.fights),T(160)));
-  if(cfg.slow)showClashes(c,ns.fights,me,T(t0+steps*200+400));
-  const tp=ns.taken.reduce((a,q)=>a+PIECES[G.at[q].t].val,0),lp=PIECES[placed.t].val;
-  if(took){flipAt(ns.taken,1);timers.push(setTimeout(()=>pop(c,'+'+tp,'gain',T(1200)),T(t0+140)));}
-  if(lost){flipAt([c],steps);timers.push(setTimeout(()=>pop(c,'−'+lp,'gain bad',T(1200)),T(t0+steps*200+140)));}
-  const who=me===0?'You':foe.name;
-  let msg=took?`${who} took <b>${took}</b> stone${took>1?'s':''}`:'';
-  if(lost)msg+=(msg?', but ':`${who} `)+'lost a clash, so the new stone was taken';
+  // Spikes break first, then each wave of the chain flips in turn, 220 ms apart.
+  const t0=ns.broke.length?380:120,steps=ns.waves.length,gap=220,end=t0+steps*gap;
+  ns.waves.forEach((w,k)=>timers.push(setTimeout(()=>{for(const i of w){disp[i]=G.own[i];flips.add(i);}renderBoard();renderSides();},T(t0+(k+1)*gap))));
+  if(ns.fights.some(f=>f[2]&&f[3]))timers.push(setTimeout(()=>sparks(c,ns.fights),T(160)));
+  ns.waves.forEach((_,k)=>{const ch=ns.chain.filter(x=>x[4]===k+1);if(ch.length)timers.push(setTimeout(()=>{for(const [f,q,a,b] of ch)sparks(f,[[q,0,a,b]]);},T(t0+(k+1)*gap-60)));});
+  if(cfg.slow)showClashes(c,ns.fights,me,T(end+400));
+  // Net result for the mover, counting the new stone as theirs: what the chain won minus what it lost.
+  const before=score(prev,me)+PIECES[placed.t].val,net=score(ns,me)-before;
+  const won=[],gone=[];for(let i=0;i<N*N;i++)if(ns.own[i]>=0&&(i===c?me:prev.own[i])!==ns.own[i])(ns.own[i]===me?won:gone).push(i);
+  if(net)timers.push(setTimeout(()=>pop(c,(net>0?'+':'\u2212')+Math.abs(net),net>0?'gain':'gain bad',T(1200)),T(end+140)));
+  const who=me===0?'You':foe.name,pl=k=>`<b>${k}</b> stone${k>1?'s':''}`;
+  let msg=won.length?`${who} took ${pl(won.length)}`:'';
+  if(gone.length)msg+=(msg?', but lost ':`${who} lost `)+pl(gone.length);
+  if(steps>1)msg+=` in a chain of ${steps}`;
   setStatus(msg?msg+'.':ns.broke.length?`${who} broke spikes, no one won the clash.`:`${who} placed a ${PIECES[placed.t].name.toLowerCase()}.`);
-  timers.push(setTimeout(()=>{disp=null;busy=false;render();next(took>0||lost);},T(t0+steps*200+(steps?560:300))));
+  timers.push(setTimeout(()=>{disp=null;busy=false;render();next(steps>0);},T(end+(steps?560:300))));
 }
 function next(justActed){
   if(full(G))return timers.push(setTimeout(finish,T(500)));
