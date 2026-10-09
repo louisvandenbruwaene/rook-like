@@ -103,7 +103,7 @@ button.primary{background:var(--accent);color:#2a2410}
 .cell.crack .brk{opacity:.3}
 .cell:not(.crack) .brk{transform-box:fill-box;transform-origin:50% 100%;animation:shatter calc(.45s*var(--t)) ease-in forwards}
 .cell.new svg.stone{animation:drop calc(.3s*var(--t)) cubic-bezier(.3,1.5,.5,1)}
-.flipper{position:absolute;inset:0;transform-style:preserve-3d;animation:turn calc(.42s*var(--t)) ease-in-out forwards}
+.flipper{position:absolute;inset:0;transform-style:preserve-3d;animation:turn calc(.42s*var(--t)*var(--pace,1)) ease-in-out forwards}
 .flipper .side-a,.flipper .side-b{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden}
 .flipper .side-b{transform:rotateY(180deg)}
 .cell.flip::after{content:"";position:absolute;inset:6px;border-radius:14px;pointer-events:none;opacity:0;background:radial-gradient(rgba(255,255,255,.6),transparent 70%);animation:flash calc(.3s*var(--t)) ease-out calc(.2s*var(--t)) forwards}
@@ -207,7 +207,7 @@ body.slow{--t:4}
     <li>Take turns placing a stone from your hand on an empty square of the 4 × 4 board. You never see the opponent's hand.</li>
     <li>Every stone is a character with its own spikes. Your stones face up the board, the opponent's are turned round and face down. Each level adds a spike to every side that has some (up to 5).</li>
     <li><b>Clash:</b> each side of your new stone that touches an enemy stone fights it. Facing spikes break off one for one, and the side with spikes left over wins and takes the other stone. A spike that hits is used up, so the winner always loses at least one spike: 2 against 1 ends 1 against 0, and 1 against 0 ends 0 against 0. That works both ways: lose any clash and your new stone is taken.</li>
-    <li><b>Chain:</b> after the new stone has fought, the fights spread outwards from every stone that changed colour. Each line between stones of different colour with spikes on it, next to a stone that changed, fights the same way, closest to the new stone first. Each line fights at most once per move.</li>
+    <li><b>Chain:</b> after the new stone has fought, as long as two stones of different colours touch with a spike between them, they fight the same way, the pair closest to the new stone first. So when a move ends, no two stones of different colours touch with a spike between them.</li>
     <li>When the board is full, count your stones. The dude with crown counts as 3. Most points wins. A draw is replayed.</li>
     <li>After a win, pick one of three stones to level up for the rest of the run. A stone keeps its character, it only gets more spikes. When a run ends, keep one stone you upgraded: it stays in your starting hand for good.</li>
     <li>Every opponent always brings the same stones, and they get stronger as the run goes on. Remember what they play.</li>
@@ -229,25 +229,33 @@ const opposite=side=>(side+2)%4;
 const MAXL=5;
 // Every piece has its own spike pattern, drawn facing up. Each level adds a spike to every side that has some, up to 5.
 const PIECES={
-  P:{name:'Weak guy',base:[1,0,0,0],val:1,text:'spikes only forward'},
+  P:{name:'Weak guy',base:[1,0,0,0],val:1,text:'a single spike, in one of four directions'},
   N:{name:'Horsey',base:[2,1,0,0],val:1,text:'an L: two forward, one to the right'},
   B:{name:'Curvy lady',base:[0,2,0,2],val:1,text:'spikes on both hips'},
   R:{name:'Steve',base:[1,1,1,1],val:1,text:'the same on every side'},
   Q:{name:'Pretty lady',base:[2,2,2,2],val:1,text:'two on every side'},
   K:{name:'Dude with crown',base:[1,1,1,1],val:3,text:'every side, and he counts as 3'},
 };
-const turnAround=s=>[s[DOWN],s[LEFT],s[UP],s[RIGHT]];
-function mkStone(t,l,f){
+const rotate=(s,quarters)=>s.map((_,side)=>s[((side-quarters)%4+4)%4]); // turn a spike pattern clockwise
+function mkStone(t,l,f,d=0){
+  // d turns the pattern clockwise in quarter turns (the weak guy comes in four variants, one per direction).
   // f is the facing: 0 points up the board (you), 1 points down (the opponent), so the pattern turns half way round.
   const s=PIECES[t].base.map(x=>x?Math.min(MAXL,x+l-1):0);
-  return {t,l,f,s:f?turnAround(s):s};
+  return {t,l,f,d,s:rotate(s,d+2*f)};
 }
+// Decks are written as codes: piece letter, level, and for a turned stone its direction, e.g. N2 or P1> (spike right).
+const DIRECTIONS='^>v<';
+function parseCode(code){
+  const [,t,l,dir]=/^([PNBRQK])(\d)([\^>v<]?)$/.exec(code);
+  return {t,l:+l,d:dir?DIRECTIONS.indexOf(dir):0};
+}
+const stoneOf=(code,f)=>{const {t,l,d}=parseCode(code);return mkStone(t,l,f,d);};
+const withLevel=(code,l)=>code[0]+l+code.slice(2);
 function neighbour(n,cell,side){
   const x=cell%n+STEP[side][0],y=(cell/n|0)+STEP[side][1];
   return x<0||y<0||x>=n||y>=n?-1:y*n+x;
 }
 const distance=(n,a,b)=>Math.abs(a%n-b%n)+Math.abs((a/n|0)-(b/n|0));
-const lineKey=(n,a,b)=>Math.min(a,b)*n*n+Math.max(a,b); // one number per line between two squares
 function newGame(n,hands,first){return {n,own:new Int8Array(n*n).fill(-1),at:new Array(n*n).fill(null),hands,turn:first};}
 const full=g=>!g.own.includes(-1);
 function score(g,p){let k=0;for(let i=0;i<g.own.length;i++)if(g.own[i]===p)k+=PIECES[g.at[i].t].val;return k;}
@@ -280,53 +288,44 @@ function play(g,handIndex,cell){
   const a={n:g.n,own:g.own.slice(),at:g.at.slice(),hands:g.hands.slice(),turn:1-me,lines:[],flips:[],broke:[]};
   a.hands[me]=g.hands[me].filter((_,i)=>i!==handIndex);
   a.own[cell]=me;a.at[cell]=g.hands[me][handIndex];
-  const move={cell,fought:new Set(),changed:new Set([cell])}; // fights only spread from squares placed or changed
-  newStoneFights(a,move);
-  spreadFights(a,move);
+  newStoneFights(a,cell);
+  spreadFights(a,cell);
   return a;
 }
-function flip(a,move,c,owner,step){a.own[c]=owner;a.flips.push([c,owner,step]);move.changed.add(c);}
-function newStoneFights(a,move){
+function flip(a,c,owner,step){a.own[c]=owner;a.flips.push([c,owner,step]);}
+function newStoneFights(a,cell){
   // Step 0: the new stone fights every enemy neighbour at once. Each win takes that stone;
   // losing any of these fights gets the new stone taken.
-  const {cell}=move,me=a.own[cell],won=[];
+  const me=a.own[cell],won=[];
   let lost=false;
   for(let side=0;side<4;side++){
     const q=neighbour(a.n,cell,side);
     if(q<0||a.own[q]!==1-me)continue;
     const [x,y]=fight(a,cell,side,q,0);
     if(!x&&!y)continue;
-    move.fought.add(lineKey(a.n,cell,q));
     a.lines.push([cell,q,x,y,0]);
     if(x>y)won.push(q);
     if(x<y)lost=true;
   }
-  for(const q of won)flip(a,move,q,me,0);
-  if(lost)flip(a,move,cell,1-me,0);
+  for(const q of won)flip(a,q,me,0);
+  if(lost)flip(a,cell,1-me,0);
 }
-function spreadFights(a,move){
-  // Then the fights spread outwards from what changed: a line between two stones of different colour with spikes on it
-  // fights if one of its stones was placed or changed colour in this move, the line closest to the new stone first.
-  // Each line fights at most once per move, so a move always ends. Lines of the new stone that did not fight in
-  // step 0 stay open, so a new stone that was taken can be hit back.
+function spreadFights(a,cell){
+  // Then, as long as two stones of different colours touch with a spike between them, the line closest to the
+  // new stone fights. Every fight uses up at least one spike, so this always ends, and when it does no two
+  // stones of different colours touch with a spike between them.
   for(let step=1;;step++){
-    const line=closestOpenLine(a,move);
+    const line=closestOpenLine(a,cell);
     if(!line)return;
-    const [,i,side,q]=line;
-    move.fought.add(lineKey(a.n,i,q));
-    const [x,y]=fight(a,i,side,q,step);
+    const [,i,side,q]=line,[x,y]=fight(a,i,side,q,step);
     a.lines.push([i,q,x,y,step]);
-    if(x>y)flip(a,move,q,a.own[i],step);
-    if(y>x)flip(a,move,i,a.own[q],step);
+    if(x>y)flip(a,q,a.own[i],step);
+    if(y>x)flip(a,i,a.own[q],step);
   }
 }
-function isOpen(g,move,i,side,q){
-  return q>=0&&g.own[q]>=0&&g.own[q]!==g.own[i]                 // two stones of different colour
-    &&(g.at[i].s[side]>0||g.at[q].s[opposite(side)]>0)         // with spikes on the line
-    &&!move.fought.has(lineKey(g.n,i,q))                       // that did not fight yet in this move
-    &&(move.changed.has(i)||move.changed.has(q));              // next to a stone that changed
-}
-function closestOpenLine(g,move){
+const isOpen=(g,i,side,q)=>q>=0&&g.own[q]>=0&&g.own[q]!==g.own[i]    // two stones of different colours
+  &&(g.at[i].s[side]>0||g.at[q].s[opposite(side)]>0);                 // with a spike between them
+function closestOpenLine(g,cell){
   // Lines are checked to the right and downwards from every stone, so each line is seen once; the first of
   // equally close lines wins, which is row by row from the top left.
   let best=null;
@@ -334,8 +333,8 @@ function closestOpenLine(g,move){
     if(g.own[i]<0)continue;
     for(const side of [RIGHT,DOWN]){
       const q=neighbour(g.n,i,side);
-      if(!isOpen(g,move,i,side,q))continue;
-      const dist=Math.min(distance(g.n,i,move.cell),distance(g.n,q,move.cell));
+      if(!isOpen(g,i,side,q))continue;
+      const dist=Math.min(distance(g.n,i,cell),distance(g.n,q,cell));
       if(!best||dist<best[0])best=[dist,i,side,q];
     }
   }
@@ -345,10 +344,11 @@ function closestOpenLine(g,move){
 /* ---------- Helpers for the computer player ---------- */
 const gain=(g,h,c)=>score(play(g,h,c),g.turn)-score(g,g.turn);
 function legal(g){
-  // Stones with the same piece and level play alike, so only the first of each is tried.
+  // Stones with the same piece, level and direction play alike, so only the first of each is tried.
   const seen=new Set(),moves=[];
   g.hands[g.turn].forEach((s,h)=>{
-    if(seen.has(s.t+s.l))return;seen.add(s.t+s.l);
+    const key=s.t+s.l+s.d;
+    if(seen.has(key))return;seen.add(key);
     for(let c=0;c<g.own.length;c++)if(g.own[c]<0)moves.push([h,c]);
   });
   return moves;
@@ -398,36 +398,38 @@ function think(g,ms,rnd=Math.random,maxDepth=99){
   }
   return best;
 }
-if(typeof module!=='undefined')module.exports={PIECES,MAXL,mkStone,newGame,full,score,play,gain,legal,think};
+if(typeof module!=='undefined')module.exports={PIECES,MAXL,mkStone,parseCode,stoneOf,withLevel,newGame,full,score,play,gain,legal,think};
 </script>
 
 <script>
 const $=s=>document.querySelector(s);
-const N=4,RUN=20,BASE='P1 P1 P1 P1 N1 B1 R1 K1';
+const N=4,RUN=20,BASE='P1^ P1> P1v P1< N1 B1 R1 K1';
 
 /* Settings and the saved run live in localStorage. */
 function load(key,fallback){try{return Object.assign(fallback,JSON.parse(localStorage.getItem(key)||'{}'));}catch(e){return fallback;}}
 const cfg=load('chainstones-cfg',{slow:false});
 const save=load('chainstones-run',{meta:BASE.split(' '),best:0,runs:0,champs:0,run:null});
+// Saves from before the weak guy had four variants: give their weak guys one direction each, in turn.
+function turnWeakGuys(deck){let k=0;return deck.map(c=>c[0]==='P'&&c.length===2?c+DIRECTIONS[k++%4]:c);}
+save.meta=turnWeakGuys(save.meta);if(save.run)save.run.deck=turnWeakGuys(save.run.deck);
 function store(){try{localStorage.setItem('chainstones-run',JSON.stringify(save));localStorage.setItem('chainstones-cfg',JSON.stringify(cfg));}catch(e){}}
 const T=ms=>ms*(cfg.slow?4:1); // every timing goes through T so slow-mo stretches the whole move
 const later=(ms,fn)=>timers.push(setTimeout(fn,T(ms)));
 
 /* Opponents. Each brings a fixed deck, an early, middle and late version (matches 1-6, 7-13, 14-19). The boss plays match 20. */
 const FOES=[
-  {name:'Pawnbroker Pete',line:'Everything has a price. Mostly weak guys.',decks:['P2 P2 P1 P1 P1 P1 N1 K1','P3 P3 P3 P2 P2 N3 N2 K2','P4 P4 P4 N3 N3 N3 Q3 K4'],face:'pete'},
-  {name:'Sir Neighsalot',line:'Hold your horses. All of them.',decks:['N1 N1 P1 P1 P1 P1 P1 K1','N2 N2 N2 N1 P2 P1 R2 K3','N4 N3 N3 N3 Q2 P3 R3 K4'],face:'neigh'},
-  {name:'Madame Swerve',line:'Darling, I never take the straight road.',decks:['B1 B1 P1 P1 P1 P1 P1 K1','B2 B2 B2 P2 P1 P1 N1 K3','B4 B4 B3 B2 P2 P2 N3 K4'],face:'swerve'},
-  {name:'Blocky Barb',line:'Square deal. Square face. Square loss.',decks:['R1 P1 P1 P1 P1 P1 P1 K1','R2 R2 R1 P2 P1 P1 N2 K2','R3 R3 R3 R3 Q3 P2 N3 K3'],face:'barb'},
-  {name:'Lady Lux',line:'I brought my sisters. You brought weak guys.',decks:['B1 B1 P1 P1 P1 P1 P1 P1','Q2 P1 P1 P1 P1 P1 P1 K3','Q3 Q2 Q2 P2 P2 N2 B3 K3'],face:'lux'},
-  {name:'Uncle Gambit',line:'I sacrifice. You suffer.',decks:['N1 B1 R1 P1 P1 P1 P1 P1','N3 B2 R2 Q2 P2 P1 P1 P1','N3 B3 R3 Q3 Q2 P2 P2 K3'],face:'gambit'},
+  {name:'Pawnbroker Pete',line:'Everything has a price. Mostly weak guys.',decks:['P2^ P2> P1v P1< P1^ P1> N1 K1','P3^ P3> P3v P2< P2^ N3 N2 K2','P4^ P4> P4v N3 N3 N3 Q3 K4'],face:'pete'},
+  {name:'Sir Neighsalot',line:'Hold your horses. All of them.',decks:['N1 N1 P1^ P1> P1v P1< P1^ K1','N2 N2 N2 N1 P2^ P1> R2 K3','N4 N3 N3 N3 Q2 P3^ R3 K4'],face:'neigh'},
+  {name:'Madame Swerve',line:'Darling, I never take the straight road.',decks:['B1 B1 P1^ P1> P1v P1< P1^ K1','B2 B2 B2 P2^ P1> P1v N1 K3','B4 B4 B3 B2 P2^ P2> N3 K4'],face:'swerve'},
+  {name:'Blocky Barb',line:'Square deal. Square face. Square loss.',decks:['R1 P1^ P1> P1v P1< P1^ P1> K1','R2 R2 R1 P2^ P1> P1v N2 K2','R3 R3 R3 R3 Q3 P2^ N3 K3'],face:'barb'},
+  {name:'Lady Lux',line:'I brought my sisters. You brought weak guys.',decks:['B1 B1 P1^ P1> P1v P1< P1^ P1>','Q2 P1^ P1> P1v P1< P1^ P1> K3','Q3 Q2 Q2 P2^ P2> N2 B3 K3'],face:'lux'},
+  {name:'Uncle Gambit',line:'I sacrifice. You suffer.',decks:['N1 B1 R1 P1^ P1> P1v P1< P1^','N3 B2 R2 Q2 P2^ P1> P1v P1<','N3 B3 R3 Q3 Q2 P2^ P2> K3'],face:'gambit'},
 ];
-const BOSS={name:'The Obsidian Monarch',line:'Nineteen boards behind you. One crown ahead.',decks:['Q4 Q4 R3 B3 N3 N3 K5 P3'],face:'boss',boss:true};
+const BOSS={name:'The Obsidian Monarch',line:'Nineteen boards behind you. One crown ahead.',decks:['Q4 Q4 R3 B3 N3 N3 K5 P3^'],face:'boss',boss:true};
 
-// Decks are lists of codes like 'N2': piece letter, then level.
-const levelOf=code=>+code.slice(1);
-const stoneOf=(code,facing)=>mkStone(code[0],levelOf(code),facing);
-const nameOf=code=>`${PIECES[code[0]].name} Lv ${levelOf(code)}`;
+const ARROWS='↑→↓←';
+const pieceName=(t,d)=>PIECES[t].name+(t==='P'?' '+ARROWS[d]:''); // the four weak guys carry their arrow
+const nameOf=code=>{const {t,l,d}=parseCode(code);return `${pieceName(t,d)} Lv ${l}`;};
 const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]];}return a;};
 function newRun(){
   // Each of the six regulars shows up three times in a random order, plus one extra, then the boss.
@@ -597,7 +599,7 @@ function renderSides(){
 function showInfo(){
   // Under the board: the stone under the mouse, or else the one selected in your hand.
   const s=hover>=0&&game.own[hover]>=0?game.at[hover]:sel>=0?game.hands[0][sel]:null;
-  $('#info').innerHTML=s?`<b>${PIECES[s.t].name}</b> <span class="lvl">Lv ${s.l}</span> · ${PIECES[s.t].text}`:'';
+  $('#info').innerHTML=s?`<b>${pieceName(s.t,(s.d+2*s.f)%4)}</b> <span class="lvl">Lv ${s.l}</span> · ${PIECES[s.t].text}`:'';
 }
 function renderHand(){
   const el=$('#hand');
@@ -606,7 +608,7 @@ function renderHand(){
   game.hands[0].forEach((s,i)=>{
     const b=document.createElement('button');
     b.className='hstone'+(yourTurn()&&sel===i?' sel':'');b.disabled=!yourTurn();
-    b.setAttribute('aria-label',`${PIECES[s.t].name}, level ${s.l}`);
+    b.setAttribute('aria-label',`${pieceName(s.t,s.d)}, level ${s.l}`);
     b.innerHTML=stoneSVG(s,0);
     b.onclick=()=>{sel=sel===i?-1:i;renderHand();renderBoard();showInfo();};
     el.appendChild(b);
@@ -700,6 +702,8 @@ function animate(a){
   // Plays the steps one after another: sparks on the line, spikes shatter, and a stone turns over only if it changes colour.
   // A stone can change colour more than once in a chain, so every flip carries the owner it turns to. Returns the end time.
   const lastStep=Math.max(0,...a.lines.map(l=>l[4]),...a.flips.map(f=>f[2]));
+  const pace=Math.min(1,12/(lastStep+1)); // a chain longer than 12 fights plays faster, so a move never drags
+  $('#board').style.setProperty('--pace',pace);
   let t=FIRST_MS;
   const badges=[];
   for(let k=0;k<=lastStep;k++){
@@ -713,7 +717,7 @@ function animate(a){
       paint(new Set([...turns.map(f=>f[0]),...breaks.map(b=>b[0])]));
       renderSides();
     });
-    t+=turns.length?TURN_MS:STEP_MS;
+    t+=(turns.length?TURN_MS:STEP_MS)*pace;
   }
   later(t+400,()=>badges.forEach(el=>el.remove()));
   return t;
@@ -762,7 +766,7 @@ function intro(rematch){
 }
 function begin(){
   const r=save.run,m=r.m,order='PNBRQK';
-  const mine=r.deck.map(c=>stoneOf(c,0)).sort((a,b)=>order.indexOf(a.t)-order.indexOf(b.t)||a.l-b.l);
+  const mine=r.deck.map(c=>stoneOf(c,0)).sort((a,b)=>order.indexOf(a.t)-order.indexOf(b.t)||a.d-b.d||a.l-b.l);
   const theirs=shuffle(foeOf(m).decks[phase(m)].split(' ').map(c=>stoneOf(c,1)));
   game=newGame(N,[mine,theirs],firstOf(m));
   sel=-1;hover=-1;last=-1;shown=null;busy=false;
@@ -782,8 +786,9 @@ function offers(){
   const d=save.run.deck,out=[],seen=new Set();
   for(const i of shuffle([...d.keys()])){
     const c=d[i];
-    if(levelOf(c)>=MAXL||seen.has(c))continue;
-    seen.add(c);out.push({i,to:c[0]+(levelOf(c)+1)});
+    const l=parseCode(c).l;
+    if(l>=MAXL||seen.has(c))continue;
+    seen.add(c);out.push({i,to:withLevel(c,l+1)});
     if(out.length===3)break;
   }
   return out;
