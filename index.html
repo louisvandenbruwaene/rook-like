@@ -248,12 +248,12 @@ function newGame(n,hands,first){return {n,own:new Int8Array(n*n).fill(-1),at:new
 const full=g=>!g.own.includes(-1);
 function score(g,p){let k=0;for(let i=0;i<g.own.length;i++)if(g.own[i]===p)k+=PIECES[g.at[i].t].val;return k;}
 
-function fight(g,i,side,q){
+function fight(g,i,side,q,wave){
   // The stones on i and q meet across one line. Facing spikes break off one for one; returns [spikes of i, spikes of q].
   const a=g.at[i].s[side],b=g.at[q].s[opposite(side)],k=Math.min(a,b);
   if(k){
     for(const [cell,sd] of [[i,side],[q,opposite(side)]]){
-      const s=g.at[cell].s.slice();s[sd]-=k;g.at[cell]={...g.at[cell],s};g.broke.push([cell,sd,k]);
+      const s=g.at[cell].s.slice();s[sd]-=k;g.at[cell]={...g.at[cell],s};g.broke.push([cell,sd,k,wave]);
     }
   }
   return [a,b];
@@ -261,7 +261,7 @@ function fight(g,i,side,q){
 function play(g,handIndex,cell){
   // Returns the game after the player to move puts stone handIndex on cell. Besides the board it records
   // lines: every fight as [from, to, spikes from, spikes to, wave]; waves: per wave the flips as [cell, new owner];
-  // broke: spikes broken as [cell, side, count].
+  // broke: spikes broken as [cell, side, count, wave].
   const n=g.n,me=g.turn,op=1-me;
   const a={n,own:g.own.slice(),at:g.at.slice(),hands:g.hands.slice(),turn:op,lines:[],waves:[[]],broke:[]};
   a.hands[me]=g.hands[me].filter((_,i)=>i!==handIndex);
@@ -277,7 +277,7 @@ function play(g,handIndex,cell){
     if(q<0)continue;
     fought.add(lineKey(cell,q));
     if(a.own[q]!==op)continue;
-    const [x,y]=fight(a,cell,side,q);
+    const [x,y]=fight(a,cell,side,q,0);
     if(!x&&!y)continue;
     a.lines.push([cell,q,x,y,0]);
     if(x>y)won.push(q);
@@ -295,7 +295,7 @@ function play(g,handIndex,cell){
     const [dist,i,side,q]=line;
     fought.add(lineKey(i,q));
     if(dist!==waveDist){a.waves.push([]);waveDist=dist;}
-    const wave=a.waves.length-1,[x,y]=fight(a,i,side,q);
+    const wave=a.waves.length-1,[x,y]=fight(a,i,side,q,wave);
     a.lines.push([i,q,x,y,wave]);
     if(x>y)flip(q,a.own[i],wave);
     if(y>x)flip(i,a.own[q],wave);
@@ -529,13 +529,20 @@ const faceSVG=f=>`<svg viewBox="0 0 100 100" aria-hidden="true">${FACES[f.face]}
 let game=null,foe=null,timers=[];
 let sel=-1,hover=-1,last=-1,busy=true; // selected hand stone, square under the mouse, last square played
 // While a move plays out, the board shows `shown` owners instead of the final ones, and marks fresh, flipped and broken stones.
-let shown=null,fresh=new Set(),flips=new Set(),broken=new Map();
+// Spikes that break in a later wave of the chain stay drawn whole until `waveNow` reaches their wave.
+let shown=null,fresh=new Set(),flips=new Set(),broken=new Map(),pending=[],waveNow=0;
 const yourTurn=()=>!busy&&!full(game)&&game.turn===0;
 const handValue=hand=>hand.reduce((a,s)=>a+PIECES[s.t].val,0);
 function brokenBySquare(broke){
   const m=new Map();
   for(const [i,side,k] of broke){if(!m.has(i))m.set(i,[0,0,0,0]);m.get(i)[side]+=k;}
   return m;
+}
+function stoneShown(i){
+  // The stone on square i as it looks now: its final spikes plus the ones that only break in a later wave.
+  const s=game.at[i].s.slice();let later=false;
+  for(const [c,side,k,w] of pending)if(c===i&&w>waveNow){s[side]+=k;later=true;}
+  return later?{...game.at[i],s}:game.at[i];
 }
 
 /* ---------- Rendering ---------- */
@@ -593,7 +600,7 @@ function renderBoard(){
     if(flips.has(i))cls.push('flip');
     if(crack.has(i))cls.push('crack');
     if(i===last&&!busy)cls.push('last');
-    let inner=own[i]>=0?stoneSVG(crack.has(i)?pv.at[i]:game.at[i],own[i],'stone',crack.get(i)||broken.get(i)):'';
+    let inner=own[i]>=0?stoneSVG(crack.has(i)?pv.at[i]:stoneShown(i),own[i],'stone',crack.get(i)||broken.get(i)):'';
     if(pv&&i===hover)inner=`<div class="ghost">${stoneSVG(pv.at[i],0,'stone',crack.get(i))}</div>`;
     html+=`<div class="${cls.join(' ')}" data-i="${i}">${inner}</div>`;
   }
@@ -636,22 +643,28 @@ function move(h,cell){
   busy=true;
   const before=game,me=game.turn,stone=game.hands[me][h],after=play(game,h,cell);
   shown=before.own.slice();shown[cell]=me;
-  game=after;sel=-1;hover=-1;last=cell;fresh.add(cell);broken=brokenBySquare(after.broke);
+  game=after;sel=-1;hover=-1;last=cell;fresh.add(cell);
+  pending=after.broke;waveNow=0;broken=brokenBySquare(pending.filter(b=>b[3]===0));
   render();showInfo();
   pop(cell,PIECES[stone.t].name,'tag p'+me,T(1300),-cellBox(cell).size*.62);
   const flipped=animate(after,cell,me);
   report(before,after,cell,me,stone);
-  later(endOf(after)+(flipped?560:300),()=>{shown=null;busy=false;render();next(flipped);});
+  later(endOf(after)+(flipped?560:300),()=>{shown=null;pending=[];busy=false;render();next(flipped);});
 }
 function animate(a,cell,me){
-  // Spikes break first, then wave after wave the stones change colour, GAP ms apart.
+  // The new stone's spikes break first, then wave after wave spikes break and stones change colour, GAP ms apart.
   // A stone can change colour more than once in a chain, so every flip carries the owner it turns to.
   const first=a.lines.filter(l=>l[4]===0);
   if(first.some(l=>l[2]&&l[3]))later(160,()=>sparks(first));
   a.waves.forEach((wave,k)=>{
     const t=startOf(a)+(k+1)*GAP,chain=k?a.lines.filter(l=>l[4]===k&&l[2]&&l[3]):[];
     if(chain.length)later(t-60,()=>sparks(chain));
-    if(wave.length)later(t,()=>{for(const [i,o] of wave){shown[i]=o;flips.add(i);}renderBoard();});
+    const breaks=k?a.broke.filter(b=>b[3]===k):[];
+    if(wave.length||breaks.length)later(t,()=>{
+      waveNow=k;broken=brokenBySquare(breaks);
+      for(const [i,o] of wave){shown[i]=o;flips.add(i);}
+      renderBoard();
+    });
   });
   later(endOf(a),renderSides);
   if(cfg.slow)showClashes(first,me,T(endOf(a)+400));
