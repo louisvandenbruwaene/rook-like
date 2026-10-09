@@ -389,12 +389,12 @@ const later=(ms,fn)=>timers.push(setTimeout(fn,T(ms)));
 
 /* Opponents. Each brings a fixed deck, an early, middle and late version (matches 1-6, 7-13, 14-19). The boss plays match 20. */
 const FOES=[
-  {name:'Pawnbroker Pete',line:'Everything has a price. Mostly weak guys.',decks:['P2 P2 P1 P1 P1 P1 N1 K1','P3 P3 P3 P2 P2 N2 N2 K2','P4 P4 P4 N3 N3 N3 Q2 K4'],face:'pete'},
-  {name:'Sir Neighsalot',line:'Hold your horses. All of them.',decks:['N1 N1 N1 P1 P1 P1 P1 K1','N2 N2 N2 N1 P2 P1 R1 K2','N4 N4 N4 N3 Q2 P3 R3 K3'],face:'neigh'},
+  {name:'Pawnbroker Pete',line:'Everything has a price. Mostly weak guys.',decks:['P2 P2 P1 P1 P1 P1 N1 K1','P3 P3 P3 P2 P2 N2 N2 K2','P4 P4 P4 N3 N3 N3 Q3 K3'],face:'pete'},
+  {name:'Sir Neighsalot',line:'Hold your horses. All of them.',decks:['N1 N1 P1 P1 P1 P1 P1 K1','N2 N2 N2 N1 P2 P1 R1 K2','N4 N3 N3 N3 Q2 P3 R3 K3'],face:'neigh'},
   {name:'Madame Swerve',line:'Darling, I never take the straight road.',decks:['B1 B1 P1 P1 P1 P1 P1 K1','B2 B2 B2 P2 P1 P1 N1 K2','B3 B3 B3 B2 P2 P2 N3 K3'],face:'swerve'},
   {name:'Blocky Barb',line:'Square deal. Square face. Square loss.',decks:['R1 P1 P1 P1 P1 P1 P1 K1','R2 R2 R1 P2 P1 P1 N2 K2','R3 R3 R3 R3 Q2 P2 N3 K3'],face:'barb'},
-  {name:'Lady Lux',line:'I brought my sisters. You brought weak guys.',decks:['B1 B1 P1 P1 P1 P1 P1 P1','Q2 P1 P1 P1 P1 P1 N1 K1','Q2 Q2 Q2 P2 P2 N2 B2 K2'],face:'lux'},
-  {name:'Uncle Gambit',line:'I sacrifice. You suffer.',decks:['N1 B1 R1 P1 P1 P1 P1 P1','N2 B2 R2 Q1 P2 P1 P1 P1','N3 B3 R3 Q2 Q1 P2 P2 K2'],face:'gambit'},
+  {name:'Lady Lux',line:'I brought my sisters. You brought weak guys.',decks:['B1 B1 P1 P1 P1 P1 P1 P1','Q2 P1 P1 P1 P1 P1 P1 K1','Q2 Q2 Q2 P2 P2 N2 B3 K2'],face:'lux'},
+  {name:'Uncle Gambit',line:'I sacrifice. You suffer.',decks:['N1 B1 R1 P1 P1 P1 P1 P1','N3 B2 R2 Q1 P2 P1 P1 P1','N3 B3 R3 Q2 Q1 P2 P2 K2'],face:'gambit'},
 ];
 const BOSS={name:'The Obsidian Monarch',line:'Nineteen boards behind you. One crown ahead.',decks:['Q3 Q3 R3 B3 N3 N3 K4 P3'],face:'boss',boss:true};
 
