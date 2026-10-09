@@ -205,7 +205,7 @@ body.slow{--t:4}
     <li>Take turns placing a stone from your hand on an empty square of the 4 × 4 board. You never see the opponent's hand.</li>
     <li>Every stone is a character with its own spikes. Your stones face up the board, the opponent's are turned round and face down. Each level adds a spike to every side that has some (up to 5).</li>
     <li><b>Clash:</b> each side of your new stone that touches an enemy stone fights it. Facing spikes break off one for one, and the side with spikes left over wins and takes the other stone. That works both ways: lose any clash and your new stone is taken.</li>
-    <li><b>Chain:</b> after the new stone has fought, the fights spread outwards. Every line between two stones of different colour with spikes on it fights the same way, closest to the new stone first. Each line fights at most once per move.</li>
+    <li><b>Chain:</b> after the new stone has fought, the fights spread outwards from every stone that changed colour. Each line between stones of different colour with spikes on it, next to a stone that changed, fights the same way, closest to the new stone first. Each line fights at most once per move.</li>
     <li>When the board is full, count your stones. The dude with crown counts as 3. Most points wins. A draw is replayed.</li>
     <li>After a win, pick one of three stones to level up for the rest of the run. A stone keeps its character, it only gets more spikes. When a run ends, keep one stone you upgraded: it stays in your starting hand for good.</li>
     <li>Every opponent always brings the same stones, and they get stronger as the run goes on. Remember what they play.</li>
@@ -266,7 +266,8 @@ function play(g,handIndex,cell){
   const a={n,own:g.own.slice(),at:g.at.slice(),hands:g.hands.slice(),turn:op,lines:[],waves:[[]],broke:[]};
   a.hands[me]=g.hands[me].filter((_,i)=>i!==handIndex);
   a.own[cell]=me;a.at[cell]=g.hands[me][handIndex];
-  const flip=(c,p,wave)=>{a.own[c]=p;a.waves[wave].push([c,p]);};
+  const changed=new Set([cell]); // stones placed or changed colour in this move: fights only spread from these
+  const flip=(c,p,wave)=>{a.own[c]=p;a.waves[wave].push([c,p]);changed.add(c);};
 
   // 1. The new stone fights every enemy neighbour at once. Each win takes that stone;
   //    losing any of these fights gets the new stone taken.
@@ -274,11 +275,10 @@ function play(g,handIndex,cell){
   let won=[],lost=false;
   for(let side=0;side<4;side++){
     const q=neighbour(n,cell,side);
-    if(q<0)continue;
-    fought.add(lineKey(cell,q));
-    if(a.own[q]!==op)continue;
+    if(q<0||a.own[q]!==op)continue;
     const [x,y]=fight(a,cell,side,q,0);
     if(!x&&!y)continue;
+    fought.add(lineKey(cell,q));
     a.lines.push([cell,q,x,y,0]);
     if(x>y)won.push(q);
     if(x<y)lost=true;
@@ -286,11 +286,13 @@ function play(g,handIndex,cell){
   for(const q of won)flip(q,me,0);
   if(lost)flip(cell,op,0);
 
-  // 2. The fights spread outwards: every line between two stones of different colour with spikes on it fights,
-  //    the line closest to the new stone first. Each line fights at most once per move, so a move always ends.
+  // 2. The fights spread outwards from what changed: a line between two stones of different colour with spikes on it
+  //    fights if one of its stones was placed or changed colour in this move, the line closest to the new stone first.
+  //    Each line fights at most once per move, so a move always ends. Lines of the new stone that did not fight in
+  //    step 1 stay open, so a new stone that was taken can be hit back.
   let waveDist=-1;
   for(;;){
-    const line=closestOpenLine(a,cell,fought,lineKey);
+    const line=closestOpenLine(a,cell,fought,lineKey,changed);
     if(!line)break;
     const [dist,i,side,q]=line;
     fought.add(lineKey(i,q));
@@ -302,14 +304,14 @@ function play(g,handIndex,cell){
   }
   return a;
 }
-function closestOpenLine(g,cell,fought,lineKey){
+function closestOpenLine(g,cell,fought,lineKey,changed){
   // Lines are checked to the right and downwards from every stone, so each line is seen once.
   let best=null;
   for(let i=0;i<g.own.length;i++){
     if(g.own[i]<0)continue;
     for(const side of [RIGHT,DOWN]){
       const q=neighbour(g.n,i,side);
-      if(q<0||g.own[q]<0||g.own[q]===g.own[i]||fought.has(lineKey(i,q)))continue;
+      if(q<0||g.own[q]<0||g.own[q]===g.own[i]||fought.has(lineKey(i,q))||!(changed.has(i)||changed.has(q)))continue;
       if(!g.at[i].s[side]&&!g.at[q].s[opposite(side)])continue;
       const dist=Math.min(distance(g.n,i,cell),distance(g.n,q,cell));
       if(!best||dist<best[0])best=[dist,i,side,q];
