@@ -46,8 +46,10 @@ const shine = (d, width = 1.6) => line(d, '#fff', width, 0.7);
 
 /* ---------- Characters ----------
    Every character is a pixel-art portrait, a 64 x 64 PNG in art/stones named after its piece (made with PixelLab).
-   drawStone shows it in a dark window on the stone's face, pixels kept sharp. STONE_ART_FOLDER is where the PNGs
-   are, relative to the page; stone-sheet.js points it at the files themselves. */
+   Each has one detail in its team's colour, in a blue copy in art/stones/you and a red copy in art/stones/opponent,
+   made by art/team_colours.py; debris belongs to nobody and keeps the plain portrait. drawStone shows it in a dark
+   window on the stone's face, pixels kept sharp. STONE_ART_FOLDER is where the PNGs are, relative to the page;
+   stone-sheet.js points it at the files themselves. */
 
 let STONE_ART_FOLDER = 'art/stones/';
 const STONE_ART_SIZE = 64; // pixels on a side
@@ -64,14 +66,16 @@ function drawPixels(pixels, colour, dx = 0, dy = 0) {
   return pixels.map(([x, y]) => `<rect x="${x + dx}" y="${y + dy}" width="1" height="1" fill="${colour}"/>`).join('');
 }
 
-// The portrait, scaled from its own pixels onto the window, with any cracks on top.
-function drawCharacter(type) {
+const TEAM_FOLDERS = ['you/', 'opponent/', '']; // for YOU, OPPONENT and DEBRIS
+
+// The portrait in its owner's colours, scaled from its own pixels onto the window, with any cracks on top.
+function drawCharacter(type, owner) {
   const scale = WINDOW.size / STONE_ART_SIZE;
   const cracks = CRACKS[type]
     ? drawPixels(CRACKS[type], '#fff', 1, 0).replace(/fill="#fff"/g, 'fill="#fff" opacity=".45"') + drawPixels(CRACKS[type], '#3a2630')
     : '';
   return `<g transform="translate(${WINDOW.x} ${WINDOW.y}) scale(${scale})" shape-rendering="crispEdges">
-<image href="${STONE_ART_FOLDER}${type}.png" width="${STONE_ART_SIZE}" height="${STONE_ART_SIZE}" style="image-rendering:pixelated"/>${cracks}</g>`;
+<image href="${STONE_ART_FOLDER}${TEAM_FOLDERS[owner]}${type}.png" width="${STONE_ART_SIZE}" height="${STONE_ART_SIZE}" style="image-rendering:pixelated"/>${cracks}</g>`;
 }
 
 /* ---------- Stones ---------- */
@@ -154,7 +158,7 @@ function drawStone(stone, owner, { className = 'stone', breakingSpikes } = {}) {
     outside += drawSpikes(side, stone.spikes[side], breakingCount, colours);
   }
   return `<svg class="${className}" viewBox="0 0 100 100" aria-hidden="true">${outside}${drawStoneBody(owner)}
-${drawWindow(owner)}<g clip-path="url(#art-clip)">${drawCharacter(stone.type)}</g></svg>`;
+${drawWindow(owner)}<g clip-path="url(#art-clip)">${drawCharacter(stone.type, owner)}</g></svg>`;
 }
 
 // The back of one of the opponent's hidden stones.
