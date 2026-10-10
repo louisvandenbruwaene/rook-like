@@ -156,15 +156,17 @@ function drawGoldenShields() {
   return shields;
 }
 
-// The spikes on one side, drawn on the top side and turned into place. Spikes sit closer together
-// when there are more than three. breakingCount extra spikes are drawn breaking off.
+// The spikes on one side, drawn on the top side and turned into place. Every spike has the same size, the size
+// that lets MAX_LEVEL of them fit side by side; fewer spikes only sit further apart. breakingCount extra spikes
+// are drawn breaking off.
+const SPIKE_HALF_WIDTH = 6;
 function drawSpikes(side, count, breakingCount, colours) {
   const total = count + breakingCount;
   if (total === 0) return '';
-  let spacing = 12;
+  let spacing = 2 * SPIKE_HALF_WIDTH;
   if (total === 4) spacing = 14.5;
   if (total <= 3) spacing = 18;
-  const halfWidth = total <= 3 ? 7.5 : spacing / 2;
+  const halfWidth = SPIKE_HALF_WIDTH;
   let spikes = '';
   for (let index = 0; index < total; index++) {
     const x = 50 + (index - (total - 1) / 2) * spacing;

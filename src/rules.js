@@ -101,6 +101,12 @@ function spikesAt(type, level) {
   return piece.baseSpikes.map((base) => (base === 0 ? 0 : Math.min(MAX_LEVEL, base + level - 1)));
 }
 
+// A stone can go up a level while that changes its spikes: a queen already at MAX_LEVEL spikes a side stops at level 4.
+function canLevelUp(type, level) {
+  if (PIECES[type].hasNoLevels || level >= MAX_LEVEL) return false;
+  return spikesAt(type, level + 1).join() !== spikesAt(type, level).join();
+}
+
 // The opponent's stones face down the board, so their pattern is turned half way round.
 // Only pieces that come in four turns have a variant.
 function makeStone(type, level, facing, variant = 0) {

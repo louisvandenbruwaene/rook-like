@@ -86,7 +86,7 @@ function groupOf(type, order) {
 function upgradeOne(deck, difficulty) {
   const growing = deck
     .map((code, index) => ({ index, ...parseCode(code) }))
-    .filter((stone) => !PIECES[stone.type].hasNoLevels && stone.level < MAX_LEVEL);
+    .filter((stone) => canLevelUp(stone.type, stone.level));
   if (growing.length === 0) return deck;
   let candidates = growing;
   const order = difficulty.upgradeOrder;

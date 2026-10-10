@@ -145,6 +145,10 @@ h1{font-weight:700;font-size:28px;margin:0;letter-spacing:-.01em}
 .choice svg{width:76px;height:76px;overflow:visible}
 .choice .swap{display:flex;align-items:center;gap:2px}
 .choice .swap svg{width:56px;height:56px}
+/* A long list of choices, like every stone of a run: smaller tiles. */
+.choices.compact{grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px;max-height:52vh;overflow-y:auto}
+.choices.compact .choice{padding:8px 4px;font-size:12px}
+.choices.compact .swap svg{width:50px;height:50px}
 .hand-row{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
 .hand-row svg{width:52px;height:52px;overflow:visible}
 /* Your collection on the card before a match: stones in your deck are lit, the rest dimmed. */
