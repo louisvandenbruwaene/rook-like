@@ -1,0 +1,26 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Rook-like icon</title>
+<style>html,body{margin:0;background:transparent}svg{display:block;width:1024px;height:1024px}</style></head>
+<body><div id="out"></div>
+<!-- The game's own stone art and its gradients, so the Rook-like icon shows the real Castle Carl stone. -->
+<svg width="0" height="0" style="position:absolute"><defs id="stone-defs">
+  <linearGradient id="body0" x1="0" y1="0" x2=".6" y2="1"><stop offset="0" stop-color="#7cc0ff"/><stop offset=".5" stop-color="#3b8be8"/><stop offset="1" stop-color="#1f5bb0"/></linearGradient>
+  <linearGradient id="body1" x1="0" y1="0" x2=".6" y2="1"><stop offset="0" stop-color="#ff9a84"/><stop offset=".5" stop-color="#ec5440"/><stop offset="1" stop-color="#b02d1f"/></linearGradient>
+  <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".38"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/></linearGradient>
+</defs></svg>
+<script src="../stones/src/rules.js"></script><script src="../stones/src/art.js"></script>
+<script>
+/* The Rook-like app icon: a macOS-style rounded square (824px tile, 100px margin) drawn as SVG. */
+const tile=(bg,inner)=>`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024"><defs><clipPath id="c"><rect x="100" y="100" width="824" height="824" rx="185"/></clipPath>
+<linearGradient id="sh" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".18"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>
+<g clip-path="url(#c)">${bg}${inner}<rect x="100" y="100" width="824" height="824" fill="url(#sh)"/></g></svg>`;
+const fill=(c1,c2)=>`<defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient></defs><rect x="0" y="0" width="1024" height="1024" fill="url(#bg)"/>`;
+const ICON=tile(fill('#2b3d66','#121a2c'),(()=>{ // two real game stones (art.js) clashing: Castle Carl the rook against a knight
+      const place=(svg,x,y,size)=>svg.replace('<svg ',`<svg x="${x}" y="${y}" width="${size}" height="${size}" `);
+      const spark=`<g transform="translate(594 520)"><circle r="120" fill="url(#glow)"/>${[0,90].map(a=>`<path d="M0 -84 L15 0 L0 84 L-15 0 Z" fill="#fff4c2" transform="rotate(${a})"/>`).join('')}${[45,135].map(a=>`<path d="M0 -54 L11 0 L0 54 L-11 0 Z" fill="#ffd34d" transform="rotate(${a})"/>`).join('')}<circle r="20" fill="#fff"/></g>`;
+      return `<defs>${document.getElementById('stone-defs').innerHTML}<radialGradient id="glow"><stop offset="0" stop-color="#ffd34d" stop-opacity=".75"/><stop offset="1" stop-color="#ffd34d" stop-opacity="0"/></radialGradient></defs>`
+        +`<ellipse cx="490" cy="790" rx="320" ry="34" fill="#000" opacity=".22"/>`
+        +place(drawStone({type:'N',spikes:[0,0,0,2]},OPPONENT),562,350,340)
+        +place(drawStone({type:'R',spikes:[2,2,2,2]},YOU),106,260,520)+spark;})());
+document.getElementById('out').innerHTML=ICON;
+</script></body></html>
