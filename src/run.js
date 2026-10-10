@@ -66,6 +66,7 @@ function chooseDifficulty() {
     html: difficulty.name,
     onPick: () => {
       save.run.difficulty = key;
+      save.run.decks = newDecks(difficulty);
       store();
       renderLadder();
       intro();
@@ -97,9 +98,7 @@ function handOrder(a, b) {
 function startMatch() {
   const run = save.run;
   const yourStones = run.hand.map((code) => fromCode(code, YOU)).sort(handOrder);
-  const matchesWon = run.match - 1;
-  const theirCodes = handOf(opponentFor(run.match), matchesWon).split(' ');
-  const theirStones = shuffle(theirCodes.map((code) => fromCode(code, OPPONENT)));
+  const theirStones = shuffle(deckOf(opponentFor(run.match)).map((code) => fromCode(code, OPPONENT)));
   game = newGame(SIZE, [yourStones, theirStones], firstFor(run.match));
   Object.assign(ui, { selected: -1, hovered: -1, lastMove: -1, waiting: false });
   replay.owners = null;
@@ -136,8 +135,10 @@ function finishMatch() {
     endRun(true, text);
     return;
   }
+  const deckPlayed = deckOf(opponent).slice();
+  upgradeAllDecks(run.decks, currentDifficulty());
   store();
-  offerRewards(pope === YOU ? 'Took the Pope' : `Won ${tally()}`);
+  offerRewards(pope === YOU ? 'Took the Pope' : `Won ${tally()}`, deckPlayed);
 }
 
 function nextMatch() {
@@ -146,10 +147,11 @@ function nextMatch() {
   intro();
 }
 
-// After a win the opponent shows three random stones from the hand they just played. Take one, or skip.
-function offerRewards(label) {
-  const handPlayed = handOf(opponent, save.run.match - 1).split(' ');
-  const offer = shuffle([...new Set(handPlayed)]).slice(0, 3);
+// After a win the opponent shows three random stones from the deck they just played. Take one, or skip.
+// A level 0 stone is offered at level 1, so a reward is never weaker than your own stones.
+function offerRewards(label, deckPlayed) {
+  const atLeastLevelOne = (code) => (code[1] === '0' ? withLevel(code, 1) : code);
+  const offer = shuffle([...new Set(deckPlayed.map(atLeastLevelOne))]).slice(0, 3);
   const choices = offer.map((code) => ({
     html: `<span class="swap">${picture(code)}</span>${titleOf(code)}`,
     onPick: () => swapIn(label, code),

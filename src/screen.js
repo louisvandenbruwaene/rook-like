@@ -95,7 +95,8 @@ function renderLadder() {
     rungs += `<i class="${classes.join(' ')}"></i>`;
   }
   find('#ladder').innerHTML = rungs;
-  const difficulty = run.difficulty ? ` · ${currentDifficulty().name}` : '';
+  const chosen = run.difficulty || run.decks; // a new run has neither until you pick a difficulty
+  const difficulty = chosen ? ` · ${currentDifficulty().name}` : '';
   find('#run-line').textContent = `${run.match} / ${RUN_LENGTH}${difficulty}`;
   const record = find('#record');
   if (record) {

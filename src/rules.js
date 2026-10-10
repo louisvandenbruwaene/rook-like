@@ -15,7 +15,7 @@
 
    A stone is:
      type     a piece letter, a key of PIECES
-     level    1 to MAX_LEVEL
+     level    0 to MAX_LEVEL (only opponents start at 0)
      facing   YOU (spikes as drawn) or OPPONENT (turned half way round)
      variant  0 to 3: which quarter turn of a piece that comes in four turns
      spikes   [top, right, bottom, left]
@@ -52,8 +52,8 @@ function other(player) {
 }
 
 /* ---------- The pieces ----------
-   The chess pieces have base spikes and grow by one spike on every spiked side per level.
-   The rare stones list their spikes for each level instead.
+   The chess pieces have base spikes (their level 1) and gain or lose one spike on every spiked side per level,
+   so a level 0 pawn has no spikes at all. The rare stones list their spikes for each level instead.
    Powers: goldenShields, poisonous, curesPoison, mayCollapse, thickFur, swarm, isPope.
    hasNoLevels: the stone is always the same (the king, rubble). */
 
@@ -69,20 +69,20 @@ const PIECES = {
   K: { name: 'Old King Coal',      chess: 'king',   baseSpikes: [0, 0, 0, 0], goldenShields: true, hasNoLevels: true,
        description: 'golden shields on every side: every spike that touches him breaks, and he can never be taken' },
 
-  //                                                 level 1       level 2       level 3       level 4       level 5
-  S: { name: 'Serpent',       poisonous: true,   levelSpikes: [[2, 0, 0, 0], [2, 1, 0, 0], [3, 1, 0, 0], [3, 1, 0, 1], [4, 1, 0, 1]],
+  //                                                 level 0       level 1       level 2       level 3       level 4       level 5
+  S: { name: 'Serpent',       poisonous: true,   levelSpikes: [[1, 0, 0, 0], [2, 0, 0, 0], [2, 1, 0, 0], [3, 1, 0, 0], [3, 1, 0, 1], [4, 1, 0, 1]],
        description: 'poisons every stone its spikes hit' },
-  W: { name: 'Old Woman',     curesPoison: true, levelSpikes: [[0, 1, 0, 1], [1, 1, 0, 1], [1, 1, 1, 1], [2, 1, 1, 1], [2, 2, 1, 1]],
+  W: { name: 'Old Woman',     curesPoison: true, levelSpikes: [[0, 1, 0, 0], [0, 1, 0, 1], [1, 1, 0, 1], [1, 1, 1, 1], [2, 1, 1, 1], [2, 2, 1, 1]],
        description: 'cures her poisoned neighbours, and becomes the Grand Empress the first time she does' },
-  E: { name: 'Grand Empress', poisonous: true,   levelSpikes: [[3, 2, 2, 3], [4, 3, 3, 4], [5, 4, 4, 5], [5, 5, 5, 5], [5, 5, 5, 5]],
+  E: { name: 'Grand Empress', poisonous: true,   levelSpikes: [[2, 1, 1, 2], [3, 2, 2, 3], [4, 3, 3, 4], [5, 4, 4, 5], [5, 5, 5, 5], [5, 5, 5, 5]],
        description: 'knight, queen and serpent in one: her spikes poison' },
-  J: { name: 'Prince Joey',   mayCollapse: true, levelSpikes: [[3, 1, 2, 0], [3, 2, 2, 0], [4, 2, 3, 0], [4, 3, 3, 0], [5, 3, 4, 0]],
+  J: { name: 'Prince Joey',   mayCollapse: true, levelSpikes: [[2, 1, 1, 0], [3, 1, 2, 0], [3, 2, 2, 0], [4, 2, 3, 0], [4, 3, 3, 0], [5, 3, 4, 0]],
        description: 'every time he changes colour, a 1 in 3 chance he collapses into rubble' },
-  G: { name: 'Gorilla',       thickFur: true,    levelSpikes: [[3, 1, 0, 1], [4, 1, 0, 1], [4, 2, 0, 1], [5, 2, 0, 2], [5, 2, 1, 2]],
+  G: { name: 'Gorilla',       thickFur: true,    levelSpikes: [[2, 1, 0, 1], [3, 1, 0, 1], [4, 1, 0, 1], [4, 2, 0, 1], [5, 2, 0, 2], [5, 2, 1, 2]],
        description: 'thick fur: he loses at most one spike in a fight' },
-  H: { name: 'Beekeeper',     swarm: true,       levelSpikes: [[1, 0, 0, 0], [1, 0, 1, 0], [1, 1, 1, 0], [2, 1, 1, 0], [2, 1, 1, 1]],
+  H: { name: 'Beekeeper',     swarm: true,       levelSpikes: [[0, 0, 0, 0], [1, 0, 0, 0], [1, 0, 1, 0], [1, 1, 1, 0], [2, 1, 1, 0], [2, 1, 1, 1]],
        description: 'when placed, his swarm breaks one spike on every enemy side around him and grounds a Pope' },
-  O: { name: 'The Pope',      isPope: true,      levelSpikes: [[0, 2, 0, 2], [1, 2, 0, 2], [1, 3, 1, 2], [2, 3, 1, 3], [2, 4, 2, 3]],
+  O: { name: 'The Pope',      isPope: true,      levelSpikes: [[0, 1, 0, 1], [0, 2, 0, 2], [1, 2, 0, 2], [1, 3, 1, 2], [2, 3, 1, 3], [2, 4, 2, 3]],
        description: 'flies on a jet pack until a swarm grounds him, and whoever loses the Pope loses the match' },
 
   X: { name: 'Rubble', baseSpikes: [0, 0, 0, 0], hasNoLevels: true, description: "what is left of Prince Joey, nobody's stone" },
@@ -97,7 +97,7 @@ function rotate(spikes, quarterTurns) {
 
 function spikesAt(type, level) {
   const piece = PIECES[type];
-  if (piece.levelSpikes) return piece.levelSpikes[level - 1].slice();
+  if (piece.levelSpikes) return piece.levelSpikes[level].slice();
   return piece.baseSpikes.map((base) => (base === 0 ? 0 : Math.min(MAX_LEVEL, base + level - 1)));
 }
 
