@@ -18,7 +18,7 @@
 *,*::before,*::after{box-sizing:border-box}
 body{margin:0}
 [hidden]{display:none!important}
-h1,h2,button,.back,.runline,.nm,.pts,#status,#info b,#info .lvl,.kicker,.tag,.gain,.clash,.dex b{font-family:var(--f-display)}
+h1,h2,button,.back,.runline,.nm,.pts,#status,#info b,#info .lvl,.kicker,.tag,.gain,.dex b{font-family:var(--f-display)}
 
 /* Your hand on the left, the board in the middle, the opponent's hidden hand on the right; stacked on phones.
    Every size follows the stone size --c, so the whole table fits the window. */
@@ -116,14 +116,6 @@ body.slow{--t:4}
 .gain.bad{color:var(--red)}
 .tag{font-size:15px;color:var(--ink);background:#0e1422;border:2px solid currentColor;border-radius:99px;padding:1px 10px;animation:tagup calc(1.3s*var(--t)) ease-out forwards}
 .tag.p0{border-color:var(--blue)}.tag.p1{border-color:var(--red)}
-.clash{position:absolute;transform:translate(-50%,-50%);z-index:3;pointer-events:none;display:flex;gap:3px;align-items:center;font-weight:700;font-size:17px;
-  background:#0e1422;border:2px solid var(--line);border-radius:9px;padding:1px 7px;font-variant-numeric:tabular-nums;animation:drop calc(.3s*var(--t)) ease-out}
-.clash .w{text-decoration:underline;text-underline-offset:3px}
-.clash .vs{color:var(--muted);font-size:12px}
-.spark{position:absolute;width:0;height:0;z-index:2;pointer-events:none}
-.spark i{position:absolute;left:-2px;top:-14px;width:4px;height:12px;border-radius:2px;background:linear-gradient(#fff6c8,#f3c54a);transform-origin:2px 14px;transform:rotate(var(--r));opacity:0;animation:spark calc(.42s*var(--t)) ease-out forwards}
-.spark b{position:absolute;left:-14px;top:-14px;width:28px;height:28px;border-radius:50%;background:radial-gradient(#fff8d8,rgba(243,197,74,.6) 40%,transparent 70%);animation:flash calc(.32s*var(--t)) ease-out forwards}
-
 /* Full-screen cards between matches: the next opponent, rewards, the end of a run. */
 .modal{position:fixed;inset:0;display:grid;place-items:center;background:rgba(10,14,26,.72);backdrop-filter:blur(3px);z-index:10;padding:16px;overflow:auto}
 .card{background:var(--panel);border:2px solid var(--line);padding:22px 24px;border-radius:18px;text-align:center;display:grid;gap:12px;width:min(520px,100%);box-shadow:0 20px 50px rgba(0,0,0,.5);animation:drop .3s ease-out}
@@ -160,9 +152,8 @@ body.slow{--t:4}
 @keyframes turn{0%{transform:perspective(500px) rotateY(0)}50%{transform:perspective(500px) rotateY(90deg) scale(1.1)}100%{transform:perspective(500px) rotateY(180deg)}}
 @keyframes rise{0%{opacity:0;margin-top:10px}20%{opacity:1}100%{opacity:0;margin-top:-40px}}
 @keyframes tagup{0%{opacity:0;margin-top:0}15%{opacity:1;margin-top:-8px}75%{opacity:1}100%{opacity:0;margin-top:-22px}}
-@keyframes spark{0%{opacity:1;transform:rotate(var(--r)) translateY(0) scaleY(1)}100%{opacity:0;transform:rotate(var(--r)) translateY(-16px) scaleY(.4)}}
 @keyframes flash{0%{opacity:1;transform:scale(.4)}100%{opacity:0;transform:scale(1.5)}}
-@media (prefers-reduced-motion:reduce){.cell:not(.crack) .brk{animation:none;opacity:0}.flipper{animation:none;transform:rotateY(180deg)}.cell.new svg.stone,.cell.flip::after,.cell.hit::after,.gain,.tag,.card{animation:none}.spark{display:none}}
+@media (prefers-reduced-motion:reduce){.cell:not(.crack) .brk{animation:none;opacity:0}.flipper{animation:none;transform:rotateY(180deg)}.cell.new svg.stone,.cell.flip::after,.cell.hit::after,.gain,.tag,.card{animation:none}}
 @media (max-width:760px){
   :root{--c:calc((100vw - 60px)/4.5)}
   .table{grid-template-columns:1fr}
@@ -213,7 +204,7 @@ body.slow{--t:4}
     <li>Her Majesty Mayhem, the queen, only joins late: when you win match 13 she replaces a stone of your choice for the rest of the run.</li>
     <li>After a win, pick one of three stones to level up for the rest of the run. A stone keeps its character, it only gets more spikes. When a run ends, keep one stone you upgraded: it stays in your starting hand for good.</li>
     <li>Every opponent always brings the same stones, and they get stronger as the run goes on. Remember what they play.</li>
-    <li>Pick a stone, then hover over a square (or tap it once on a phone): yellow stones you would take, red stones you would lose, faded spikes would break. Slow-mo (or S) shows every clash as a score.</li>
+    <li>Pick a stone, then hover over a square (or tap it once on a phone): yellow stones you would take, red stones you would lose, faded spikes would break. Slow-mo (or S) plays every move four times slower.</li>
   </ul>
   <div class="dex" id="dex"></div>
   <p class="record" id="record"></p>
@@ -674,25 +665,6 @@ function place(el,x,y,ms){
 function pop(cell,text,cls,ms,dy=0){
   const {x,y}=cellBox(cell),el=document.createElement('div');el.className=cls;el.textContent=text;place(el,x,y+dy,ms);
 }
-function onLine(from,to,el,ms){const a=cellBox(from),b=cellBox(to);return place(el,(a.x+b.x)/2,(a.y+b.y)/2,ms);}
-function sparks(lines){
-  // A burst on every line that fights, so each hit is visible even at full speed.
-  for(const [from,to] of lines){
-    const el=document.createElement('div');el.className='spark';
-    el.innerHTML='<b></b>'+[0,45,90,135,180,225,270,315].map(r=>`<i style="--r:${r+20*Math.random()}deg"></i>`).join('');
-    onLine(from,to,el,T(520));
-  }
-}
-function showClashes(lines){
-  // Slow-mo only: a badge on each line as it fights, both stones' spikes in their colours, the winner underlined.
-  const col=p=>p===0?'var(--blue)':'var(--red)';
-  return lines.map(([from,to,a,b])=>{
-    const el=document.createElement('div');el.className='clash';
-    el.innerHTML=`<span class="${a>b?'w':''}" style="color:${col(shown[from])}">${a}</span><span class="vs">vs</span><span class="${b>a?'w':''}" style="color:${col(shown[to])}">${b}</span>`;
-    return onLine(from,to,el);
-  });
-}
-
 /* ---------- A move ---------- */
 // One step per fight: step 0 is the new stone's own fights, then every fight of the chain in turn.
 const FIRST_MS=260,STEP_MS=240,TURN_MS=440; // before step 0, per step, and per step in which a stone turns over
@@ -709,19 +681,16 @@ function move(h,cell){
   later(end+(flipped?560:300),()=>{shown=null;pending=[];stepNow=-1;busy=false;render();next(flipped);});
 }
 function animate(a){
-  // Plays the steps one after another: sparks on the line, spikes shatter, and a stone turns over only if it changes colour.
+  // Plays the steps one after another: the spikes that break shatter, and a stone turns over only if it changes colour.
   // A stone can change colour more than once in a chain, so every flip carries the owner it turns to. Returns the end time.
   const lastStep=Math.max(0,...a.lines.map(l=>l[4]),...a.flips.map(f=>f[2]));
   const pace=Math.min(1,12/(lastStep+1)); // a chain longer than 12 fights plays faster, so a move never drags
   $('#board').style.setProperty('--pace',pace);
   let t=FIRST_MS;
-  const badges=[];
   for(let k=0;k<=lastStep;k++){
     const lines=a.lines.filter(l=>l[4]===k),turns=a.flips.filter(f=>f[2]===k),breaks=a.broke.filter(b=>b[3]===k);
     if(!lines.length&&!turns.length)continue;
     later(t,()=>{
-      sparks(lines);
-      if(cfg.slow)badges.push(...showClashes(lines));
       stepNow=k;broken=brokenBySquare(breaks);
       for(const [i,o] of turns){flips.set(i,shown[i]);shown[i]=o;}
       paint(new Set([...turns.map(f=>f[0]),...breaks.map(b=>b[0])]));
@@ -729,7 +698,6 @@ function animate(a){
     });
     t+=(turns.length?TURN_MS:STEP_MS)*pace;
   }
-  later(t+400,()=>badges.forEach(el=>el.remove()));
   return t;
 }
 function report(before,a,cell,me,stone,end){
