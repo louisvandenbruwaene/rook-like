@@ -5,13 +5,15 @@
 
 /* ---------- Saved data ----------
    Settings and progress live in localStorage, under their old keys so earlier saves carry over.
-   save: { version, startingHand (stone codes, kept between runs), bestMatch, runsPlayed, crowns, run }
-   run:  { match, hand (stone codes), opponentOrder, changedSlots (hand slots that got a new stone),
-           difficulty, decks (each opponent's stone codes, see settings.js), over } */
+   save: { version, collection (stone codes you own for good), deck (the 8 codes you last played),
+           bestMatch, runsPlayed, crowns, run }
+   run:  { match, collection (stone codes owned this run), startSize (how many of them you started with),
+           deck (indexes into the run's collection), opponentOrder, difficulty,
+           decks (each opponent's stone codes, see settings.js), over } */
 
 const SAVE_KEY = 'chainstones-run';
 const SETTINGS_KEY = 'chainstones-cfg';
-const SAVE_VERSION = 3;
+const SAVE_VERSION = 4;
 
 function readStorage(key) {
   try {
@@ -22,9 +24,11 @@ function readStorage(key) {
 }
 
 function newSave() {
+  const starter = STARTER_COLLECTION.split(' ');
   return {
     version: SAVE_VERSION,
-    startingHand: STARTER_HAND.split(' '),
+    collection: starter,
+    deck: starter.slice(),
     bestMatch: 0,
     runsPlayed: 0,
     crowns: 0,
@@ -32,25 +36,52 @@ function newSave() {
   };
 }
 
-// Version 3 gave the saved fields their full names; a version 2 save is converted.
-// Saves from before version 2 (before the rare stones and the golden king) start over.
+// Older saves are converted step by step. Saves from before version 2 (before the rare stones) start over.
 function loadSave() {
-  const stored = readStorage(SAVE_KEY);
-  if (stored && stored.version === SAVE_VERSION) return stored;
-  if (!stored || stored.version !== 2) return newSave();
-  const oldRun = stored.run;
+  let stored = readStorage(SAVE_KEY);
+  if (!stored || ![2, 3, 4].includes(stored.version)) return newSave();
+  if (stored.version === 2) stored = fromVersion2(stored);
+  if (stored.version === 3) stored = fromVersion3(stored);
+  return stored;
+}
+
+// Version 3 gave the saved fields their full names.
+function fromVersion2(old) {
+  const oldRun = old.run;
   return {
-    version: SAVE_VERSION,
-    startingHand: stored.meta,
-    bestMatch: stored.best,
-    runsPlayed: stored.runs,
-    crowns: stored.champs,
+    version: 3,
+    startingHand: old.meta,
+    bestMatch: old.best,
+    runsPlayed: old.runs,
+    crowns: old.champs,
     run: oldRun && {
       match: oldRun.m,
       hand: oldRun.deck,
       opponentOrder: oldRun.order,
-      changedSlots: oldRun.changed,
       difficulty: oldRun.level,
+      over: oldRun.over,
+    },
+  };
+}
+
+// Version 4 replaced the fixed hand of 8 with a collection you pick a deck of 8 from.
+function fromVersion3(old) {
+  const oldRun = old.run;
+  return {
+    version: 4,
+    collection: old.startingHand.slice(),
+    deck: old.startingHand.slice(),
+    bestMatch: old.bestMatch,
+    runsPlayed: old.runsPlayed,
+    crowns: old.crowns,
+    run: oldRun && {
+      match: oldRun.match,
+      collection: oldRun.hand.slice(),
+      startSize: oldRun.hand.length,
+      deck: oldRun.hand.map((_, index) => index),
+      opponentOrder: oldRun.opponentOrder,
+      difficulty: oldRun.difficulty,
+      decks: oldRun.decks,
       over: oldRun.over,
     },
   };
