@@ -15,7 +15,7 @@ function pieceGuide() {
       const piece = PIECES[type];
       const kind = piece.chess ? `The ${piece.chess}` : 'Rare stone';
       const levels = piece.hasNoLevels ? '' : ', level 1 and 3';
-      const turns = piece.variants ? ` Comes in four turns: ${piece.variants.join(', ')}.` : '';
+      const turns = piece.namesByDirection ? ` Comes in four turns: ${piece.namesByDirection.join(', ')}.` : '';
       let pictures = drawStone(makeStone(type, 1, YOU), YOU, { className: '' });
       if (!piece.hasNoLevels) pictures += drawStone(makeStone(type, 3, YOU), YOU, { className: '' });
       return `<div>${pictures}<p style="margin:0"><b>${piece.name}</b><span>${kind}${levels}: ${piece.description}.${turns}</span></p></div>`;

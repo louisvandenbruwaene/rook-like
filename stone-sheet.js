@@ -22,8 +22,8 @@ function rating(type, level) {
   return makeStone(type, level, YOU).spikes.reduce((sum, count) => sum + count, 0) * 5;
 }
 
-function picture(type, level, variant = 0) {
-  return drawStone(makeStone(type, level, YOU, variant), YOU, { className: '' });
+function picture(type, level, direction = 0) {
+  return drawStone(makeStone(type, level, YOU, direction), YOU, { className: '' });
 }
 
 const capitalised = (text) => text[0].toUpperCase() + text.slice(1);
@@ -33,21 +33,21 @@ function levelTile(type, level) {
   const spikes = piece.goldenShields ? 'golden shields' : makeStone(type, level, YOU).spikes.join(' · ');
   const score = piece.goldenShields ? '' : `<div class="score"><b>${rating(type, level)}</b>/100</div>`;
   const label = piece.hasNoLevels ? 'Always' : `Level ${level}`;
-  return `<div class="lv"><div class="pic">${picture(type, level)}</div><div class="lvl">${label}</div><div class="sp">${spikes}</div>${score}</div>`;
+  return `<div class="level-tile"><div class="picture">${picture(type, level)}</div><div class="level-label">${label}</div><div class="spike-list">${spikes}</div>${score}</div>`;
 }
 
 function section(type) {
   const piece = PIECES[type];
   const levels = piece.hasNoLevels ? [1] : LEVELS;
-  let html = `<section><div class="head"><h2>${piece.name}</h2><span class="chess">${piece.chess || 'rare stone'}</span>
+  let html = `<section><div class="heading"><h2>${piece.name}</h2><span class="chess">${piece.chess || 'rare stone'}</span>
 <p>${capitalised(piece.description)}.</p></div><div class="levels">`;
   html += levels.map((level) => levelTile(type, level)).join('');
   html += '</div>';
-  if (piece.variants) {
-    const turns = piece.variants.map(
-      (name, variant) => `<div class="mini">${picture(type, 1, variant)}<small>${name}</small></div>`,
+  if (piece.namesByDirection) {
+    const turns = piece.namesByDirection.map(
+      (name, direction) => `<div class="turn-tile">${picture(type, 1, direction)}<small>${name}</small></div>`,
     );
-    html += `<div class="variants"><span>Four turns, all rated the same:</span>${turns.join('')}</div>`;
+    html += `<div class="turns"><span>Four turns, all rated the same:</span>${turns.join('')}</div>`;
   }
   return html + '</section>';
 }
@@ -70,18 +70,36 @@ const table = growing
   )
   .join('');
 
-const STYLE = `@page{size:A4;margin:14mm}body{font-family:Nunito,system-ui,sans-serif;color:#1d2433;margin:0;font-size:12px}
-h1{font-family:Fredoka;font-size:26px;margin:0 0 4px}h2{font-family:Fredoka;font-size:18px;margin:0}
-.intro{color:#4a5468;margin:0 0 10px;line-height:1.45}
-table{border-collapse:collapse;margin:6px 0 14px;font-size:12px}td,th{border:1px solid #d6dbe6;padding:3px 10px;text-align:center}td:first-child,th:first-child{text-align:left}th{background:#eef1f7;font-family:Fredoka;font-weight:600}
-section{break-inside:avoid;border:1px solid #d6dbe6;border-radius:10px;padding:10px 12px;margin:0 0 10px}
-.head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}.head p{margin:0;color:#4a5468;width:100%}
-.chess{color:#7a8396;font-family:Fredoka}
-.levels{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:8px}
-.lv{text-align:center}.pic{width:78px;height:78px;margin:6px auto 2px}.pic svg,.mini svg{width:100%;height:100%;overflow:visible}
-.lvl{font-family:Fredoka;font-weight:600}.sp{color:#7a8396;font-size:11px}.score{font-family:Fredoka;font-size:13px}.score b{font-size:20px;color:#2e6fba}
-.variants{display:flex;align-items:center;gap:14px;margin-top:6px;color:#4a5468}.mini{width:46px;text-align:center;margin:4px}.mini svg{height:40px}.mini small{display:block;font-size:9.5px;white-space:nowrap}
-h1.part{break-before:page;margin-top:0}
+const STYLE = `@page { size: A4; margin: 14mm; }
+body { font-family: Nunito, system-ui, sans-serif; color: #1d2433; margin: 0; font-size: 12px; }
+h1 { font-family: Fredoka; font-size: 26px; margin: 0 0 4px; }
+h2 { font-family: Fredoka; font-size: 18px; margin: 0; }
+h1.part { break-before: page; margin-top: 0; }
+.intro { color: #4a5468; margin: 0 0 10px; line-height: 1.45; }
+
+/* the ratings table */
+table { border-collapse: collapse; margin: 6px 0 14px; font-size: 12px; }
+td, th { border: 1px solid #d6dbe6; padding: 3px 10px; text-align: center; }
+td:first-child, th:first-child { text-align: left; }
+th { background: #eef1f7; font-family: Fredoka; font-weight: 600; }
+
+/* one section per piece: its name, then a tile per level, then its four turns */
+section { break-inside: avoid; border: 1px solid #d6dbe6; border-radius: 10px; padding: 10px 12px; margin: 0 0 10px; }
+.heading { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.heading p { margin: 0; color: #4a5468; width: 100%; }
+.chess { color: #7a8396; font-family: Fredoka; }
+.levels { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 8px; }
+.level-tile { text-align: center; }
+.picture { width: 78px; height: 78px; margin: 6px auto 2px; }
+.picture svg, .turn-tile svg { width: 100%; height: 100%; overflow: visible; }
+.level-label { font-family: Fredoka; font-weight: 600; }
+.spike-list { color: #7a8396; font-size: 11px; }
+.score { font-family: Fredoka; font-size: 13px; }
+.score b { font-size: 20px; color: #2e6fba; }
+.turns { display: flex; align-items: center; gap: 14px; margin-top: 6px; color: #4a5468; }
+.turn-tile { width: 46px; text-align: center; margin: 4px; }
+.turn-tile svg { height: 40px; }
+.turn-tile small { display: block; font-size: 9.5px; white-space: nowrap; }
 `;
 
 fs.writeFileSync(

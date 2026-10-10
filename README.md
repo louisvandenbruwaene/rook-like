@@ -94,19 +94,19 @@ Naming: `render…()` updates the page, `draw…()` returns an SVG string. The r
 classDiagram
     class Game {
         size = 4
-        owners[16] : EMPTY · YOU · OPPONENT · RUBBLE
+        owners[16] : EMPTY · YOU · OPPONENT · DEBRIS
         stones[16] : Stone or null
         hands : [your stones, their stones]
         turn : YOU or OPPONENT
         first : who placed first
         moveCount
-        popeWinner : set when His Hovering Holiness is taken
+        holinessWinner : set when His Hovering Holiness is taken
     }
     class Stone {
         type : the piece, pawn knight ... king venom_veronica ...
         level : 0 to 5, only opponents start at 0
         facing : YOU or OPPONENT
-        variant : 0 to 3, the quarter turn
+        direction : 0 to 3, up right down left, for pieces that turn
         spikes : [top, right, bottom, left]
         poison : byPlayer, dueAtMove
         grounded : His Hovering Holiness without his jet pack
@@ -114,9 +114,9 @@ classDiagram
     class Piece {
         name, chess, description
         baseSpikes or levelSpikes
-        variants : four names, for pieces that turn
+        namesByDirection : four names, for pieces that turn
         powers : goldenShields, poisonous, curesPoison,
-        mayCollapse, thickFur, swarm, isPope
+        mayCollapse, thickFur, swarm, isHisHoliness
     }
     class Move {
         handIndex
@@ -288,4 +288,12 @@ The code is checked by behaviour, not by tests in the repo:
 
 - `node stone-sheet.js` prints every stone's rating (in the order of `PIECES`) and writes `stones.html`. Its output should not change unless you meant to change a stone.
 - For rule changes, play a few seeded games in node with `src/rules.js` and `src/computer.js` (see how `stone-sheet.js` loads them) and compare the move records before and after. A refactor should leave them identical.
-- Formatting is Prettier with the settings in [`.prettierrc.json`](.prettierrc.json) (120 wide, single quotes).
+- Formatting is Prettier with the settings in [`.prettierrc.json`](.prettierrc.json) (120 wide, single quotes), for the scripts and `style.css` alike.
+
+## Naming
+
+- Stones and pieces are written out in full: `king_level_1`, `pawn_level_1_right`, never `K1` or `P1>`.
+- His Hovering Holiness is `isHisHoliness` and `holinessWinner`; debris is the piece `debris` and the owner `DEBRIS`.
+- A stone's `direction` (0 to 3: up, right, down, left) is where a piece that turns points; `facing` is whose side it is drawn for.
+- Every timing and size in `move.js` and `computer.js` is a named constant at the top of its section.
+- CSS variables say what they are: `--stone-size`, `--board-size`, `--time-scale`.

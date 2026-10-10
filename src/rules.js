@@ -7,19 +7,19 @@
 
    A game is:
      size         the board is size x size squares, numbered row by row from the top left
-     owners[i]    who owns square i: EMPTY, YOU, OPPONENT or RUBBLE (nobody's)
+     owners[i]    who owns square i: EMPTY, YOU, OPPONENT or DEBRIS (nobody's)
      stones[i]    the stone on square i, or null
      hands        [your stones, the opponent's stones] not yet placed
      turn         the player to move
      first        who placed first (wins a match level on points and spikes)
      moveCount    moves made so far
-     popeWinner   set when His Hovering Holiness changes colour: that player wins at once
+     holinessWinner   set when His Hovering Holiness changes colour: that player wins at once
 
    A stone is:
      type     the piece, a key of PIECES: pawn, knight, ... king, or a rare stone like venom_veronica
      level    0 to MAX_LEVEL (only opponents start at 0)
      facing   YOU (spikes as drawn) or OPPONENT (turned half way round)
-     variant  0 to 3: which quarter turn of a piece that comes in four turns
+     direction 0 to 3 (up, right, down, left): where a piece that comes in four turns points
      spikes   [top, right, bottom, left]
      poison   {byPlayer, dueAtMove} while poisoned
      grounded true for His Hovering Holiness once his jet pack is gone
@@ -30,7 +30,7 @@
 const EMPTY = -1;
 const YOU = 0;
 const OPPONENT = 1;
-const RUBBLE = 2;
+const DEBRIS = 2;
 
 const MAX_LEVEL = 5; // the highest level, and the most spikes on one side
 
@@ -56,14 +56,14 @@ function other(player) {
 /* ---------- The pieces ----------
    The chess pieces have base spikes (their level 1) and gain or lose one spike on every spiked side per level,
    so a level 0 pawn has no spikes at all. The rare stones list their spikes for each level instead.
-   Powers: goldenShields, poisonous, curesPoison, mayCollapse, thickFur, swarm, isPope.
-   hasNoLevels: the stone is always the same (the king, rubble). */
+   Powers: goldenShields, poisonous, curesPoison, mayCollapse, thickFur, swarm, isHisHoliness.
+   hasNoLevels: the stone is always the same (the king, debris). */
 
 // prettier-ignore
 const PIECES = {
-  pawn:   { name: 'Tiny Tim',       chess: 'pawn',   baseSpikes: [1, 0, 0, 0], variants: ['Tiny Tim', 'Tiny Tony', 'Tiny Tom', 'Tiny Ted'],
+  pawn:   { name: 'Tiny Tim',       chess: 'pawn',   baseSpikes: [1, 0, 0, 0], namesByDirection: ['Tiny Tim', 'Tiny Tony', 'Tiny Tom', 'Tiny Ted'],
             description: 'a single spike' },
-  knight: { name: 'Neigh Nigel',    chess: 'knight', baseSpikes: [2, 0, 0, 2], variants: ['Neigh Nigel', 'Neigh Newman', 'Neigh Nathan', 'Neigh Nolan'],
+  knight: { name: 'Neigh Nigel',    chess: 'knight', baseSpikes: [2, 0, 0, 2], namesByDirection: ['Neigh Nigel', 'Neigh Newman', 'Neigh Nathan', 'Neigh Nolan'],
             description: 'two sides of one corner' },
   bishop: { name: 'Bishop Bailey',  chess: 'bishop', baseSpikes: [2, 0, 2, 0], description: 'spikes up and down' },
   rook:   { name: 'Castle Carl',    chess: 'rook',   baseSpikes: [0, 2, 0, 2], description: 'spikes left and right' },
@@ -84,7 +84,7 @@ const PIECES = {
                            description: 'thick fur: he loses at most one spike in a fight' },
   buzzy_beatrice:        { name: 'Buzzy Beatrice',        swarm: true,       levelSpikes: [[0, 0, 0, 0], [1, 0, 0, 0], [1, 0, 1, 0], [1, 1, 1, 0], [2, 1, 1, 0], [2, 1, 1, 1]],
                            description: 'when placed, her swarm breaks one spike on every enemy side around her and grounds His Hovering Holiness' },
-  his_hovering_holiness: { name: 'His Hovering Holiness', isPope: true,      levelSpikes: [[0, 1, 0, 1], [0, 2, 0, 2], [1, 2, 0, 2], [1, 3, 1, 2], [2, 3, 1, 3], [2, 4, 2, 3]],
+  his_hovering_holiness: { name: 'His Hovering Holiness', isHisHoliness: true,      levelSpikes: [[0, 1, 0, 1], [0, 2, 0, 2], [1, 2, 0, 2], [1, 3, 1, 2], [2, 3, 1, 3], [2, 4, 2, 3]],
                            description: 'flies on a jet pack until a swarm grounds him, and whoever loses him loses the match' },
 
   debris: { name: 'Debris', baseSpikes: [0, 0, 0, 0], hasNoLevels: true, description: "what is left of Brittle Bernard, nobody's stone" },
@@ -110,16 +110,16 @@ function canLevelUp(type, level) {
 }
 
 // The opponent's stones face down the board, so their pattern is turned half way round.
-// Only pieces that come in four turns have a variant.
-function makeStone(type, level, facing, variant = 0) {
-  if (!PIECES[type].variants) variant = 0;
-  const quarterTurns = variant + 2 * facing;
-  return { type, level, facing, variant, spikes: rotate(spikesAt(type, level), quarterTurns) };
+// Only pieces that come in four turns have a direction other than up.
+function makeStone(type, level, facing, direction = 0) {
+  if (!PIECES[type].namesByDirection) direction = 0;
+  const quarterTurns = direction + 2 * facing;
+  return { type, level, facing, direction, spikes: rotate(spikesAt(type, level), quarterTurns) };
 }
 
 function nameOf(stone) {
   const piece = PIECES[stone.type];
-  return piece.variants ? piece.variants[stone.variant] : piece.name;
+  return piece.namesByDirection ? piece.namesByDirection[stone.direction] : piece.name;
 }
 
 function spikeCount(stone) {
@@ -127,10 +127,10 @@ function spikeCount(stone) {
 }
 
 // The king can never be taken, and His Hovering Holiness not while he flies.
-function takeable(stone) {
+function canBeTaken(stone) {
   const piece = PIECES[stone.type];
   if (piece.goldenShields) return false;
-  if (piece.isPope && !stone.grounded) return false;
+  if (piece.isHisHoliness && !stone.grounded) return false;
   return true;
 }
 
@@ -143,13 +143,13 @@ const DIRECTIONS = ['up', 'right', 'down', 'left'];
 const CODE_PATTERN = /^([a-z_]+?)_level_(\d)(?:_(up|right|down|left))?$/;
 
 function parseCode(code) {
-  const [, type, level, direction] = CODE_PATTERN.exec(code);
-  return { type, level: Number(level), variant: direction ? DIRECTIONS.indexOf(direction) : 0 };
+  const [, type, level, directionName] = CODE_PATTERN.exec(code);
+  return { type, level: Number(level), direction: directionName ? DIRECTIONS.indexOf(directionName) : 0 };
 }
 
 function fromCode(code, facing) {
-  const { type, level, variant } = parseCode(code);
-  return makeStone(type, level, facing, variant);
+  const { type, level, direction } = parseCode(code);
+  return makeStone(type, level, facing, direction);
 }
 
 function pieceOf(code) {
@@ -219,7 +219,7 @@ function newGame(size, hands, first) {
 
 // A match ends when the board is full or His Hovering Holiness was taken.
 function isOver(game) {
-  return game.popeWinner !== undefined || !game.owners.includes(EMPTY);
+  return game.holinessWinner !== undefined || !game.owners.includes(EMPTY);
 }
 
 function emptySquares(game) {
@@ -250,7 +250,7 @@ function spikesLeft(game, player) {
 // Who wins a finished match: His Hovering Holiness, then points, then spikes left, then whoever placed first
 // (the other player had the last move).
 function winnerOf(game) {
-  if (game.popeWinner !== undefined) return game.popeWinner;
+  if (game.holinessWinner !== undefined) return game.holinessWinner;
   const pointsAhead = pointsOf(game, YOU) - pointsOf(game, OPPONENT);
   const spikesAhead = spikesLeft(game, YOU) - spikesLeft(game, OPPONENT);
   const lead = pointsAhead || spikesAhead;
@@ -264,7 +264,7 @@ function winnerOf(game) {
    So 2 against 1 ends 1 against 0, 1 against 0 ends 0 against 0, and 2 against 2 ends 0 against 0.
    A golden shield breaks every spike that touches it, and Hairy Harambe loses at most one spike in a fight. */
 
-function spent(mine, theirs) {
+function spikesUsedUp(mine, theirs) {
   if (mine > theirs) return Math.max(theirs, 1);
   return Math.min(mine, theirs);
 }
@@ -283,7 +283,7 @@ function breakSpikes(game, cell, side, count, step) {
 function poisonHit(game, attackerCell, targetCell, spikesThatHit) {
   if (spikesThatHit === 0) return;
   if (!PIECES[game.stones[attackerCell].type].poisonous) return;
-  if (!takeable(game.stones[targetCell])) return;
+  if (!canBeTaken(game.stones[targetCell])) return;
   const poison = { byPlayer: game.owners[attackerCell], dueAtMove: game.moveCount + 2 };
   game.stones[targetCell] = { ...game.stones[targetCell], poison };
 }
@@ -307,8 +307,8 @@ function fight(game, cell, side, neighbour, step) {
     return { spikesHere, spikesThere, winner: -1 };
   }
 
-  breakSpikes(game, cell, side, spent(spikesHere, spikesThere), step);
-  breakSpikes(game, neighbour, otherSide, spent(spikesThere, spikesHere), step);
+  breakSpikes(game, cell, side, spikesUsedUp(spikesHere, spikesThere), step);
+  breakSpikes(game, neighbour, otherSide, spikesUsedUp(spikesThere, spikesHere), step);
   let winner = -1;
   if (spikesHere > spikesThere) winner = cell;
   if (spikesThere > spikesHere) winner = neighbour;
@@ -327,7 +327,7 @@ function fight(game, cell, side, neighbour, step) {
 
 function play(game, move, luck) {
   const player = game.turn;
-  const after = {
+  const result = {
     size: game.size,
     owners: game.owners.slice(),
     stones: game.stones.slice(),
@@ -335,7 +335,7 @@ function play(game, move, luck) {
     turn: other(player),
     first: game.first,
     moveCount: game.moveCount + 1,
-    popeWinner: game.popeWinner,
+    holinessWinner: game.holinessWinner,
     fights: [],
     flips: [],
     breaks: [],
@@ -343,19 +343,19 @@ function play(game, move, luck) {
     luck,
   };
   const stone = game.hands[player][move.handIndex];
-  after.hands[player] = game.hands[player].filter((_, index) => index !== move.handIndex);
-  after.owners[move.cell] = player;
-  after.stones[move.cell] = stone;
+  result.hands[player] = game.hands[player].filter((_, index) => index !== move.handIndex);
+  result.owners[move.cell] = player;
+  result.stones[move.cell] = stone;
 
-  if (PIECES[stone.type].swarm) sting(after, move.cell);
-  clash(after, move.cell);
-  let step = chain(after, move.cell, 1);
-  step = cure(after, step); // Experienced Edna cures before the poison takes effect
-  step = poisonStrikes(after, step);
-  step = cure(after, step);
+  if (PIECES[stone.type].swarm) sting(result, move.cell);
+  clash(result, move.cell);
+  let step = chain(result, move.cell, 1);
+  step = cure(result, step); // Experienced Edna cures before the poison takes effect
+  step = poisonStrikes(result, step);
+  step = cure(result, step);
 
-  delete after.luck;
-  return after;
+  delete result.luck;
+  return result;
 }
 
 // Buzzy Beatrice's swarm stings the eight squares around her: one spike off every spiked enemy side,
@@ -373,7 +373,8 @@ function sting(game, cell) {
       for (const side of SIDES) {
         if (game.stones[square].spikes[side] > 0) breakSpikes(game, square, side, 1, 0);
       }
-      if (PIECES[game.stones[square].type].isPope) game.stones[square] = { ...game.stones[square], grounded: true };
+      if (PIECES[game.stones[square].type].isHisHoliness)
+        game.stones[square] = { ...game.stones[square], grounded: true };
     }
   }
 }
@@ -480,12 +481,12 @@ function cure(game, step) {
 function take(game, cell, step) {
   const stone = game.stones[cell];
   const owner = other(game.owners[cell]);
-  if (!takeable(stone)) return false;
-  if (PIECES[stone.type].isPope && game.popeWinner === undefined) game.popeWinner = owner;
+  if (!canBeTaken(stone)) return false;
+  if (PIECES[stone.type].isHisHoliness && game.holinessWinner === undefined) game.holinessWinner = owner;
   if (PIECES[stone.type].mayCollapse && game.luck && game.luck() < 1 / 3) {
-    game.owners[cell] = RUBBLE;
+    game.owners[cell] = DEBRIS;
     game.stones[cell] = makeStone('debris', 1, YOU);
-    game.flips.push({ cell, owner: RUBBLE, step, collapsed: stone });
+    game.flips.push({ cell, owner: DEBRIS, step, collapsed: stone });
     return true;
   }
   game.owners[cell] = owner;

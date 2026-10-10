@@ -15,9 +15,10 @@
 
 const POINT_VALUE = 2000;
 const SPIKE_VALUE = 2;
-const POPE_VALUE = 1e6;
+const HOLINESS_VALUE = 1_000_000;
 const NEXT_CAPTURE_VALUE = 1200; // most of a point for each stone the player to move can take next
-const WORST = -1e9;
+const WORST = -1_000_000_000; // lower than any position can be worth
+const MOVES_BETWEEN_CLOCK_CHECKS = 256; // reading the clock is slow, so the search only looks now and then
 
 /* ---------- Moves and how good they are ---------- */
 
@@ -26,13 +27,13 @@ function gain(game, move) {
   return pointsOf(play(game, move), game.turn) - pointsOf(game, game.turn);
 }
 
-// Every move of the player to move. Stones of the same piece, level and variant play alike,
+// Every move of the player to move. Stones of the same piece, level and direction play alike,
 // so only the first of each kind in the hand is tried.
 function legalMoves(game) {
   const kindsTried = new Set();
   const moves = [];
   game.hands[game.turn].forEach((stone, handIndex) => {
-    const kind = stone.type + stone.level + stone.variant;
+    const kind = stone.type + stone.level + stone.direction;
     if (kindsTried.has(kind)) return;
     kindsTried.add(kind);
     for (let cell = 0; cell < game.owners.length; cell++) {
@@ -46,7 +47,7 @@ function legalMoves(game) {
 function score(game) {
   const me = game.turn;
   const them = other(me);
-  if (game.popeWinner !== undefined) return game.popeWinner === me ? POPE_VALUE : -POPE_VALUE;
+  if (game.holinessWinner !== undefined) return game.holinessWinner === me ? HOLINESS_VALUE : -HOLINESS_VALUE;
   const pointsAhead = pointsOf(game, me) - pointsOf(game, them);
   const spikesAhead = spikesLeft(game, me) - spikesLeft(game, them);
   const placedFirst = game.first === me ? 1 : -1;
@@ -70,7 +71,7 @@ function estimate(game) {
 
 /* ---------- The search ---------- */
 
-// The search in progress: it stops when the clock passes the deadline, checked every 256 positions.
+// The search in progress: it stops when the clock passes the deadline, checked every MOVES_BETWEEN_CLOCK_CHECKS positions.
 const search = {
   deadline: 0, // in now() milliseconds
   aborted: false, // the time ran out: every value found since is worthless
@@ -81,9 +82,14 @@ function now() {
   return typeof performance !== 'undefined' ? performance.now() : Date.now();
 }
 
+// How good `game` is for the player to move, looking `depth` moves ahead. Negamax: my best move is the one that
+// leaves my opponent worst off, so each level is the opposite (minus) of the level below.
+// Alpha-beta: alpha is the least the player to move already knows they can get, beta the most the opponent
+// will allow. Once a move reaches beta the opponent would never let this position happen, so the other moves
+// need not be looked at.
 function negamax(game, depth, alpha, beta) {
   search.positions++;
-  if (search.positions % 256 === 0 && now() > search.deadline) search.aborted = true;
+  if (search.positions % MOVES_BETWEEN_CLOCK_CHECKS === 0 && now() > search.deadline) search.aborted = true;
   if (search.aborted) return 0;
   if (isOver(game)) return score(game);
   if (depth === 0) return estimate(game);
