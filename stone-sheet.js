@@ -27,7 +27,7 @@ for(const t of ORDER){
   rows+='</section>';
 }
 const table=ORDER.split('').filter(t=>!E.PIECES[t].fixed).map(t=>`<tr><td>${E.PIECES[t].name}</td>${[1,2,3,4,5].map(l=>`<td>${out(t+l)}</td>`).join('')}</tr>`).join('');
-fs.writeFileSync('stones.html',`<!doctype html><html><head><meta charset="utf-8"><title>Chain Stones: every stone</title>
+fs.writeFileSync('stones.html',`<!doctype html><html><head><meta charset="utf-8"><title>Rook-like: every stone</title>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
 <style>@page{size:A4;margin:14mm}body{font-family:Nunito,system-ui,sans-serif;color:#1d2433;margin:0;font-size:12px}
 h1{font-family:Fredoka;font-size:26px;margin:0 0 4px}h2{font-family:Fredoka;font-size:18px;margin:0}
@@ -42,7 +42,7 @@ section{break-inside:avoid;border:1px solid #d6dbe6;border-radius:10px;padding:1
 .variants{display:flex;align-items:center;gap:14px;margin-top:6px;color:#4a5468}.mini{width:46px;text-align:center;margin:4px}.mini svg{height:40px}.mini small{display:block;font-size:9.5px;white-space:nowrap}
 h1.part{break-before:page;margin-top:0}
 </style></head><body><svg width="0" height="0" style="position:absolute">${defs}</svg>
-<h1>Chain Stones: every stone</h1>
+<h1>Rook-like: every stone</h1>
 <p class="intro">The six chess pieces at levels 1 to 5, facing up, with their spikes listed as top · right · bottom · left. The rating out of 100 counts spikes: every spike is worth 5 points, so a stone with the maximum of 5 spikes on all four sides (20 spikes) scores 100. Old King Coal has no spikes but golden shields: every spike that touches him breaks and he is never taken. The rating counts spikes only, not the powers of the rare stones.</p>
 <table><tr><th>stone</th><th>Lv 1</th><th>Lv 2</th><th>Lv 3</th><th>Lv 4</th><th>Lv 5</th></tr>${table}</table>
 ${rows}</body></html>`);
