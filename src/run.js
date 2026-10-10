@@ -62,10 +62,10 @@ function newRun() {
 }
 
 // The indexes of a deck of DECK_SIZE stones from the collection: the preferred codes where it has them,
-// then the first stones not yet taken, keeping to one king and one queen.
+// then the first stones not yet taken, keeping to one of each stone.
 function deckFrom(collection, preferredCodes) {
   const deck = [];
-  const fits = (i) => !deck.includes(i) && !sameLimitedPiece(collection, deck, i);
+  const fits = (i) => !deck.includes(i) && sameStoneInDeck(collection, deck, i) === undefined;
   for (const code of preferredCodes) {
     const index = collection.findIndex((owned, i) => owned === code && fits(i));
     if (index >= 0 && deck.length < DECK_SIZE) deck.push(index);
@@ -76,12 +76,12 @@ function deckFrom(collection, preferredCodes) {
   return deck;
 }
 
-// The deck index of a king or queen of the same piece as collection[index], or undefined.
-// Only one of each may be in a deck.
-function sameLimitedPiece(collection, deck, index) {
-  const type = collection[index][0];
-  if (!ONE_PER_DECK.includes(type)) return undefined;
-  return deck.find((i) => collection[i][0] === type);
+// The deck index of the same stone as collection[index] at any level, or undefined. A deck holds one of each
+// stone (piece and turn), and one king and one queen whatever their turn.
+function sameStoneInDeck(collection, deck, index) {
+  const stoneOf = (code) => (ONE_PER_DECK.includes(code[0]) ? code[0] : withoutLevel(code));
+  const stone = stoneOf(collection[index]);
+  return deck.find((i) => stoneOf(collection[i]) === stone);
 }
 
 function deckCodes(run) {
@@ -105,8 +105,8 @@ function chooseDifficulty() {
 // The next opponent, and your collection to pick a deck from.
 function intro() {
   const run = save.run;
-  // A run saved before the one king, one queen rule may hold two: keep the first, the gap is yours to fill.
-  run.deck = run.deck.filter((index, n) => sameLimitedPiece(run.collection, run.deck.slice(0, n), index) === undefined);
+  // A run saved before the one of each stone rule may hold two: keep the first, the gap is yours to fill.
+  run.deck = run.deck.filter((index, n) => sameStoneInDeck(run.collection, run.deck.slice(0, n), index) === undefined);
   opponent = opponentFor(run.match);
   save.bestMatch = Math.max(save.bestMatch, run.match);
   store();
@@ -140,10 +140,10 @@ function renderCollection() {
   find('#card .primary').disabled = run.deck.length !== DECK_SIZE;
 }
 
-// Tapping a stone takes it out of your deck or puts it in. A second king or queen swaps with the one in the deck.
+// Tapping a stone takes it out of your deck or puts it in. The same stone at another level swaps with the one in the deck.
 function toggleInDeck(index) {
   const { deck, collection } = save.run;
-  const rival = sameLimitedPiece(collection, deck, index);
+  const rival = sameStoneInDeck(collection, deck, index);
   if (deck.includes(index)) deck.splice(deck.indexOf(index), 1);
   else if (rival !== undefined) deck[deck.indexOf(rival)] = index;
   else if (deck.length < DECK_SIZE) deck.push(index);
@@ -215,7 +215,7 @@ function nextMatch() {
 
 /* ---------- Rewards ----------
    After a win you upgrade one of UPGRADE_CHOICES random stones from your deck by one level. The upgraded stone takes its
-   place in your deck, and the old one stays in your collection. And if the opponent played a stone (piece and turn)
+   place in your deck, and the old one stays in your collection, except a queen, who is replaced. And if the opponent played a stone (piece and turn)
    that is not in your collection, you get one of those too, at level 1. */
 
 function canGrow(code) {
@@ -270,20 +270,25 @@ function offerRewards(label, opponentDeck) {
 
 function upgradeInDeck(index) {
   const run = save.run;
-  run.collection.push(upgraded(run.collection[index]));
-  run.deck[run.deck.indexOf(index)] = run.collection.length - 1;
+  const code = upgraded(run.collection[index]);
+  if (code[0] === 'Q') {
+    run.collection[index] = code;
+    return;
+  }
+  let newIndex = run.collection.indexOf(code);
+  if (newIndex < 0) newIndex = run.collection.push(code) - 1;
+  run.deck[run.deck.indexOf(index)] = newIndex;
 }
 
 /* ---------- The end of a run ----------
-   Offers every stone you owned this run, your whole deck and collection. The one you pick joins your collection
-   for good, as a second copy if you already own it. A second copy of the king or the same queen would never fit in a deck,
-   so those are left out. Your next run starts with the deck you played last, as far as you still own it. */
+   Offers every stone you owned this run that you do not own for good yet. The one you pick joins your collection
+   for good, and a queen replaces the queen you had. Your next run starts with the deck you played last, as far as
+   you still own it. */
 
 function endRun(won, text) {
   const run = save.run;
-  const uselessCopy = (code) => ONE_PER_DECK.includes(code[0]) && save.collection.includes(code);
   const gains = [...new Set(run.collection)]
-    .filter((code) => !uselessCopy(code))
+    .filter((code) => !save.collection.includes(code))
     .sort((a, b) => handOrder(fromCode(a, YOU), fromCode(b, YOU)));
   run.over = true;
   save.deck = deckCodes(run);
@@ -302,6 +307,7 @@ function endRun(won, text) {
   const choices = gains.map((code) => ({
     html: `<span class="swap">${picture(code)}</span>${titleOf(code)}`,
     onPick: () => {
+      if (code[0] === 'Q') save.collection = save.collection.filter((owned) => owned[0] !== 'Q');
       save.collection.push(code);
       beginAgain();
     },

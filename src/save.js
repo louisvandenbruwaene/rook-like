@@ -93,6 +93,17 @@ function loadSettings() {
 }
 
 const save = loadSave();
+dropCopies(save);
+
+// Saves from before the one of each stone rule may own a stone twice: keep one, and point the run's deck at it.
+function dropCopies(save) {
+  save.collection = [...new Set(save.collection)];
+  const run = save.run;
+  if (!run || !run.collection) return;
+  const collection = [...new Set(run.collection)];
+  run.deck = [...new Set(run.deck.map((index) => collection.indexOf(run.collection[index])))];
+  run.collection = collection;
+}
 const settings = loadSettings();
 
 function store() {
