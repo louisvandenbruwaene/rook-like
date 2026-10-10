@@ -234,7 +234,7 @@ stateDiagram-v2
     intro --> startMatch : pick 8 from your collection, Fight
     startMatch --> finishMatch : board full or His Holiness taken
     finishMatch --> offerRewards : you won, every opponent deck upgrades one stone
-    offerRewards --> nextMatch : upgrade one of 5 stones (+ a new stone)
+    offerRewards --> nextMatch : upgrade one of 3 stones (+ a new stone)
     nextMatch --> intro
     finishMatch --> endRun : you lost, or won match 20
     endRun --> chooseDifficulty : keep one gain, new run
@@ -242,7 +242,7 @@ stateDiagram-v2
 
 - **Opponent decks** (`newDecks`, `upgradeOne`, `upgradeAllDecks` in `settings.js`): every opponent keeps one deck for the whole run, starting at the difficulty's level. After each match you win, every deck upgrades one stone, so they all grow, even the ones you are not facing. The boss starts with 6 extra upgrades. 
 - **Your collection** (`run.collection`, `deckFrom`, `renderCollection` in `run.js`): every stone you own this run, at every level you have had it. Before each match you pick 8 of them as your deck.
-- **Rewards** (`offerRewards`): after a win you upgrade one of five random stones from your deck by one level. The upgraded stone takes its place in the deck and the old one stays in the collection. If the opponent played a stone (piece and turn) that you do not own, you also get one of those, at level 1.
+- **Rewards** (`offerRewards`): after a win you upgrade one of three random stones from your deck by one level. The upgraded stone takes its place in the deck and the old one stays in the collection. If the opponent played a stone (piece and turn) that you do not own, you also get one of those, at level 1.
 - **The end of a run** (`endRun`): keep one gain, an upgrade or a new stone, in your collection for good.
 - **Who places first** (`firstFor`): you in odd matches, the opponent in even ones, the boss always.
 - **Winning a match** (`winnerOf`): taking His Hovering Holiness, else most points (stones), else most spikes left, else whoever placed first.
