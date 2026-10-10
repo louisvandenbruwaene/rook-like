@@ -226,12 +226,13 @@ body.slow{--t:4}
     <li>Take turns placing a stone from your hand on an empty square of the 4 × 4 board. You never see the opponent's hand.</li>
     <li>Your hand: Tiny Tim, Tiny Tony and Tiny Ted (pawns), Sir Gallops (knight), Mitre Mandy (bishop), Castle Carl (rook), Her Majesty Mayhem (queen) and Old King Coal (king). Your stones face up the board, the opponent's are turned round and face down. Each level adds a spike to every side that has some, up to 5.</li>
     <li><b>Old King Coal</b> has golden shields on every side: every spike that touches him breaks, and he can never be taken.</li>
-    <li><b>Rare stones</b> have their own powers and their own growth (see below). Each belongs to one opponent, who may drop it when you win.</li>
+    <li><b>Rare stones</b> have their own powers and their own growth (see below). Each belongs to one opponent, who always plays it and may offer it when you win.</li>
     <li><b>Clash:</b> each side of your new stone that touches an enemy stone fights it. Facing spikes break off one for one, and the side with spikes left over wins and takes the other stone. A spike that hits is used up, so the winner always loses at least one spike: 2 against 1 ends 1 against 0, and 1 against 0 ends 0 against 0. That works both ways: lose any clash and your new stone is taken.</li>
     <li><b>Chain:</b> after the new stone has fought, as long as two stones of different colours touch with a spike between them, they fight the same way, the pair closest to the new stone first. So when a move ends, no two stones of different colours touch with a spike between them.</li>
     <li>When the board is full, count your stones, one point each. Most points wins. A draw is replayed. Whoever loses the Pope loses the match at once.</li>
-    <li>After a win, pick a reward for the rest of the run: one of three stones one level higher, Tiny Tom until you have him, or sometimes the rare stone of the opponent you beat. When a run ends, keep one stone you gained: it stays in your starting hand for good.</li>
-    <li>Every opponent always brings the same stones, and they get stronger as the run goes on. Remember what they play.</li>
+    <li>Opponents come in a random order, but Lady Lux, whose Old Woman cures poison, always comes before Madame Swerve and her Serpent. Every match you win makes the next opponents' stones stronger.</li>
+    <li>After a win the opponent shows you three random stones from the deck they played, sometimes their rare stone too. Take one, in the place of a stone you pick, or keep your hand. When a run ends, keep one stone you gained: it stays in your starting hand for good.</li>
+    <li>Every opponent always brings the same stones, a level stronger for every match you have won. Remember what they play.</li>
     <li>Pick a stone, then hover over a square (or tap it once on a phone): yellow stones you would take, red stones you would lose, faded spikes would break. Slow-mo (or S) plays every move four times slower.</li>
   </ul>
   <div class="dex" id="dex"></div>
@@ -513,7 +514,7 @@ if(typeof module!=='undefined')module.exports={PIECES,MAXL,RUBBLE,mkStone,stoneN
 
 <script>
 const $=s=>document.querySelector(s);
-const N=4,RUN=20,BASE='P1^ P1> P1< N1 B1 R1 Q1 K1',TOM='P1v'; // Tiny Tim, Tony and Ted; Tiny Tom is an easy reward
+const N=4,RUN=20,BASE='P1^ P1> P1< N1 B1 R1 Q1 K1'; // Tiny Tim, Tony and Ted; Tiny Tom comes from the first opponents
 
 /* Settings and the saved run live in localStorage. */
 function load(key,fallback){try{return Object.assign(fallback,JSON.parse(localStorage.getItem(key)||'{}'));}catch(e){return fallback;}}
@@ -525,26 +526,39 @@ function store(){try{localStorage.setItem('chainstones-run',JSON.stringify(save)
 const T=ms=>ms*(cfg.slow?4:1); // every timing goes through T so slow-mo stretches the whole move
 const later=(ms,fn)=>timers.push(setTimeout(fn,T(ms)));
 
-/* Opponents. Each brings a fixed deck, an early, middle and late version (matches 1-6, 7-13, 14-19). The boss plays match 20. */
+/* Opponents. Each plays one deck, its rare stone included, and every match you have won makes it stronger. The boss plays match 20. */
 const FOES=[
-  {name:'Pawnbroker Pete',line:'Everything has a price. My gorilla collects.',decks:['P1^ P1> P1v P1< P1^ N1 B1 K1','P2^ P2> P2v P2< N2 B2 G1 K1','P3^ P3> P3v N3 B3 R3 G3 K1'],rare:'G',face:'pete'},
-  {name:'Sir Neighsalot',line:'Hold your horses. All of them.',decks:['N1 N1> N1v P1^ P1> P1< R1 K1','N2 N2> N2v N2< H1 P2^ R2 K1','N3 N3> N3v N3< H3 Q2 R3 K1'],rare:'H',face:'neigh'},
-  {name:'Madame Swerve',line:'Darling, I never take the straight road.',decks:['B1 B1 P1^ P1> P1v P1< N1 K1','B2 B2 B2 S1 P2^ P2> N2 K1','B3 B3 B3 S3 Q2 P3^ N3 K1'],rare:'S',face:'swerve'},
-  {name:'Blocky Barb',line:'Square deal. Square face. Square loss.',decks:['R1 R1 P1^ P1> P1v P1< N1 K1','R2 R2 R2 P2^ P2> N2 B2 K1','R3 R3 R3 R3 Q3 P3^ N3 K1'],face:'barb'},
-  {name:'Lady Lux',line:'I brought my sisters. You brought Tiny Tims.',decks:['B1 Q1 P1^ P1> P1v P1< P1^ K1','Q2 Q1 W1 P2^ P2> B2 N2 K1','Q3 Q3 W3 Q2 P3^ B3 N3 K1'],rare:'W',face:'lux'},
-  {name:'Uncle Gambit',line:'I sacrifice. You suffer.',decks:['N1 B1 R1 P1^ P1> P1v P1< K1','N2 B2 R2 J1 P2^ P2> Q1 K1','N3 B3 R3 J3 Q3 P3^ P3> K1'],rare:'J',face:'gambit'},
+  {name:'Pawnbroker Pete',line:'Everything has a price. My gorilla collects.',deck:'P1^ P1> P1v P1< N1 B1 G1 K1',rare:'G',face:'pete'},
+  {name:'Sir Neighsalot',line:'Hold your horses. All of them.',deck:'N1 N1> N1v P1^ P1> H1 R1 K1',rare:'H',face:'neigh'},
+  {name:'Madame Swerve',line:'Darling, I never take the straight road.',deck:'B1 B1 S1 P1^ P1> P1v N1 K1',rare:'S',face:'swerve'},
+  {name:'Blocky Barb',line:'Square deal. Square face. Square loss.',deck:'R1 R1 P1^ P1> P1v P1< N1 K1',face:'barb'},
+  {name:'Lady Lux',line:'I brought my sisters. You brought Tiny Tims.',deck:'Q1 W1 B1 P1^ P1> P1v N1 K1',rare:'W',face:'lux'},
+  {name:'Uncle Gambit',line:'I sacrifice. You suffer.',deck:'N1 B1 R1 J1 P1^ P1> P1v K1',rare:'J',face:'gambit'},
 ];
-const BOSS={name:'The Obsidian Monarch',line:'Nineteen boards behind you. One crown ahead.',decks:['O3 Q4 Q4 R4 B4 N4 N4> K1'],rare:'O',face:'boss',boss:true};
+const BOSS={name:'The Obsidian Monarch',line:'Nineteen boards behind you. One crown ahead.',deck:'O1 Q1 Q1 R1 B1 N1 N1> K1',rare:'O',face:'boss',boss:true};
 
 const nameOf=code=>{const s=stoneOf(code,0);return stoneName(s)+(PIECES[s.t].fixed?'':` Lv ${s.l}`);};
 const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]];}return a;};
 function newRun(){
   // Each of the six regulars shows up three times in a random order, plus one extra, then the boss.
+  // Lady Lux, whose Old Woman cures poison, always comes before Madame Swerve and her Serpent.
   const order=shuffle([0,1,2,3,4,5,0,1,2,3,4,5,0,1,2,3,4,5,Math.random()*6|0]);
+  const lux=order.indexOf(4),swerve=order.indexOf(2);
+  if(swerve<lux)[order[swerve],order[lux]]=[order[lux],order[swerve]];
   save.run={m:1,deck:save.meta.slice(),order,changed:[]};save.runs++;store();
 }
+// Every match you have won adds LEVELS_PER_WIN levels to the opponent's stones, most valuable first and round robin,
+// never above 5; the king and rubble never change. The boss starts BOSS_EXTRA levels ahead.
+const LEVELS_PER_WIN=1,BOSS_EXTRA=6,GROWTH='OEQGJRBSNHWP';
+function strengthen(deck,levels){
+  const stones=deck.split(' ').map(c=>({t:c[0],l:+c[1],dir:c.slice(2)}));
+  const order=stones.filter(st=>GROWTH.includes(st.t)).sort((a,b)=>GROWTH.indexOf(a.t)-GROWTH.indexOf(b.t));
+  for(let added=0,round=0;added<levels&&round<MAXL;round++)
+    for(const st of order)if(added<levels&&st.l<MAXL){st.l++;added++;}
+  return stones.map(st=>st.t+st.l+st.dir).join(' ');
+}
+const deckFor=(f,wins)=>strengthen(f.deck,wins*LEVELS_PER_WIN+(f.boss?BOSS_EXTRA:0));
 const foeOf=m=>m===RUN?BOSS:FOES[save.run.order[m-1]];
-const phase=m=>m===RUN?0:m<=6?0:m<=13?1:2;
 const firstOf=m=>m===RUN?1:(m+(save.run.rematch||0))%2?0:1; // you place first in odd matches, the boss always first
 
 /* ---------- Drawing ---------- */
@@ -946,14 +960,14 @@ function intro(rematch){
   save.best=Math.max(save.best,m);store();renderLadder();
   card(rematch?'Draw. Rematch':m===RUN?'Final match':`Match ${m} of ${RUN}`,
     `<div class="big${foe.boss?' boss':''}">${faceSVG(foe)}</div><h2>${foe.name}</h2><q>${foe.line}</q>
-<p>${firstOf(m)===0?'You place first.':`${foe.name} places first.`} Their 8 stones stay hidden until played.</p>
+<p>${firstOf(m)===0?'You place first.':`${foe.name} places first.`} Their 8 stones stay hidden until played${m>1?`, and they are ${(m-1)*LEVELS_PER_WIN+(foe.boss?BOSS_EXTRA:0)} levels stronger for your ${m-1} win${m>2?'s':''}`:''}.</p>
 <p class="kicker muted">Your stones</p><div class="deckrow">${deckRow(r.deck)}</div>`,
     {button:{label:'Fight',onClick:begin}});
 }
 function begin(){
   const r=save.run,m=r.m,order='PNBRQK';
   const mine=r.deck.map(c=>stoneOf(c,0)).sort((a,b)=>order.indexOf(a.t)-order.indexOf(b.t)||a.d-b.d||a.l-b.l);
-  const theirs=shuffle(foeOf(m).decks[phase(m)].split(' ').map(c=>stoneOf(c,1)));
+  const theirs=shuffle(deckFor(foeOf(m),m-1).split(' ').map(c=>stoneOf(c,1))); // you have won m-1 matches so far
   game=newGame(N,[mine,theirs],firstOf(m));
   sel=-1;hover=-1;last=-1;shown=null;busy=false;
   render();showInfo();next();
@@ -969,32 +983,12 @@ function finish(){
   store();rewards(`Won ${a} to ${b}`);
 }
 const nextMatch=()=>{save.run.m++;store();intro();};
-function offers(){
-  // Up to three different stones from your hand, each offered one level higher. A stone keeps its character;
-  // the king and rubble never level up.
-  const d=save.run.deck,out=[],seen=new Set();
-  for(const i of shuffle([...d.keys()])){
-    const c=d[i],{t,l}=parseCode(c);
-    if(PIECES[t].fixed||l>=MAXL||seen.has(c))continue;
-    seen.add(c);out.push({i,to:withLevel(c,l+1)});
-    if(out.length===3)break;
-  }
-  return out;
-}
-function newStones(){
-  // Stones that can join your hand: Tiny Tom until you have him, and half the time the rare stone of the opponent you beat.
-  const d=save.run.deck,out=[];
-  if(!d.includes(TOM)&&!d.some(c=>/^P\dv$/.test(c)))out.push(TOM);
-  if(foe.rare&&!d.some(c=>c[0]===foe.rare)&&Math.random()<.5)out.push(foe.rare+'1');
-  return out;
-}
 function rewards(kicker){
-  const r=save.run,os=offers(),fresh=newStones();
-  const levelUp=o=>({html:`${upgrade(r.deck[o.i],o.to)}Level up<small>${nameOf(o.to)}</small>`,onPick:()=>{acquire(o.i,o.to);nextMatch();}});
-  const join=code=>({html:`<span class="arrow">${stoneSVG(stoneOf(code,0),0,'')}</span>Joins you<small>${nameOf(code)}</small>`,onPick:()=>replaceWith(kicker,code)});
-  const picks=[...os.map(levelUp),...fresh.map(join)];
-  if(!picks.length)return card(kicker,'<h2>Pick an upgrade</h2><p>Every stone is already at its best.</p>',{button:{label:'Next match',onClick:nextMatch}});
-  card(kicker,`<h2>Pick a reward</h2><p>It lasts for the rest of this run.</p>`,{picks});
+  // After a win the opponent shows three random stones from the deck they just played; take one or keep your hand.
+  const r=save.run,used=shuffle([...new Set(deckFor(foe,r.m-1).split(' '))]).slice(0,3);
+  card(kicker,`<h2>Take a stone from ${foe.name}</h2><p>It takes the place of a stone you pick, for the rest of this run.</p>`,
+    {picks:used.map(code=>({html:`<span class="arrow">${stoneSVG(stoneOf(code,0),0,'')}</span>${nameOf(code)}`,onPick:()=>replaceWith(kicker,code)})),
+     button:{label:'Keep my hand',onClick:nextMatch}});
 }
 function replaceWith(kicker,code){
   // A new stone joins your hand of eight: it takes the place of a stone you choose.
