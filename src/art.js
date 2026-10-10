@@ -2,8 +2,8 @@
    ART  (builds on rules.js)
    Every stone and portrait is an SVG string drawn in code. Shared with stone-sheet.js.
    Stones are drawn in a 100 x 100 box: the body is a rounded square from 15 to 85, the spikes stand outside it,
-   and the character is an ivory cameo set in the middle. The gradients they use (cameo-ivory, gold, art-shade, ...)
-   and the cameo's clip are in the <defs> of index.html.
+   and the character is a pixel-art portrait in a window in the middle. The gradients they use (gold, art-shade, ...)
+   and the window's clip are in the <defs> of index.html.
 
    Contents: colours · drawing helpers · characters · stones · opponent portraits
    ===================================================================== */
@@ -45,193 +45,34 @@ const blush = (x, y, r = 2.4) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#ff
 const shine = (d, width = 1.6) => line(d, '#fff', width, 0.7);
 
 /* ---------- Characters ----------
-   Every character is a cameo: a bust in profile, looking left, carved in ivory relief on the stone's coloured
-   well, with gold inlay for crowns and crosses. drawStone clips the bust to the well and sets a gold bezel round it.
-   Each one keeps the mark of its chess piece: a kettle helmet, a horse's head, a mitre, a mural crown of
-   battlements, a pearl coronet, a crown with a cross. */
+   Every character is a pixel-art portrait, a 64 x 64 PNG in art/stones named after its piece (made with PixelLab).
+   drawStone shows it in a dark window on the stone's face, pixels kept sharp. STONE_ART_FOLDER is where the PNGs
+   are, relative to the page; stone-sheet.js points it at the files themselves. */
 
-// A raised shape: its cast shadow, the ivory, shade toward the lower right, a lit upper edge and a carved outline.
-function relief(d) {
-  return `<path d="${d}" fill="#000" opacity=".42" transform="translate(.9 1.4)"/><path d="${d}" fill="url(#cameo-ivory)"/>` +
-    `<path d="${d}" fill="url(#cameo-shade)"/>` +
-    `<path d="${d}" fill="none" stroke="#fffdf6" stroke-width=".8" opacity=".75" transform="translate(-.35 -.45)"/>` +
-    `<path d="${d}" fill="none" stroke="#8f7c5a" stroke-width=".6" opacity=".75"/>`;
-}
-// Gold inlaid in the ivory.
-function inlay(d) {
-  return `<path d="${d}" fill="#000" opacity=".35" transform="translate(.6 .9)"/><path d="${d}" fill="url(#gold)" stroke="#8a5a00" stroke-width=".6" stroke-linejoin="round"/>`;
-}
-// A line cut into the ivory: a dark groove with a lit lower lip.
-function carve(d, width = 0.9) {
-  return `<path d="${d}" fill="none" stroke="#8a7656" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round"/>` +
-    `<path d="${d}" fill="none" stroke="#fffaf0" stroke-width="${width * 0.55}" stroke-linecap="round" stroke-linejoin="round" opacity=".7" transform="translate(.45 .55)"/>`;
-}
-// A round stone set in the ivory: a pearl, or a green gem for the poisoners.
-function bead(cx, cy, r, fill = 'url(#cameo-ivory)') {
-  return `<circle cx="${cx + 0.5}" cy="${cy + 0.8}" r="${r}" fill="#000" opacity=".35"/><circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}" stroke="#8f7c5a" stroke-width=".5"/>` +
-    `<circle cx="${cx - r * 0.35}" cy="${cy - r * 0.35}" r="${r * 0.35}" fill="#fff" opacity=".8"/>`;
-}
-const EMERALD = '#3fbf5a';
+let STONE_ART_FOLDER = 'art/stones/';
+const STONE_ART_SIZE = 64; // pixels on a side
+const WINDOW = { x: 19, y: 19, size: 62 }; // where the portrait sits on the stone's 100 x 100 box
 
-// A head and bust in profile, looking left, as one closed outline: from the crown down the forehead, nose, lips
-// and chin, down the throat to the chest, along the curved cut that ends a cameo bust, and up the back of the
-// shoulders, the nape and the back of the head. (x, y) is the brow.
-//   nose: how far the nose stands out   lips: how full the lips are
-function profile(x, y, { nose = 4, lips = 1 } = {}) {
-  const at = (dx, dy) => `${(x + dx).toFixed(1)} ${(y + dy).toFixed(1)}`;
-  return `M${at(9, -11)} Q${at(0.6, -10)} ${at(0, -1)} Q${at(-0.4, 0.6)} ${at(-0.2, 1.4)} Q${at(0.4, 2.4)} ${at(-nose * 0.35, 4.2)} ` +
-    `L${at(-nose, 7.6)} Q${at(-nose + 0.4, 9.2)} ${at(-0.6, 9.2)} Q${at(-0.6 - lips * 0.5, 10)} ${at(-0.4 - lips, 11.2)} ` +
-    `L${at(0.4, 12)} Q${at(-0.8 - lips * 0.8, 12.6)} ${at(-0.2 - lips * 0.4, 13.8)} Q${at(0.8, 14.6)} ${at(0.4, 15.8)} ` +
-    `Q${at(-0.4, 18.4)} ${at(2.4, 19.4)} Q${at(5, 20)} ${at(6, 22)} Q${at(6.6, 25)} ${at(6, 27)} Q${at(5, 29.4)} ${at(-2, 30.4)} ` +
-    `Q${at(13, 36.6)} ${at(29, 29)} Q${at(25, 26)} ${at(20.6, 24.6)} Q${at(18, 21)} ${at(18, 16)} ` +
-    `Q${at(24, 7)} ${at(20, -4)} Q${at(16, -11.2)} ${at(9, -11)} Z`;
-}
-// The carved line along the bottom of a bust, a little above its cut.
-function truncation(x, y) {
-  return carve(`M${x} ${y + 29.4} Q${x + 13.6} ${y + 34} ${x + 26.4} ${y + 28.6}`, 0.7);
-}
-// The carved features of a face in profile: brow, eye, nostril, mouth and an ear.
-function features(x, y, { nose = 4, closed = false, smile = false, ear = true } = {}) {
-  const eye = closed
-    ? `M${x + 1.6} ${y + 3.4} Q${x + 3.4} ${y + 4.8} ${x + 5} ${y + 3}`
-    : `M${x + 4.8} ${y + 2.2} L${x + 1.6} ${y + 3.4} L${x + 4.6} ${y + 4.6} M${x + 2.9} ${y + 3.4} h.4`;
-  const mouth = smile ? `M${x + 0.2} ${y + 12} Q${x + 1.6} ${y + 12.6} ${x + 2.8} ${y + 11}` : `M${x + 0.2} ${y + 12} L${x + 2.2} ${y + 12.3}`;
-  const earCut = ear ? carve(`M${x + 12.6} ${y + 4} Q${x + 16} ${y + 4} ${x + 15.6} ${y + 8} Q${x + 15} ${y + 10.6} ${x + 12.8} ${y + 10.4} M${x + 13.6} ${y + 6} Q${x + 14.6} ${y + 7.2} ${x + 13.4} ${y + 8.4}`) : '';
-  const jaw = carve(`M${x + 2.6} ${y + 19.2} Q${x + 8} ${y + 19.6} ${x + 12.6} ${y + 12.6}`, 0.6);
-  return carve(`M${x + 0.6} ${y + 0.4} Q${x + 3} ${y - 1.4} ${x + 6.4} ${y + 0.2}`) + carve(eye) + jaw +
-    carve(`M${x - nose + 2.4} ${y + 7.8} Q${x - nose + 3.4} ${y + 8.6} ${x - nose + 4.2} ${y + 7.8}`, 0.7) + carve(mouth, 0.8) + earCut;
-}
-
-const CHARACTERS = {
-  // Tiny Tim, Tony, Tom and Ted: a young foot soldier in a kettle helmet, his spear at his shoulder
-  pawn: `${relief('M68.6 76 L70 34 L71.8 34 L70.6 76 Z')}${relief('M70.9 21.6 L74.6 34.4 L67.2 34.4 Z')}${carve('M70.9 24.6 V33', 0.6)}
-${relief(profile(40, 45, { nose: 3 }))}${features(40, 45, { nose: 3 })}${truncation(40, 45)}
-${relief('M58.4 44 Q64.6 45.6 63.4 53 Q61.2 51.4 58.8 52.6 Q60.2 48.6 58.4 44 Z')}${carve('M60 46 Q61.6 48.6 61.2 51', 0.6)}
-${relief('M36 40.4 Q36 26.4 50 25.8 Q62.6 26.2 63.6 38.6 Q50 37.6 36 40.4 Z')}${carve('M40.6 36 Q41.6 29.6 48.6 27.8', 0.8)}${carve('M50 26.2 V37.4', 0.6)}
-${relief('M28.6 41.6 Q47.6 34.2 69 35.6 L68.8 38.2 Q47.6 37.8 29.4 44.2 Z')}
-${carve('M47 70 Q52 72.6 57 70.6', 0.7)}`,
-
-  // Neigh Nigel: the chess knight's horse head, a steel chamfron down his face and a plume on his crown
-  knight: `<g transform="translate(10 9) scale(.8)">
-${relief('M67 84 Q62 74 63.4 63 Q66.6 49 59.6 39 Q55 32 50 31 L52 23.6 L45.6 29 L43.6 22.6 L40 30.6 Q31 34.6 27 43.6 L22 52.6 Q20 57.6 23 60.6 Q26.6 64 32 62.6 L39 60.6 Q41.6 64.2 40.6 69.6 L37 84 Q52 91 67 84 Z')}
-${carve('M51.6 32.6 Q59.6 36.6 61.6 44.6 Q65.6 50.6 62.6 56.6 Q67.6 62.6 63.6 68.6 Q66.6 74 64.4 79', 1.2)}${carve('M55 38.6 Q58.6 42.6 58.6 48.6 M59.6 58.6 Q61.6 62.6 60.6 66.6', 0.9)}
-${relief('M42.4 31 L48.6 33.4 L36 54.6 L29 51.4 Z')}${carve('M41.6 35.4 L33.6 50', 0.7)}${bead(38.4, 43, 1.4)}
-${carve('M44.4 39 Q47.4 37 50 39.2 Q47.4 41.4 44.4 39 Z', 1)}${carve('M45.4 36 Q48.4 34.4 51.4 36.4', 0.8)}
-${carve('M24.4 56 Q25.8 54.6 27.2 56', 1)}${carve('M24.2 60.6 Q28 61.6 31.6 61', 1)}${carve('M39 60.6 L32.6 52 M32.6 52 L44.6 47.4', 1)}${bead(32.6, 52, 1.3)}
-${carve('M39.6 81 Q52 86.4 64.6 81', 0.9)}
-${relief('M46.6 28.6 Q46 19.6 55.6 16.6 Q52.6 21.6 54 25 Q57.6 21 62.6 21 Q56.6 24.6 52.6 30.6 Z')}${carve('M49.6 25 Q51.6 20.6 55 18.6', 0.8)}</g>`,
-
-  // Bishop Bailey: an old bishop under the tall cleft mitre of the chess bishop, its ribbons down his back
-  bishop: `${relief('M58.6 45 L62.6 45 L63.6 64 L59.6 64 Z')}${carve('M60 51 H63.2 M60.4 57 H63.4', 0.6)}
-${relief(profile(40, 47, { nose: 5 }))}${features(40, 47, { nose: 5, closed: true, smile: true })}${truncation(40, 47)}
-${carve('M44.6 53.6 Q46 55 45.2 56.6 M42.4 61.6 Q43.8 63.4 46.4 63.4', 0.6)}
-${relief('M36.4 45.4 Q36.4 35.4 40.6 28.4 L45.6 20 L49.6 26.6 L53.6 21 Q59.6 29.6 62.4 38.6 L62.6 45.4 Q50 42.4 36.4 45.4 Z')}
-${carve('M36.8 41.4 Q50 38.4 62.4 41.4', 0.8)}${carve('M49.6 26.8 L50.6 40', 0.6)}${inlay('M43.6 28.6 h1.8 v3.4 h3 v1.8 h-3 v5.6 h-1.8 v-5.6 h-3 v-1.8 h3 Z')}
-${bead(46, 72.6, 1.8, 'url(#gold)')}`,
-
-  // Castle Carl: a burly man in a mural crown of battlements, the chess rook's tower, with a curled moustache
-  rook: `${relief(profile(40, 46, { nose: 5.4, lips: 0.6 }))}${features(40, 46, { nose: 5.4 })}${truncation(40, 46)}
-${relief('M58.6 46 Q64.6 46.6 64 55 Q61.6 56 59.6 54 Q61.6 50.6 58.6 46 Z')}${carve('M60.2 48 Q62 50 61.6 52.6', 0.6)}
-${relief('M39.6 55.4 Q36 55 33.4 56.6 Q30.6 58.4 31.4 55 Q29 56.6 30 59 Q32 60.6 35 59.6 Q38.4 58.4 41 57.4 Z')}
-${relief('M37 43.4 L37 33.6 L40 33.6 L40 29.6 L44 29.6 L44 33.6 L48.4 33.6 L48.4 29.6 L52.4 29.6 L52.4 33.6 L56.6 33.6 L56.6 29.6 L60.6 29.6 L60.6 33.6 L63 33.6 L63 43.4 Q50 41.4 37 43.4 Z')}
-${carve('M37.2 38.6 H62.8 M41.6 34 V38.4 M50.4 34 V38.4 M58.6 34 V38.4 M45.6 38.6 V42.2 M54.4 38.6 V42.4', 0.7)}`,
-
-  // Duchess Dagger: a duchess with her hair pinned up under a pearl coronet, her dagger raised behind her
-  queen: `${relief('M64 72 L73.6 48 L75.2 48.8 L66 73 Z')}${relief('M61 71.4 L69.6 75.6 L70.4 73.8 L61.8 69.6 Z')}${carve('M68 62 L72.6 51', 0.5)}
-${relief(profile(40, 45, { nose: 3.2, lips: 1.5 }))}${features(40, 45, { nose: 3.2 })}${truncation(40, 45)}
-${carve('M41.4 46.6 l-1.4 -1.6 M42.6 46 l-.8 -1.8', 0.5)}
-${relief('M39.6 39.6 Q42 33 50 32.4 Q60 32.6 63.4 41 Q65 49 60.6 55.6 Q58.6 52 58.8 48 Q56 44 50 43.6 Q44 41.6 39.6 39.6 Z')}
-${relief('M59 38.6 Q63.4 30 70 34.6 Q74 40 69.6 46 Q64.6 48 61.6 44 Z')}${carve('M62 37.6 Q65.6 34.6 68.6 37.6 M62.6 42 Q66 40 69 42.6', 0.6)}
-${carve('M44 40.4 Q50 36.6 57 38.6 M52 43.4 Q56 46 57.4 50.6', 0.7)}
-${inlay('M42.6 39.4 L43 31 L46.4 34.6 L49.6 28.6 L52.4 34 L56 30 L56.6 37.6 Q49.6 37.2 42.6 39.4 Z')}${bead(43, 29.6, 1.3)}${bead(49.6, 27.2, 1.4)}${bead(56, 28.6, 1.3)}
-${carve('M46.4 67.6 Q52 71 58 68.4', 0.7)}${[48.4, 51.2, 54, 56.6].map((x) => bead(x, 69.4 + (x - 52.6) * (x - 52.6) * 0.05, 0.9)).join('')}`,
-
-  // King Kobe: a king with a full curled beard and the cross-topped crown of the chess king
-  king: `${relief(profile(40, 46, { nose: 4.6 }))}${features(40, 46, { nose: 4.6 })}
-${relief('M42 57.6 Q39.4 60.6 38.4 63.6 Q37.4 69.6 41.4 73 Q47 76 52.6 72.6 Q57 68.6 57.4 62.6 Q57 57.4 53.6 54.4 Q51.4 58 47 57.4 Q44 57.4 42 57.6 Z')}
-${carve('M41.6 63 Q41 66.6 42.6 70 M45.6 61.6 Q45 66 46.6 71.4 M49.8 61 Q49.4 65.6 50.6 70.6 M53.8 59.6 Q54.2 63.6 53.8 67.6', 0.7)}
-${relief('M33.6 55.6 Q37 54 41 56.4 Q43.6 58.6 46.6 57.6 Q43 60.4 39 59.6 Q36 58.6 33.6 55.6 Z')}
-${relief('M58 44.6 Q64.6 45 64.4 52 Q66 57 62 60.6 Q60.6 56 59 55 Q61 50 58 44.6 Z')}${carve('M60 47 Q62.4 49 61.6 52 M61 55.4 Q62.6 57 62 59', 0.6)}
-${inlay('M37 44.6 L37 34.6 L42 38.6 L47.6 30.6 L53 38 L58.6 33.6 L62.6 34.6 L62.6 44.6 Q50 42.6 37 44.6 Z')}${carve('M37.4 41.6 Q50 39.8 62.4 41.6', 0.6)}
-${inlay('M46.6 30.6 V27 H43.6 V24.8 H46.6 V21.6 H49 V24.8 H52 V27 H49 V30.6 Z')}${bead(42.4, 38, 1)}${bead(53, 37, 1)}
-${carve('M46 75.6 Q57 79.6 66 74.4', 0.7)}`,
-
-  // Venom Veronica: a cobra rearing to face you, her hood spread, long lashes, emerald eyes and a forked tongue
-  venom_veronica: `${relief('M22 80 Q22 70 34 69 L66 69 Q78 70 78 80 Q78 86 70 86 L30 86 Q22 86 22 80 Z')}${carve('M28 76 Q50 72 72 76 M30 82 Q50 78 70 82', 0.6)}
-${relief('M50 25.6 Q66 27.6 70.6 43 Q72.6 56 63 66 L57 71 L43 71 L37 66 Q27.4 56 29.4 43 Q34 27.6 50 25.6 Z')}
-${carve('M38 48 Q38 40 44 38.6 M62 48 Q62 40 56 38.6 M35 56 Q40 62 44 62.6 M65 56 Q60 62 56 62.6', 0.8)}
-${carve('M45 52 H55 M45 56 H55 M45 60 H55 M45.6 64 H54.4 M46 68 H54', 0.6)}
-${relief('M50 29.6 Q60.6 30.2 61.4 38.6 Q61.4 45.6 55.4 48.6 L50 50.6 L44.6 48.6 Q38.6 45.6 38.6 38.6 Q39.4 30.2 50 29.6 Z')}
-${bead(45, 38.6, 1.9, EMERALD)}${bead(55, 38.6, 1.9, EMERALD)}
-${carve('M42.4 36.4 l-1.6 -1.6 M43.4 35.2 l-.8 -2 M44.8 34.8 l0 -2.2 M57.6 36.4 l1.6 -1.6 M56.6 35.2 l.8 -2 M55.2 34.8 l0 -2.2', 0.6)}
-${carve('M48.4 44.4 h.3 M51.4 44.4 h.3', 1)}${carve('M44.6 46.4 Q50 49.4 55.4 46.4', 0.8)}
-${relief('M46.6 47.6 L47.4 51 L48.4 48.2 Z')}${relief('M53.4 47.6 L52.6 51 L51.6 48.2 Z')}
-${carve('M50 49.6 V54.4 M50 54.4 l-1.8 2 M50 54.4 l1.8 2', 0.8)}`,
-
-  // Experienced Edna: a granny with her hair in a bun, little round spectacles and a knitted shawl, holding a vial
-  experienced_edna: `${relief(profile(40, 45, { nose: 4.6, lips: 0.5 }))}${features(40, 45, { nose: 4.6, smile: true, ear: false })}
-${carve('M42.8 60 Q44.6 61.6 47 61.4 M45.4 50 Q46.6 51 46.4 52.6 M38.6 48.4 Q39.6 47 41 47.2', 0.6)}
-${relief('M38.6 41.6 Q40.6 33 50 32.4 Q60 32.6 62.6 41 Q63.6 49 60 55 Q57 53 57.6 49 Q55 44 49 43.4 Q43 42 38.6 41.6 Z')}
-${carve('M42 39 Q48 35.4 55 36.6 M47 41 Q53 39.6 58 42 M56 45.6 Q58.4 48 58.4 51', 0.6)}
-${relief('M57.6 35.4 Q60 27.6 66.6 29.4 Q71 32.6 68 38.6 Q64 41.6 59.6 40.4 Z')}${carve('M60 32.6 Q63.6 30.6 66.6 33 M60.6 36.6 Q64.6 35.4 67.6 37', 0.6)}
-<ellipse cx="41.4" cy="48.6" rx="2.6" ry="2.9" fill="none" stroke="#8a7656" stroke-width="1"/>${carve('M44 48.4 L53.6 49.6', 0.7)}
-${relief('M34 70 Q40 63 48 66 Q57 64 64 68 Q70 71 71 75 Q60 79.6 46 78 Q38 76 34 70 Z')}${carve('M39 70 l2 2 l2 -2 l2 2 l2 -2 l2 2 l2 -2 l2 2 l2 -2 l2 2 l2 -2 l2 2', 0.6)}
-${relief('M28.6 68 L28.6 60.4 L27.6 59 L27.6 57 L32.4 57 L32.4 59 L31.4 60.4 L31.4 68 Q30 69.4 28.6 68 Z')}${carve('M30 62 V66 M28.8 64 H31.2', 0.6)}
-${relief('M26 70 Q25 65 30 64.6 Q34 65 34 69 Q32 72 28 72 Z')}`,
-
-  // Empress Edna: the same granny crowned, with an emerald serpent necklace and her eye gone green
-  empress_edna: `${relief(profile(40, 46, { nose: 4.6, lips: 0.5 }))}${features(40, 46, { nose: 4.6, ear: false })}
-${carve('M42.8 61 Q44.6 62.6 47 62.4 M45.4 51 Q46.6 52 46.4 53.6', 0.6)}
-${relief('M38.6 42.6 Q40.6 34 50 33.4 Q60 33.6 62.6 42 Q63.6 50 60 56 Q57 54 57.6 50 Q55 45 49 44.4 Q43 43 38.6 42.6 Z')}
-${carve('M42 40 Q48 36.4 55 37.6 M47 42 Q53 40.6 58 43 M56 46.6 Q58.4 49 58.4 52', 0.6)}
-<ellipse cx="41.4" cy="49.6" rx="2.6" ry="2.9" fill="none" stroke="url(#gold)" stroke-width="1.1"/>${carve('M44 49.4 L53.6 50.6', 0.7)}<circle cx="42.6" cy="49.6" r="1" fill="${EMERALD}"/>
-${inlay('M38 41 L37 28.6 L42 32.6 L45 25.6 L49.6 31 L54 24.6 L57 31 L62.4 27.6 L62.4 41 Q50 38.6 38 41 Z')}${carve('M38.2 37.6 Q50 35.6 62.4 37.6', 0.6)}
-${bead(37, 27.4, 1.2, EMERALD)}${bead(45, 24.4, 1.2, EMERALD)}${bead(54, 23.4, 1.3, EMERALD)}${bead(62.4, 26.4, 1.2, EMERALD)}${bead(50, 35.6, 1.3, EMERALD)}
-${carve('M44.6 69.6 Q48 72.6 52 70.6 Q56 68.6 59.6 71.6', 1.6)}${bead(52, 72, 1.6, EMERALD)}${truncation(40, 46)}`,
-
-  // Brittle Bernard: a young prince carved in brittle ivory, cracked across the face, his little crown askew
-  brittle_bernard: `${relief(profile(40, 46, { nose: 3 }))}${features(40, 46, { nose: 3 })}${truncation(40, 46)}
-${relief('M38.6 43.6 Q38.6 34 50 33.4 Q61 33.6 62.4 44 Q62.6 50 59.6 55 Q58.6 50 57 48 Q54 46.6 51.6 47.6 Q52 45 50.4 44 Q46 46 41.6 45.6 Q40 45 38.6 43.6 Z')}
-${carve('M44 38.6 Q50 36 56 37.6 M48.6 41.6 Q53.6 40.6 57.6 43', 0.6)}
-<g transform="rotate(-14 50 34)">${inlay('M42.6 36 L42.6 28 L46 31 L49.4 25.4 L52.6 31 L56 28 L56 36 Q49.4 34.6 42.6 36 Z')}${bead(49.4, 24.4, 1)}</g>
-${carve('M58 35 L54.6 41 L57.4 45 L53.4 51 L55.6 55 M54.6 41 L51 40.6 M53.4 51 L49 52.4', 0.9)}
-${carve('M38.8 57 L42 59.4 L40.6 63 M42 59.4 L45 59.4 L47.6 63', 0.8)}${carve('M47.6 68 L50 71 L48.8 74', 0.8)}
-<path d="M61.6 38 L64 41 L61.4 43.6 Z" fill="#000" opacity=".55"/>
-${carve('M44 72 L57 66.6', 0.8)}`,
-
-  // Hairy Harambe: a silverback in profile: the crest of his skull, a jutting brow, a broad muzzle, a vast chest
-  hairy_harambe: `${relief('M30 78 Q24 74 25 67 Q26 63.6 30 63 Q27.6 61.6 27.2 59 L27.4 56.4 Q25.2 55 26 52.2 Q27 49.4 30.4 49.2 Q29.6 47 31.4 45.4 Q29.6 43.4 30.6 41 Q32.6 38.2 36.8 38.4 Q40 30 48 26 Q56 22.6 62.6 26 Q68 30 69 38 Q75 46 75 56 Q79 64 77 74 Q54 84 30 78 Z')}
-${relief('M37 38.6 Q41.6 39.6 42.6 44 Q42.6 50.6 39.6 56.6 Q37.6 61.6 32.6 63.4 Q28.6 63 27.4 59 L27.4 56.4 Q25.2 55 26 52.2 Q27 49.4 30.4 49.2 Q29.6 47 31.4 45.4 Q29.6 43.4 30.6 41 Q32.6 38.2 37 38.6 Z')}${carve('M30.8 41.4 Q34 39.4 38.6 40.2 Q41 41 41.6 43', 1.4)}${carve('M37.6 44 L34.6 44.8 L37.4 46 M35.6 44.8 h.4', 0.9)}
-${carve('M29.6 49.6 Q31 48.6 31.6 50.2', 0.8)}${carve('M26.6 56 Q30 57.4 33 56.6', 0.9)}${carve('M33.4 46.6 Q37 52 35.6 58 Q34 61.6 30 63', 0.7)}
-${carve('M49.6 44.6 Q53 44 53.6 47.6 Q53.2 50.6 50.6 50.2', 0.8)}
-${carve('M46 29 Q52 26.6 58 27.6 M52 33 Q58 31.6 64 34 M58 39 Q63 39.6 67 43 M60 47 Q64 49.6 66 54.6 M62 59 Q66 63 67 68 M44 62 Q48 66 47 72 M36 66 Q40 70 39 76 M70 60 Q73 66 72 72', 0.7)}
-${inlay('M33 72.6 Q46 77.6 60 73.6 L60.2 75.4 Q46 79.6 32.6 74.4 Z')}`,
-
-  // Buzzy Beatrice: a beekeeper with her veil hanging from the brim of her wide hat, her bees about her
-  buzzy_beatrice: `${relief('M57 42 Q66 44 68 56 Q68.6 65 66 72 L58 72 Q60 63 58 54 Z')}${carve('M60 46 L60.6 70 M63 47 L64 70 M65.6 50 L66 68 M58.4 52 L66.6 51 M58.6 60 L67.4 59.4 M58.6 67 L66.6 66.6', 0.5)}
-${relief(profile(40, 47, { nose: 2.8, lips: 1.2 }))}${features(40, 47, { nose: 2.8, smile: true })}${truncation(40, 47)}
-${carve('M43.6 52.6 h.3 M45.4 53.6 h.3 M43.8 54.8 h.3', 0.8)}
-${relief('M38 43.6 Q39 36.6 50 36 Q58.6 36.4 60.6 44 Q55 42.6 50 43.6 Q44 44.6 38 43.6 Z')}
-${relief('M26 42.6 Q48 34.6 71 38.6 Q72 40.6 69 41 Q48 38.4 27.4 45 Q25 44.6 26 42.6 Z')}
-${relief('M38 38.6 Q37.6 26.6 49 26 Q60 26.4 61.4 37.4 Q50 36 38 38.6 Z')}${carve('M38.6 35 Q50 33 61 34.4', 0.9)}${carve('M42 31.6 Q44.6 28 49 27.6', 0.6)}
-${[[30, 58, 1], [29, 33, 0.8], [71, 29, 0.75]].map(([x, y, size]) => `<g transform="translate(${x} ${y}) scale(${size})">${relief('M-1.6 -2 Q-4 -6 -6 -4 Q-6 -1.6 -1.6 -1 Z')}${relief('M1 -2 Q0 -6.6 3 -6 Q4.6 -4 1.6 -1 Z')}${relief('M-4.6 0 Q-4.6 -3 0 -3 Q4.6 -3 4.6 0 Q4.6 3 0 3 Q-4.6 3 -4.6 0 Z')}${carve('M-1.6 -2.6 V2.6 M1.4 -2.6 V2.6', 0.9)}${carve('M4.6 0 h1.6', 0.6)}</g>`).join('')}`,
-
-  // His Hovering Holiness: a beaming pope in a mitre with flying goggles, a jet pack on his back and flames below it
-  his_hovering_holiness: `${relief('M61 50 Q61 46 65 46 L69 46 Q73 46 73 50 L73 66 L61 66 Z')}${carve('M61.4 53 H72.6 M61.4 59 H72.6', 0.7)}
-${inlay('M62 66.6 Q62.4 72 67 78 Q71.6 72 72 66.6 Z')}<path d="M64.4 66.6 Q64.6 70 67 73.4 Q69.4 70 69.6 66.6 Z" fill="#fff6c8" opacity=".85"/>
-${relief(profile(40, 48, { nose: 4 }))}${features(40, 48, { nose: 4, closed: true, smile: true })}${truncation(40, 48)}
-${carve('M39.4 60 Q41 62 43.6 60.6', 0.7)}
-${relief('M36.6 46.6 Q36.6 36 41 28.4 L46.6 19.6 L50.6 26.6 L54.6 20.6 Q60.4 29.6 62.4 39 L62.6 46.6 Q50 43.4 36.6 46.6 Z')}
-${inlay('M45 27.6 h1.8 v3.4 h3 v1.8 h-3 v5.6 h-1.8 v-5.6 h-3 v-1.8 h3 Z')}
-${carve('M36.8 42.4 Q49 39.6 62.4 42.4', 1.4)}<circle cx="40.6" cy="41.6" r="3" fill="url(#cameo-ivory)" stroke="url(#gold)" stroke-width="1.3"/>${carve('M39.6 40.6 Q40.4 39.8 41.4 40', 0.5)}
-${inlay('M48.4 68.6 h1.6 v2.6 h2.4 v1.6 h-2.4 v4 h-1.6 v-4 h-2.4 v-1.6 h2.4 Z')}`,
-
-  // What is left of Brittle Bernard: the cameo smashed into shards, a sliver of his crown among them
-  debris: `${relief('M30 40 L44 30 L48 46 L36 54 Z')}${relief('M50 28 L66 34 L58 48 L51 45 Z')}${relief('M38 58 L50 50 L56 62 L44 72 Z')}
-${relief('M60 52 L72 50 L70 66 L58 64 Z')}${relief('M26 60 L34 62 L32 72 Z')}${relief('M58 70 L66 72 L60 78 Z')}
-${carve('M38 42 L42 46 M54 36 L60 40 M44 60 L50 64', 0.6)}
-<g transform="rotate(30 52 56)">${inlay('M48 58 L48.4 52 L51 54.4 L53.4 50.6 L55 54 L56.6 52.6 L56.4 58 Z')}</g>`,
+// Brittle Bernard's cracks, drawn over his portrait pixel by pixel: [x, y] in the portrait's own pixels.
+// prettier-ignore
+const CRACKS = {
+  brittle_bernard: [[34, 17], [33, 18], [33, 19], [34, 20], [35, 21], [35, 22], [34, 23], [33, 23], [32, 24], [34, 24], [35, 25], [36, 26],
+    [23, 29], [24, 30], [25, 30], [26, 31], [27, 32], [41, 25], [40, 26], [40, 27], [41, 28]],
 };
+
+function drawPixels(pixels, colour, dx = 0, dy = 0) {
+  return pixels.map(([x, y]) => `<rect x="${x + dx}" y="${y + dy}" width="1" height="1" fill="${colour}"/>`).join('');
+}
+
+// The portrait, scaled from its own pixels onto the window, with any cracks on top.
+function drawCharacter(type) {
+  const scale = WINDOW.size / STONE_ART_SIZE;
+  const cracks = CRACKS[type]
+    ? drawPixels(CRACKS[type], '#fff', 1, 0).replace(/fill="#fff"/g, 'fill="#fff" opacity=".45"') + drawPixels(CRACKS[type], '#3a2630')
+    : '';
+  return `<g transform="translate(${WINDOW.x} ${WINDOW.y}) scale(${scale})" shape-rendering="crispEdges">
+<image href="${STONE_ART_FOLDER}${type}.png" width="${STONE_ART_SIZE}" height="${STONE_ART_SIZE}" style="image-rendering:pixelated"/>${cracks}</g>`;
+}
 
 /* ---------- Stones ---------- */
 
@@ -263,16 +104,14 @@ function drawStoneBody(owner) {
 <path d="M24 34 Q26 24 36 22" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" opacity=".45"/>`;
 }
 
-// The cameo's ground: a round well of the owner's colour, deep at the rim, that the ivory bust is carved on.
-function drawWell(owner) {
-  return `<circle cx="50" cy="50" r="28" fill="url(#well-${BODY_GRADIENTS[owner].slice(5)})"/>`;
-}
-
-// The gold bezel the cameo is set in, with the shadow it throws onto the ground.
-function drawBezel() {
-  return `<circle cx="50" cy="50" r="26.6" fill="none" stroke="#000" stroke-width="1.6" opacity=".35"/>
-<circle cx="50" cy="50" r="28" fill="none" stroke="#5a3a00" stroke-width="3.8"/><circle cx="50" cy="50" r="28" fill="none" stroke="url(#gold)" stroke-width="2.6"/>
-<path d="M30.8 33 A26.4 26.4 0 0 1 58 23.2" fill="none" stroke="#fffbe0" stroke-width=".9" stroke-linecap="round" opacity=".8"/>`;
+// The dark window on the stone's face that the portrait sits in: a deep shade of the owner's colour, with an
+// inner shadow along its top and a lit lower edge.
+function drawWindow(owner) {
+  const { light } = SPIKE_COLOURS[owner];
+  const { x, y, size } = WINDOW;
+  return `<rect x="${x}" y="${y}" width="${size}" height="${size}" rx="9" fill="url(#well-${BODY_GRADIENTS[owner].slice(5)})"/>
+<path d="M${x + 1} ${y + 12} V${y + 9} Q${x + 1} ${y + 1} ${x + 9} ${y + 1} H${x + size - 9}" fill="none" stroke="#000" stroke-width="2" opacity=".35"/>
+<path d="M${x + 9} ${y + size - 0.6} H${x + size - 9}" stroke="${light}" stroke-width="1.2" stroke-linecap="round" opacity=".5"/>`;
 }
 
 // A golden shield on each side, for King Kobe: a rivet at each end and a glint along the top.
@@ -315,7 +154,7 @@ function drawStone(stone, owner, { className = 'stone', breakingSpikes } = {}) {
     outside += drawSpikes(side, stone.spikes[side], breakingCount, colours);
   }
   return `<svg class="${className}" viewBox="0 0 100 100" aria-hidden="true">${outside}${drawStoneBody(owner)}
-${drawWell(owner)}<g clip-path="url(#art-clip)"><g transform="translate(5 5) scale(.9)">${CHARACTERS[stone.type]}</g></g>${drawBezel()}</svg>`;
+${drawWindow(owner)}<g clip-path="url(#art-clip)">${drawCharacter(stone.type)}</g></svg>`;
 }
 
 // The back of one of the opponent's hidden stones.

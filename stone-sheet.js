@@ -9,8 +9,10 @@ const path = require('path');
 
 const read = (file) => fs.readFileSync(path.join(__dirname, file), 'utf8');
 const gradients = read('index.html').match(/<defs>[\s\S]*?<\/defs>/)[0];
+// The portraits are PNGs next to the game, so the sheet points at them by their full path.
+const artFolder = `file://${path.join(__dirname, 'art/stones')}/`;
 const { PIECES, makeStone, drawStone } = new Function(
-  `${read('src/rules.js')}\n${read('src/art.js')}\nreturn { PIECES, makeStone, drawStone };`,
+  `${read('src/rules.js')}\n${read('src/art.js')}\nSTONE_ART_FOLDER = ${JSON.stringify(artFolder)};\nreturn { PIECES, makeStone, drawStone };`,
 )();
 
 const TYPES = Object.keys(PIECES).filter((type) => type !== 'debris'); // every piece but debris, chess pieces first

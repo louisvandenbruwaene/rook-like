@@ -8,7 +8,7 @@ The page is [`index.html`](index.html) (layout and rules text) with [`style.css`
 |---|---|---|
 | [`src/rules.js`](src/rules.js) | 496 | the pieces, stones and stone codes, the board, one fight, one move. Pure logic, never touches the page |
 | [`src/computer.js`](src/computer.js) | 134 | the computer player |
-| [`src/art.js`](src/art.js) | 440 | every stone and portrait as an SVG string (the stones are ivory cameos, 130 lines of drawing data) |
+| [`src/art.js`](src/art.js) | 279 | every stone and portrait: the stones show the pixel-art PNGs in [`art/stones/`](art/stones/), the opponent portraits are SVG strings |
 | [`src/settings.js`](src/settings.js) | 235 | board size, run length, difficulties, the opponents and their decks |
 | [`src/save.js`](src/save.js) | 196 | progress and settings in localStorage |
 | [`src/screen.js`](src/screen.js) | 318 | the state of a match, a move playing out, and the `render…()` functions |
@@ -25,7 +25,8 @@ Every file starts with a header that says what it builds on and lists its sectio
 |---|---|
 | a piece's spikes, name or power | `PIECES` in `rules.js` |
 | what a power does in a fight | `fight`, `breakSpikes`, `poisonHit`, `sting`, `cure`, `take` in `rules.js` |
-| how a stone or portrait looks | `CHARACTERS`, `PORTRAITS`, `drawStone` in `art.js` |
+| how a stone looks | its PNG in `art/stones/` (64 x 64, made with PixelLab), drawn by `drawCharacter` in `art.js` |
+| how an opponent portrait looks | `PORTRAITS` in `art.js` |
 | run length, deck size, thinking time | the top of `settings.js` |
 | difficulties | `DIFFICULTIES` in `settings.js` (the card text is made from it by `difficultyTile` in `run.js`) |
 | an opponent, their deck or line | `OPPONENTS` and `BOSS` in `settings.js` |
