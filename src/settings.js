@@ -6,7 +6,8 @@
 
 const SIZE = 4;
 const RUN_LENGTH = 20; // the last match is against the boss
-const STARTER_HAND = 'P1^ P1> P1< N1 B1 R1 Q1 K1'; // Tiny Tim, Tony and Ted; Tiny Tom comes from the first opponents
+const DECK_SIZE = 8; // the stones you take into a match, chosen from your collection
+const STARTER_COLLECTION = 'P1^ P1> P1< N1 B1 R1 Q1 K1'; // Tiny Tim, Tony and Ted; Tiny Tom comes from the opponents
 const THINK_MS = 1000;
 const BOSS_THINK_MS = 1600;
 
@@ -19,7 +20,7 @@ const BOSS_THINK_MS = 1600;
 // prettier-ignore
 const DIFFICULTIES = {
   easy:     { name: 'Easy',      lookAhead: 2,  startLevel: 0, upgradeOrder: ['P'] },
-  normal:   { name: 'Normal',    lookAhead: 99, startLevel: 0, upgradeOrder: ['P', 'NBR'] },
+  normal:   { name: 'Normal',    lookAhead: 99, startLevel: 0, upgradeOrder: ['PNBR'] },
   hard:     { name: 'Hard',      lookAhead: 2,  startLevel: 1, upgradeOrder: null },
   veryHard: { name: 'Very hard', lookAhead: 99, startLevel: 1, upgradeOrder: null },
 };

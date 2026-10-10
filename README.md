@@ -10,10 +10,10 @@ The page is [`index.html`](index.html) (layout and rules text) with [`style.css`
 | [`src/computer.js`](src/computer.js) | 117 | the computer player |
 | [`src/art.js`](src/art.js) | 240 | every stone and portrait as an SVG string (120 lines are drawing data) |
 | [`src/settings.js`](src/settings.js) | 130 | board size, run length, difficulties, the opponents and their decks |
-| [`src/save.js`](src/save.js) | 79 | progress and settings in localStorage |
+| [`src/save.js`](src/save.js) | 120 | progress and settings in localStorage |
 | [`src/screen.js`](src/screen.js) | 255 | the state of a match and the `render…()` functions |
 | [`src/move.js`](src/move.js) | 202 | how a move plays out on screen, step by step |
-| [`src/run.js`](src/run.js) | 203 | the cards between matches, from difficulty to the end of a run |
+| [`src/run.js`](src/run.js) | 289 | the cards between matches, from difficulty to the end of a run |
 | [`src/controls.js`](src/controls.js) | 109 | the rules panel, mouse, touch and keys, and the start |
 
 ## How the files fit together
@@ -190,7 +190,7 @@ The difficulty sets two things: `maxDepth`, how many moves ahead the computer ma
 | Difficulty | Looks ahead | Opponent stones start at | After each of your wins, every deck upgrades one stone |
 |---|---|---|---|
 | Easy | 2 moves | level 0 | tinies first, then everything else, one level at a time |
-| Normal | as far as it can | level 0 | tinies, then knight, bishop and rook, then everything else, one level at a time |
+| Normal | as far as it can | level 0 | tinies, knights, bishops and rooks, then everything else, one level at a time |
 | Hard | 2 moves | level 1 | any stone, at random |
 | Very hard | as far as it can | level 1 | any stone, at random |
 
@@ -231,18 +231,19 @@ While a move plays out the board shows `replay.owners`, the colours as they are 
 stateDiagram-v2
     [*] --> chooseDifficulty
     chooseDifficulty --> intro : Easy · Normal · Hard · Very hard
-    intro --> startMatch : Fight
+    intro --> startMatch : pick 8 from your collection, Fight
     startMatch --> finishMatch : board full or Pope taken
-    finishMatch --> offerRewards : you won
-    offerRewards --> swapIn : take a stone
-    offerRewards --> nextMatch : Skip
-    swapIn --> nextMatch
+    finishMatch --> offerRewards : you won, every opponent deck upgrades one stone
+    offerRewards --> nextMatch : upgrade one of 3 stones (+ a new stone)
     nextMatch --> intro
     finishMatch --> endRun : you lost, or won match 20
-    endRun --> chooseDifficulty : keep one stone, new run
+    endRun --> chooseDifficulty : keep one gain, new run
 ```
 
-- **Opponent decks** (`newDecks`, `upgradeOne`, `upgradeAllDecks` in `settings.js`): every opponent keeps one deck for the whole run, starting at the difficulty's level. After each match you win, every deck upgrades one stone, so they all grow, even the ones you are not facing. The boss starts with 6 extra upgrades. Rewards are never below level 1.
+- **Opponent decks** (`newDecks`, `upgradeOne`, `upgradeAllDecks` in `settings.js`): every opponent keeps one deck for the whole run, starting at the difficulty's level. After each match you win, every deck upgrades one stone, so they all grow, even the ones you are not facing. The boss starts with 6 extra upgrades. 
+- **Your collection** (`run.collection`, `deckFrom`, `renderCollection` in `run.js`): every stone you own this run, at every level you have had it. Before each match you pick 8 of them as your deck.
+- **Rewards** (`offerRewards`): after a win you upgrade one of three random stones from your deck by one level. The upgraded stone takes its place in the deck and the old one stays in the collection. If the opponent played a stone (piece and turn) that you do not own, you also get one of those, at level 1.
+- **The end of a run** (`endRun`): keep one gain, an upgrade or a new stone, in your collection for good.
 - **Who places first** (`firstFor`): you in odd matches, the opponent in even ones, the boss always.
 - **Winning a match** (`winnerOf`): taking the Pope, else most points (stones), else most spikes left, else whoever placed first.
 - **Saves** (`loadSave`, `store`) keep your starting hand, records and the run in localStorage. Older saves are converted when they load.

@@ -147,6 +147,14 @@ h1{font-weight:700;font-size:28px;margin:0;letter-spacing:-.01em}
 .choice .swap svg{width:56px;height:56px}
 .hand-row{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
 .hand-row svg{width:52px;height:52px;overflow:visible}
+/* Your collection on the card before a match: stones in your deck are lit, the rest dimmed. */
+.collection{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+.owned{width:58px;height:58px;padding:3px;background:none;box-shadow:none;border-radius:12px;opacity:.38;filter:saturate(.6);transition:opacity .12s,transform .12s}
+.owned svg{width:100%;height:100%;overflow:visible}
+.owned.in-deck{opacity:1;filter:none;background:rgba(243,197,74,.16);box-shadow:inset 0 0 0 2px rgba(243,197,74,.6)}
+.owned:hover{transform:translateY(-2px)}
+.deck-count{font-variant-numeric:tabular-nums}
+.card .primary:disabled{opacity:.4;cursor:default;transform:none}
 
 /* ===== Rules ===== */
 .card.rules{text-align:left;width:min(760px,100%);line-height:1.5}
