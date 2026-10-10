@@ -31,6 +31,7 @@ button.primary,#slow-button[aria-pressed="true"]{background:var(--accent);color:
 .title{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;min-width:0}
 .back-link{color:var(--muted);text-decoration:none;font-size:14px;width:100%}
 .back-link:hover{color:var(--accent)}
+.as-app .back-link{display:none} /* opened as its own Mac app: there is no "All games" page to go back to */
 h1{font-weight:700;font-size:28px;margin:0;letter-spacing:-.01em}
 .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 /* Twenty pips, the last one is the boss. */
