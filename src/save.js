@@ -111,14 +111,27 @@ function fromVersion3(old) {
   };
 }
 
-// Saves from before the one of each stone rule may own a stone twice: keep one, and point the run's deck at it.
+// Saves from before the one of each stone rule may own a stone twice, and saves from before the one queen rule
+// may own two queens: keep one (the highest level queen), and point the run's deck at it.
 function dropCopies(save) {
-  save.collection = [...new Set(save.collection)];
+  save.collection = onePerOwned(save.collection);
   const run = save.run;
   if (!run || !run.collection) return;
-  const collection = [...new Set(run.collection)];
-  run.deck = [...new Set(run.deck.map((index) => collection.indexOf(run.collection[index])))];
+  const collection = onePerOwned(run.collection);
+  const keptIndex = (code) => collection.indexOf(keptCode(run.collection, code));
+  run.deck = [...new Set(run.deck.map((index) => keptIndex(run.collection[index])))];
   run.collection = collection;
+}
+
+// The code that stays of this one: the highest level of its piece for an ONLY_ONE_OWNED piece, else itself.
+function keptCode(codes, code) {
+  if (!ONLY_ONE_OWNED.includes(pieceOf(code))) return code;
+  const same = codes.filter((owned) => pieceOf(owned) === pieceOf(code));
+  return same.reduce((best, owned) => (parseCode(owned).level > parseCode(best).level ? owned : best));
+}
+
+function onePerOwned(codes) {
+  return [...new Set(codes.map((code) => keptCode(codes, code)))];
 }
 
 // Runs from before opponent decks get them now: built for their difficulty, with one upgrade per match won.
