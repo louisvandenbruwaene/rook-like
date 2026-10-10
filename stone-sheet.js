@@ -44,7 +44,9 @@ function section(type) {
   html += levels.map((level) => levelTile(type, level)).join('');
   html += '</div>';
   if (piece.variants) {
-    const turns = piece.variants.map((name, variant) => `<div class="mini">${picture(type, 1, variant)}<small>${name}</small></div>`);
+    const turns = piece.variants.map(
+      (name, variant) => `<div class="mini">${picture(type, 1, variant)}<small>${name}</small></div>`,
+    );
     html += `<div class="variants"><span>Four turns, all rated the same:</span>${turns.join('')}</div>`;
   }
   return html + '</section>';
@@ -62,7 +64,10 @@ for (const type of TYPES) {
 
 const growing = TYPES.filter((type) => !PIECES[type].hasNoLevels);
 const table = growing
-  .map((type) => `<tr><td>${PIECES[type].name}</td>${LEVELS.map((level) => `<td>${rating(type, level)}</td>`).join('')}</tr>`)
+  .map(
+    (type) =>
+      `<tr><td>${PIECES[type].name}</td>${LEVELS.map((level) => `<td>${rating(type, level)}</td>`).join('')}</tr>`,
+  )
   .join('');
 
 const STYLE = `@page{size:A4;margin:14mm}body{font-family:Nunito,system-ui,sans-serif;color:#1d2433;margin:0;font-size:12px}

@@ -6,15 +6,48 @@ The page is [`index.html`](index.html) (layout and rules text) with [`style.css`
 
 | File | Lines | What it holds |
 |---|---|---|
-| [`src/rules.js`](src/rules.js) | 460 | the pieces, stones, the board, one fight, one move. Pure logic, never touches the page |
-| [`src/computer.js`](src/computer.js) | 119 | the computer player |
-| [`src/art.js`](src/art.js) | 242 | every stone and portrait as an SVG string (120 lines are drawing data) |
-| [`src/settings.js`](src/settings.js) | 133 | board size, run length, difficulties, the opponents and their decks |
-| [`src/save.js`](src/save.js) | 131 | progress and settings in localStorage |
-| [`src/screen.js`](src/screen.js) | 272 | the state of a match and the `render…()` functions |
-| [`src/move.js`](src/move.js) | 218 | how a move plays out on screen, step by step |
-| [`src/run.js`](src/run.js) | 325 | the cards between matches, from difficulty to the end of a run |
-| [`src/controls.js`](src/controls.js) | 110 | the rules panel, mouse, touch and keys, and the start |
+| [`src/rules.js`](src/rules.js) | 494 | the pieces, stones and stone codes, the board, one fight, one move. Pure logic, never touches the page |
+| [`src/computer.js`](src/computer.js) | 128 | the computer player |
+| [`src/art.js`](src/art.js) | 244 | every stone and portrait as an SVG string (120 lines are drawing data) |
+| [`src/settings.js`](src/settings.js) | 128 | board size, run length, difficulties, the opponents and their decks |
+| [`src/save.js`](src/save.js) | 139 | progress and settings in localStorage |
+| [`src/screen.js`](src/screen.js) | 316 | the state of a match, a move playing out, and the `render…()` functions |
+| [`src/move.js`](src/move.js) | 211 | how a move plays out on screen, step by step |
+| [`src/run.js`](src/run.js) | 324 | the cards between matches: the run match by match, your deck, rewards, the end |
+| [`src/controls.js`](src/controls.js) | 112 | the rules panel, mouse, touch and keys, and the start |
+
+Every file starts with a header that says what it builds on and lists its sections (`Contents: …`), and every section starts with a `/* ---------- name ---------- */` line, so a search for `----------` lists them all.
+
+## Where to find things
+
+| To change… | Look at |
+|---|---|
+| a piece's spikes, name or power | `PIECES` in `rules.js` |
+| what a power does in a fight | `fight`, `breakSpikes`, `poisonHit`, `sting`, `cure`, `take` in `rules.js` |
+| how a stone or portrait looks | `CHARACTERS`, `PORTRAITS`, `drawStone` in `art.js` |
+| run length, deck size, thinking time | the top of `settings.js` |
+| difficulties | `DIFFICULTIES` in `settings.js` (the card text is made from it by `difficultyTile` in `run.js`) |
+| an opponent, their deck or line | `OPPONENTS` and `BOSS` in `settings.js` |
+| how strong the computer plays | `bestMove` and the values at the top of `computer.js` |
+| what a square on the board shows | `squareClasses` and `squareContents` in `screen.js`, styled in `style.css` |
+| the timing of a move on screen | the `…_MS` constants and `animate` in `move.js` |
+| rewards and the end of a run | `offerRewards`, `endRun` in `run.js` |
+| what is saved | `newSave` in `save.js`; add a `fromVersion…` step when the shape changes |
+| keys, mouse and touch | the input section of `controls.js` |
+| the rules text | `#rules-template` in `index.html` |
+
+## Shared state
+
+The files share one global scope. These are the only variables that change while the game runs:
+
+| Variable | File | What it is |
+|---|---|---|
+| `save`, `settings` | `save.js` | your progress and slow motion, written back by `store()` |
+| `game`, `opponent` | `screen.js` | the match being played and who you face, set by `startMatch` and `makeMove` |
+| `ui` | `screen.js` | your selected stone, the hovered square, the last move, whether input waits |
+| `replay` | `screen.js` | how far a move has played out on screen, set by `startReplay` and `endReplay` |
+| `timers` | `move.js` | every pending timeout, so giving up can cancel a move |
+| `search` | `computer.js` | the computer's clock while it thinks |
 
 ## How the files fit together
 
@@ -253,4 +286,5 @@ stateDiagram-v2
 The code is checked by behaviour, not by tests in the repo:
 
 - `node stone-sheet.js` prints every stone's rating (in the order of `PIECES`) and writes `stones.html`. Its output should not change unless you meant to change a stone.
-- For rule changes, play a few seeded games in node with `src/rules.js` and `src/computer.js` (see how `stone-sheet.js` loads them) and compare the move records before and after.
+- For rule changes, play a few seeded games in node with `src/rules.js` and `src/computer.js` (see how `stone-sheet.js` loads them) and compare the move records before and after. A refactor should leave them identical.
+- Formatting is Prettier with the settings in [`.prettierrc.json`](.prettierrc.json) (120 wide, single quotes).

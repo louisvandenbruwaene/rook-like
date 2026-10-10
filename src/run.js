@@ -1,11 +1,15 @@
 /* =====================================================================
-   A RUN
-   The cards between matches, from choosing a difficulty to the end of the run.
+   A RUN  (builds on settings.js, save.js, screen.js and move.js)
+   Everything between matches, from choosing a difficulty to the end of the run. A run goes:
+
+     chooseDifficulty -> intro (pick your deck) -> startMatch -> ... -> finishMatch -> offerRewards -> nextMatch -> intro
+                                                                                   \-> endRun (lost, gave up, or won the last match)
+
+   Contents: cards · the run, match by match · your deck · rewards · the end of a run
    ===================================================================== */
 
-/* ---------- Cards between matches ----------
-   A run goes: chooseDifficulty, then for every match intro (pick your deck), startMatch, finishMatch and
-   offerRewards, until endRun. */
+/* ---------- Cards ----------
+   Every screen between matches is one card over the board. */
 
 function closeCard() {
   find('#card-modal').hidden = true;
@@ -48,6 +52,8 @@ function swapPicture(oldCode, newCode) {
   return `<span class="swap">${picture(oldCode)}<span>→</span>${picture(newCode)}</span>`;
 }
 
+/* ---------- The run, match by match ---------- */
+
 // Each of the six regular opponents comes three times in a random order, plus one extra, then the boss.
 // You start with your collection and the deck you last played.
 function newRun() {
@@ -62,36 +68,10 @@ function newRun() {
   store();
 }
 
-// The indexes of a deck of DECK_SIZE stones from the collection: the preferred codes where it has them,
-// then the first stones not yet taken, keeping to one of each stone.
-function deckFrom(collection, preferredCodes) {
-  const deck = [];
-  const fits = (i) => !deck.includes(i) && sameStoneInDeck(collection, deck, i) === undefined;
-  for (const code of preferredCodes) {
-    const index = collection.findIndex((owned, i) => owned === code && fits(i));
-    if (index >= 0 && deck.length < DECK_SIZE) deck.push(index);
-  }
-  for (let i = 0; i < collection.length && deck.length < DECK_SIZE; i++) {
-    if (fits(i)) deck.push(i);
-  }
-  return deck;
-}
-
-// The deck index of the same stone as collection[index] at any level, or undefined. A deck holds one of each
-// stone (piece and turn), and one king and one queen whatever their turn.
-function sameStoneInDeck(collection, deck, index) {
-  const stoneOf = (code) => (ONE_PER_DECK.includes(code[0]) ? code[0] : withoutLevel(code));
-  const stone = stoneOf(collection[index]);
-  return deck.find((i) => stoneOf(collection[i]) === stone);
-}
-
-function deckCodes(run) {
-  return run.deck.map((index) => run.collection[index]);
-}
-
 // "Looks 2 moves ahead · stones from Lv 0", with one pip per step up in difficulty.
 function difficultyTile(difficulty, rank) {
-  const looks = difficulty.lookAhead >= 99 ? 'Looks as far ahead as it can' : `Looks ${difficulty.lookAhead} moves ahead`;
+  const looks =
+    difficulty.lookAhead >= 99 ? 'Looks as far ahead as it can' : `Looks ${difficulty.lookAhead} moves ahead`;
   const pips = '●'.repeat(rank + 1) + '○'.repeat(Object.keys(DIFFICULTIES).length - rank - 1);
   return `<span class="pips">${pips}</span><span class="difficulty">${difficulty.name}</span>
 <span class="difficulty-detail">${looks} · stones from Lv ${difficulty.startLevel}</span>`;
@@ -128,44 +108,6 @@ function intro() {
   renderCollection();
 }
 
-// Every stone you own this run; the ones in your deck are lit. Fight needs exactly DECK_SIZE.
-function renderCollection() {
-  const run = save.run;
-  const stones = run.collection
-    .map((code, index) => ({ code, index, stone: fromCode(code, YOU) }))
-    .sort((a, b) => handOrder(a.stone, b.stone));
-  find('#collection').innerHTML = stones
-    .map(({ code, index }) => {
-      const inDeck = run.deck.includes(index) ? ' in-deck' : '';
-      return `<button class="owned${inDeck}" data-index="${index}" title="${titleOf(code)}">${picture(code)}</button>`;
-    })
-    .join('');
-  find('#collection')
-    .querySelectorAll('.owned')
-    .forEach((button) => {
-      button.onclick = () => toggleInDeck(Number(button.dataset.index));
-    });
-  find('#deck-count').textContent = `${run.deck.length} / ${DECK_SIZE}`;
-  find('#card .primary').disabled = run.deck.length !== DECK_SIZE;
-}
-
-// Tapping a stone takes it out of your deck or puts it in. The same stone at another level swaps with the one in the deck.
-function toggleInDeck(index) {
-  const { deck, collection } = save.run;
-  const rival = sameStoneInDeck(collection, deck, index);
-  if (deck.includes(index)) deck.splice(deck.indexOf(index), 1);
-  else if (rival !== undefined) deck[deck.indexOf(rival)] = index;
-  else if (deck.length < DECK_SIZE) deck.push(index);
-  store();
-  renderCollection();
-}
-
-// Stones are shown pawns first, then by piece, turn and level; the king last.
-function handOrder(a, b) {
-  const pieceOrder = 'PNBRQSWEJGHOK';
-  return pieceOrder.indexOf(a.type) - pieceOrder.indexOf(b.type) || a.variant - b.variant || a.level - b.level;
-}
-
 function startMatch() {
   const run = save.run;
   const yourStones = deckCodes(run)
@@ -174,7 +116,7 @@ function startMatch() {
   const theirStones = shuffle(deckOf(opponentFor(run.match)).map((code) => fromCode(code, OPPONENT)));
   game = newGame(SIZE, [yourStones, theirStones], firstFor(run.match));
   Object.assign(ui, { selected: -1, hovered: -1, lastMove: -1, waiting: false });
-  replay.owners = null;
+  endReplay();
   render();
   renderInfo();
   nextTurn();
@@ -222,33 +164,79 @@ function nextMatch() {
   intro();
 }
 
+/* ---------- Your deck ----------
+   save.run.collection holds every stone code you own this run, save.run.deck the indexes of the DECK_SIZE of them
+   you take into the next match. */
+
+// The indexes of a deck of DECK_SIZE stones from the collection: the preferred codes where it has them,
+// then the first stones not yet taken, keeping to one of each stone.
+function deckFrom(collection, preferredCodes) {
+  const deck = [];
+  const fits = (i) => !deck.includes(i) && sameStoneInDeck(collection, deck, i) === undefined;
+  for (const code of preferredCodes) {
+    const index = collection.findIndex((owned, i) => owned === code && fits(i));
+    if (index >= 0 && deck.length < DECK_SIZE) deck.push(index);
+  }
+  for (let i = 0; i < collection.length && deck.length < DECK_SIZE; i++) {
+    if (fits(i)) deck.push(i);
+  }
+  return deck;
+}
+
+// The deck index of the same stone as collection[index] at any level, or undefined. A deck holds one of each
+// stone (piece and turn), and one king and one queen whatever their turn.
+function sameStoneInDeck(collection, deck, index) {
+  const stoneOf = (code) => (ONE_PER_DECK.includes(pieceOf(code)) ? pieceOf(code) : withoutLevel(code));
+  const stone = stoneOf(collection[index]);
+  return deck.find((i) => stoneOf(collection[i]) === stone);
+}
+
+function deckCodes(run) {
+  return run.deck.map((index) => run.collection[index]);
+}
+
+// Every stone you own this run; the ones in your deck are lit. Fight needs exactly DECK_SIZE.
+function renderCollection() {
+  const run = save.run;
+  const stones = run.collection
+    .map((code, index) => ({ code, index, stone: fromCode(code, YOU) }))
+    .sort((a, b) => handOrder(a.stone, b.stone));
+  find('#collection').innerHTML = stones
+    .map(({ code, index }) => {
+      const inDeck = run.deck.includes(index) ? ' in-deck' : '';
+      return `<button class="owned${inDeck}" data-index="${index}" title="${titleOf(code)}">${picture(code)}</button>`;
+    })
+    .join('');
+  find('#collection')
+    .querySelectorAll('.owned')
+    .forEach((button) => {
+      button.onclick = () => toggleInDeck(Number(button.dataset.index));
+    });
+  find('#deck-count').textContent = `${run.deck.length} / ${DECK_SIZE}`;
+  find('#card .primary').disabled = run.deck.length !== DECK_SIZE;
+}
+
+// Tapping a stone takes it out of your deck or puts it in. The same stone at another level swaps with the one in the deck.
+function toggleInDeck(index) {
+  const { deck, collection } = save.run;
+  const rival = sameStoneInDeck(collection, deck, index);
+  if (deck.includes(index)) deck.splice(deck.indexOf(index), 1);
+  else if (rival !== undefined) deck[deck.indexOf(rival)] = index;
+  else if (deck.length < DECK_SIZE) deck.push(index);
+  store();
+  renderCollection();
+}
+
+// Stones are shown pawns first, then by piece, turn and level; the king last.
+function handOrder(a, b) {
+  const pieceOrder = 'PNBRQSWEJGHOK';
+  return pieceOrder.indexOf(a.type) - pieceOrder.indexOf(b.type) || a.variant - b.variant || a.level - b.level;
+}
+
 /* ---------- Rewards ----------
    After a win you upgrade one of UPGRADE_CHOICES random stones from your deck by one level. The upgraded stone takes its
-   place in your deck, and the old one stays in your collection, except a queen, who is replaced. And if the opponent played a stone (piece and turn)
-   that is not in your collection, you get one of those too, at level 1. */
-
-function canGrow(code) {
-  const { type, level } = parseCode(code);
-  return canLevelUp(type, level);
-}
-
-function upgraded(code) {
-  return withLevel(code, parseCode(code).level + 1);
-}
-
-// A stone is the same stone at any level: its piece letter and its turn.
-function withoutLevel(code) {
-  return code[0] + code.slice(2);
-}
-
-// One stone from the opponent's deck that you do not own at any level, at level 1, or null.
-function newStoneFrom(opponentDeck) {
-  const owned = new Set(save.run.collection.map(withoutLevel));
-  const missing = [...new Set(opponentDeck.map(withoutLevel))].filter((stone) => !owned.has(stone));
-  if (missing.length === 0) return null;
-  const stone = missing[Math.floor(Math.random() * missing.length)];
-  return stone[0] + '1' + stone.slice(1);
-}
+   place in your deck, and the old one stays in your collection, except a queen, who is replaced. And if the opponent
+   played a stone (piece and turn) that is not in your collection, you get one of those too, at level 1. */
 
 function offerRewards(label, opponentDeck) {
   const run = save.run;
@@ -277,10 +265,19 @@ function offerRewards(label, opponentDeck) {
   showCard(label, giftHtml + '<h2>Upgrade one</h2>', { choices });
 }
 
+// One stone from the opponent's deck that you do not own at any level, at level 1, or null.
+function newStoneFrom(opponentDeck) {
+  const owned = new Set(save.run.collection.map(withoutLevel));
+  const missing = [...new Set(opponentDeck.map(withoutLevel))].filter((stone) => !owned.has(stone));
+  if (missing.length === 0) return null;
+  const stone = missing[Math.floor(Math.random() * missing.length)];
+  return stone[0] + '1' + stone.slice(1);
+}
+
 function upgradeInDeck(index) {
   const run = save.run;
   const code = upgraded(run.collection[index]);
-  if (code[0] === 'Q') {
+  if (ONLY_ONE_OWNED.includes(pieceOf(code))) {
     run.collection[index] = code;
     return;
   }
@@ -316,7 +313,9 @@ function endRun(won, text) {
   const choices = gains.map((code) => ({
     html: `<span class="swap">${picture(code)}</span>${titleOf(code)}`,
     onPick: () => {
-      if (code[0] === 'Q') save.collection = save.collection.filter((owned) => owned[0] !== 'Q');
+      if (ONLY_ONE_OWNED.includes(pieceOf(code))) {
+        save.collection = save.collection.filter((owned) => pieceOf(owned) !== pieceOf(code));
+      }
       save.collection.push(code);
       beginAgain();
     },

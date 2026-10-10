@@ -9,6 +9,8 @@
      + 1 for having placed first
    which is the same order of tiebreaks as winnerOf. Taking His Hovering Holiness is worth more than any score.
    A move is { handIndex, cell }.
+
+   Contents: moves and how good they are · the search
    ===================================================================== */
 
 const POINT_VALUE = 2000;
@@ -17,13 +19,7 @@ const POPE_VALUE = 1e6;
 const NEXT_CAPTURE_VALUE = 1200; // most of a point for each stone the player to move can take next
 const WORST = -1e9;
 
-let deadline = 0;
-let aborted = false;
-let searched = 0;
-
-function now() {
-  return typeof performance !== 'undefined' ? performance.now() : Date.now();
-}
+/* ---------- Moves and how good they are ---------- */
 
 // The points a move wins for the player making it.
 function gain(game, move) {
@@ -72,16 +68,29 @@ function estimate(game) {
   return score(game) + NEXT_CAPTURE_VALUE * bestCapture;
 }
 
+/* ---------- The search ---------- */
+
+// The search in progress: it stops when the clock passes the deadline, checked every 256 positions.
+const search = {
+  deadline: 0, // in now() milliseconds
+  aborted: false, // the time ran out: every value found since is worthless
+  positions: 0, // positions looked at in this round
+};
+
+function now() {
+  return typeof performance !== 'undefined' ? performance.now() : Date.now();
+}
+
 function negamax(game, depth, alpha, beta) {
-  searched++;
-  if (searched % 256 === 0 && now() > deadline) aborted = true;
-  if (aborted) return 0;
+  search.positions++;
+  if (search.positions % 256 === 0 && now() > search.deadline) search.aborted = true;
+  if (search.aborted) return 0;
   if (isOver(game)) return score(game);
   if (depth === 0) return estimate(game);
   let best = WORST;
   for (const move of sortedMoves(game)) {
     const value = -negamax(play(game, move), depth - 1, -beta, -alpha);
-    if (aborted) return 0;
+    if (search.aborted) return 0;
     best = Math.max(best, value);
     alpha = Math.max(alpha, value);
     if (alpha >= beta) break;
@@ -98,21 +107,21 @@ function bestMove(game, thinkingTimeMs, random = Math.random, maxDepth = 99) {
   const bestGain = Math.max(...gains);
   let best = pickOne(moves.filter((_, index) => gains[index] === bestGain));
 
-  deadline = now() + thinkingTimeMs;
+  search.deadline = now() + thinkingTimeMs;
   const depthLimit = Math.min(maxDepth, emptySquares(game).length);
   for (let depth = 1; depth <= depthLimit; depth++) {
-    aborted = false;
-    searched = 0;
+    search.aborted = false;
+    search.positions = 0;
     let alpha = WORST;
     const rated = [];
     for (const move of [best, ...moves.filter((move) => move !== best)]) {
       // beta just above alpha keeps the values of equally good moves exact, so we can pick among them
       const value = -negamax(play(game, move), depth - 1, WORST, -(alpha - 1));
-      if (aborted) break;
+      if (search.aborted) break;
       rated.push({ move, value });
       alpha = Math.max(alpha, value);
     }
-    if (aborted) break;
+    if (search.aborted) break;
     best = pickOne(rated.filter((entry) => entry.value >= alpha).map((entry) => entry.move));
   }
   return best;

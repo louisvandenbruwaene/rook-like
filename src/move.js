@@ -1,6 +1,8 @@
 /* =====================================================================
-   A MOVE ON SCREEN  (builds on screen.js)
-   How a move plays out: timers, effects over the board, and the step-by-step animation.
+   A MOVE ON SCREEN  (builds on screen.js and computer.js)
+   How a move plays out: timers, effects over the board, the step-by-step animation, and whose turn is next.
+
+   Contents: timers · effects over the board · a move
    ===================================================================== */
 
 /* ---------- Timers ---------- */
@@ -88,13 +90,7 @@ function makeMove(move) {
   const stone = game.hands[mover][move.handIndex];
   const result = play(game, move, Math.random);
 
-  replay.before = game;
-  replay.owners = game.owners.slice();
-  replay.owners[move.cell] = mover;
-  replay.placed.add(move.cell);
-  replay.pending = result.breaks;
-  replay.step = -1;
-  game = result;
+  startReplay(move.cell, result);
   ui.selected = -1;
   ui.hovered = -1;
   ui.lastMove = move.cell;
@@ -109,10 +105,7 @@ function makeMove(move) {
 
   const anyTurnedOver = result.flips.length > 0;
   after(endTime + (anyTurnedOver ? 560 : 300), () => {
-    replay.owners = null;
-    replay.pending = [];
-    replay.step = -1;
-    replay.before = null;
+    endReplay();
     ui.waiting = false;
     render();
     nextTurn(anyTurnedOver);

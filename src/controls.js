@@ -1,6 +1,8 @@
 /* =====================================================================
-   RULES PANEL, INPUT AND START
+   RULES PANEL, INPUT AND START  (builds on everything else: it is loaded last)
    The rules layer, mouse, touch and keys, and what happens when the page opens.
+
+   Contents: rules · input · start
    ===================================================================== */
 
 /* ---------- Rules ---------- */

@@ -1,9 +1,12 @@
 /* =====================================================================
    SAVED DATA  (builds on settings.js)
-   Progress and settings in localStorage.
+   Progress and settings in localStorage. Loading them makes the two globals the rest of the game reads and
+   writes: save (your progress) and settings (slow motion). store() writes both back.
+
+   Contents: reading and writing · converting older saves · loading
    ===================================================================== */
 
-/* ---------- Saved data ----------
+/* ---------- Reading and writing ----------
    Settings and progress live in localStorage, under their old keys so earlier saves carry over.
    save: { version, collection (stone codes you own for good), deck (the 8 codes you last played),
            bestMatch, runsPlayed, crowns, run }
@@ -35,6 +38,27 @@ function newSave() {
     run: null,
   };
 }
+
+function loadSettings() {
+  const stored = readStorage(SETTINGS_KEY) || {};
+  return { slowMotion: Boolean(stored.slowMotion ?? stored.slow) };
+}
+
+function store() {
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify(save));
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  } catch (error) {
+    // private browsing: progress lasts until the page closes
+  }
+}
+
+// Runs from before difficulties were added play on Very hard, which is how they always played.
+function currentDifficulty() {
+  return DIFFICULTIES[save.run.difficulty || 'veryHard'];
+}
+
+/* ---------- Converting older saves ---------- */
 
 // Older saves are converted step by step. Saves from before version 2 (before the rare stones) start over.
 function loadSave() {
@@ -87,14 +111,6 @@ function fromVersion3(old) {
   };
 }
 
-function loadSettings() {
-  const stored = readStorage(SETTINGS_KEY) || {};
-  return { slowMotion: Boolean(stored.slowMotion ?? stored.slow) };
-}
-
-const save = loadSave();
-dropCopies(save);
-
 // Saves from before the one of each stone rule may own a stone twice: keep one, and point the run's deck at it.
 function dropCopies(save) {
   save.collection = [...new Set(save.collection)];
@@ -103,21 +119,6 @@ function dropCopies(save) {
   const collection = [...new Set(run.collection)];
   run.deck = [...new Set(run.deck.map((index) => collection.indexOf(run.collection[index])))];
   run.collection = collection;
-}
-const settings = loadSettings();
-
-function store() {
-  try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify(save));
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-  } catch (error) {
-    // private browsing: progress lasts until the page closes
-  }
-}
-
-// Runs from before difficulties were added play on Very hard, which is how they always played.
-function currentDifficulty() {
-  return DIFFICULTIES[save.run.difficulty || 'veryHard'];
 }
 
 // Runs from before opponent decks get them now: built for their difficulty, with one upgrade per match won.
@@ -128,4 +129,11 @@ function addMissingDecks() {
   for (let won = 1; won < run.match; won++) upgradeAllDecks(run.decks, currentDifficulty());
   store();
 }
+
+/* ---------- Loading ----------
+   Runs once, when the page opens. */
+
+const save = loadSave();
+dropCopies(save);
+const settings = loadSettings();
 addMissingDecks();
