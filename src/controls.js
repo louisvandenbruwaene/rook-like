@@ -32,6 +32,13 @@ function showRules() {
   find('#close-rules-button').onclick = () => {
     find('#rules-modal').hidden = true;
   };
+  // In the tutorial only the way back is offered, and the tutorial does not start while a move plays out.
+  for (const id of ['#give-up-button', '#new-game-button']) find(id).hidden = Boolean(tutorial);
+  find('#tutorial-button').hidden = !canStartTutorial();
+  find('#tutorial-button').onclick = () => {
+    find('#rules-modal').hidden = true;
+    startTutorial();
+  };
   find('#give-up-button').onclick = () => {
     if (!confirm('Give up this run? You still get to keep one upgraded stone.')) return;
     find('#rules-modal').hidden = true;
@@ -113,5 +120,6 @@ if (needsNewRun) newRun();
 opponent = opponentFor(save.run.match);
 game = newGame(SIZE, [[], []], YOU);
 render();
-if (save.run.decks) intro();
-else chooseDifficulty();
+const carryOn = () => (save.run.decks ? intro() : chooseDifficulty());
+if (save.tutorialDone) carryOn();
+else startTutorial(carryOn);

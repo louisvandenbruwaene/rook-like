@@ -103,7 +103,8 @@ function chooseDifficulty() {
   showCard('New game', '<h2>Choose a difficulty</h2>', { choices, layout: 'difficulties' });
 }
 
-// The next opponent, and your collection to pick a deck from, with the spikiest deck already picked.
+// The next opponent and the stones they bring, a word on each rare stone you have not met yet, and your collection
+// to pick a deck from, with the spikiest deck already picked.
 function intro() {
   const run = save.run;
   run.deck = spikiestDeck(run.collection);
@@ -113,10 +114,27 @@ function intro() {
   renderLadder();
   const label = run.match === RUN_LENGTH ? 'Boss' : `${run.match} / ${RUN_LENGTH}`;
   const portraitClass = opponent.isBoss ? 'big-portrait boss' : 'big-portrait';
+  const theirDeck = deckOf(opponent);
+  const newStones = newStonesIn(theirDeck);
   const content = `<div class="${portraitClass}">${drawPortrait(opponent)}</div><h2>${opponent.name}</h2><q>${opponent.line}</q>
-<div class="collection" id="collection"></div><p class="deck-count" id="deck-count"></p>`;
-  showCard(label, content, { button: { label: 'Fight', onClick: startMatch } });
+<p class="card-label quiet">They bring</p><div class="hand-row their-deck">${drawTheirDeck(theirDeck)}</div>
+${newStones.map(meetingHtml).join('')}
+<p class="card-label quiet">You bring</p><div class="collection" id="collection"></div><p class="deck-count" id="deck-count"></p>`;
+  const fight = () => {
+    markExplained(newStones);
+    startMatch();
+  };
+  showCard(label, content, { button: { label: 'Fight', onClick: fight } });
   renderCollection();
+}
+
+// The opponent's stones as they will look on the board: red, turned round.
+function drawTheirDeck(codes) {
+  return codes
+    .map((code) => fromCode(code, OPPONENT))
+    .sort(handOrder)
+    .map((stone) => drawStone(stone, OPPONENT, { className: '' }))
+    .join('');
 }
 
 function startMatch() {
@@ -126,6 +144,7 @@ function startMatch() {
     .sort(handOrder);
   const theirStones = shuffle(deckOf(opponentFor(run.match)).map((code) => fromCode(code, OPPONENT)));
   game = newGame(SIZE, [yourStones, theirStones], firstFor(run.match));
+  history = [];
   Object.assign(ui, { selected: -1, hovered: -1, lastMove: -1, waiting: false });
   endReplay();
   render();
@@ -155,7 +174,7 @@ function finishMatch() {
       holinessWinner === OPPONENT
         ? `${opponent.name} took His Hovering Holiness.`
         : `${opponent.name} wins ${tally()}.`;
-    endRun(false, text);
+    endRun(false, text, worstMove());
     return;
   }
   if (run.match === RUN_LENGTH) {
@@ -171,6 +190,26 @@ function finishMatch() {
   upgradeAllDecks(run.decks, currentDifficulty());
   store();
   offerRewards(holinessWinner === YOU ? 'Took His Holiness' : `Won ${tally()}`, deckPlayed);
+}
+
+// The opponent's move that took the most of your stones (the later one of equals), or null if none took any.
+function worstMove() {
+  let worst = null;
+  for (const entry of history.filter((entry) => entry.mover === OPPONENT)) {
+    const taken = stonesTaken(entry);
+    if (taken > 0 && (!worst || taken >= worst.taken)) worst = { ...entry, taken };
+  }
+  return worst;
+}
+
+// How many of your stones a move turned red, or Infinity when it took His Hovering Holiness.
+function stonesTaken({ before, result }) {
+  if (result.holinessWinner === OPPONENT && before.holinessWinner === undefined) return Infinity;
+  let taken = 0;
+  for (let cell = 0; cell < before.owners.length; cell++) {
+    if (before.owners[cell] === YOU && result.owners[cell] === OPPONENT) taken++;
+  }
+  return taken;
 }
 
 function nextMatch() {
@@ -356,9 +395,10 @@ function startNewGame() {
 
 /* ---------- The end of a run ----------
    Offers every stone you owned this run that you do not own for good yet. The one you pick joins your collection
-   for good, and a queen replaces the queen you had. The next run keeps the game's difficulty. */
+   for good, and a queen replaces the queen you had. The next run keeps the game's difficulty.
+   A lost match also names the opponent's move that hurt most, and can play it again in slow motion. */
 
-function endRun(won, text) {
+function endRun(won, text, worst = null) {
   const run = save.run;
   const gains = [...new Set(run.collection)]
     .filter((code) => !save.collection.includes(code))
@@ -367,20 +407,38 @@ function endRun(won, text) {
   store();
 
   const label = won ? 'Champion' : `Run over at match ${run.match}`;
-  const heading = `<h2>${won ? 'You took the crown!' : 'Defeated'}</h2><p>${text}</p>`;
+  const heading = `<h2>${won ? 'You took the crown!' : 'Defeated'}</h2><p>${text}</p>${worst ? worstMoveHtml(worst) : ''}`;
   if (gains.length === 0) {
     showCard(label, heading, { button: { label: 'New run', onClick: beginRun } });
-    return;
+  } else {
+    const choices = gains.map((code) => ({
+      html: `<span class="swap">${picture(code)}</span>${titleOf(code)}`,
+      onPick: () => {
+        if (ONLY_ONE_OWNED.includes(pieceOf(code))) {
+          save.collection = save.collection.filter((owned) => pieceOf(owned) !== pieceOf(code));
+        }
+        save.collection.push(code);
+        beginRun();
+      },
+    }));
+    showCard(label, heading + '<p class="card-label quiet">Keep one</p>', { choices, layout: 'compact' });
   }
-  const choices = gains.map((code) => ({
-    html: `<span class="swap">${picture(code)}</span>${titleOf(code)}`,
-    onPick: () => {
-      if (ONLY_ONE_OWNED.includes(pieceOf(code))) {
-        save.collection = save.collection.filter((owned) => pieceOf(owned) !== pieceOf(code));
-      }
-      save.collection.push(code);
-      beginRun();
-    },
-  }));
-  showCard(label, heading + '<p class="card-label quiet">Keep one</p>', { choices, layout: 'compact' });
+  if (worst) find('#watch-again').onclick = () => watchAgain(worst);
+}
+
+function worstMoveHtml(worst) {
+  const what =
+    worst.taken === Infinity
+      ? 'took His Hovering Holiness'
+      : `took ${worst.taken} of your stone${worst.taken === 1 ? '' : 's'}`;
+  return `<p class="worst-move">The move that hurt most: their <b>${nameOf(worst.stone)}</b> ${what}.
+<button class="text-button" id="watch-again">Watch it again</button></p>`;
+}
+
+// The card steps aside while the move plays again.
+function watchAgain(worst) {
+  find('#card-modal').hidden = true;
+  replayMove(worst, () => {
+    find('#card-modal').hidden = false;
+  });
 }

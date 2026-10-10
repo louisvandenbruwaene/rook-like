@@ -384,9 +384,46 @@ h1 {
   color: var(--blue);
 }
 
+/* The coach line under the board: the tutorial's lessons, and a word on a rare stone the first time it shows up. */
+.coach {
+  max-width: calc(var(--stone-size) * 4.4);
+  justify-self: center;
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: var(--panel);
+  border: 2px solid var(--accent);
+  text-align: center;
+  font-size: 15px;
+  line-height: 1.45;
+  animation: drop 0.25s ease-out;
+}
+.coach p {
+  margin: 0;
+}
+.coach .take {
+  color: var(--accent);
+  font-weight: 700;
+}
+.coach .lose {
+  color: var(--red);
+  font-weight: 700;
+}
+.coach-buttons {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+.coach-buttons:empty {
+  display: none;
+}
+
 /* ===== Board ===== */
 .board-frame {
   position: relative;
+  justify-self: center;
 }
 .board {
   position: relative;
@@ -841,6 +878,65 @@ h1 {
   opacity: 0.4;
   cursor: default;
   transform: none;
+}
+
+/* The card before a match: the opponent's stones, and a panel for each rare stone you have not met yet. */
+.their-deck svg {
+  width: 46px;
+  height: 46px;
+}
+.meeting {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--panel-raised);
+}
+.meeting p b {
+  color: var(--ink);
+}
+.demo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.demo-arrow {
+  font-size: 22px;
+  color: var(--accent);
+}
+.mini-board {
+  display: grid;
+  grid-template-columns: repeat(var(--board-size), clamp(34px, 11vw, 56px));
+  gap: 5px;
+  padding: 5px;
+  border-radius: 10px;
+  background: linear-gradient(160deg, #5d6880 0%, #363f56 100%);
+}
+.mini-board .square {
+  border-radius: 8px;
+}
+.mini-board .square.placed {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.mini-board .square svg.stone {
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.45));
+}
+.mini-board .poison-countdown {
+  width: 16px;
+  height: 16px;
+  font-size: 10px;
+  border-width: 1px;
+}
+.demo-caption {
+  font-size: 14px;
+}
+.worst-move b {
+  color: var(--ink);
+}
+.worst-move .text-button {
+  margin-left: 6px;
+  font-size: 14px;
 }
 
 /* ===== Rules ===== */
