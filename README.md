@@ -2,33 +2,58 @@
 
 Rook-like is a roguelike of spiked chess stones. You and the computer take turns placing stones on a 4 × 4 board. Facing spikes fight, the winner takes the other stone, and one move can set off a chain of fights. A run is twenty matches against opponents who grow stronger with every win, and the last one is the boss.
 
-Everything lives in one page, [`index.html`](index.html), in three scripts. The diagrams below use the function names from the code, so you can search for any box.
+The page is [`index.html`](index.html) (layout and rules text) with [`style.css`](style.css) and nine small scripts in [`src/`](src/), loaded in this order. They share one global scope, so a later file can use everything from an earlier one. The diagrams below use the function names from the code, so you can search for any box.
 
-## The three scripts
+| File | Lines | What it holds |
+|---|---|---|
+| [`src/rules.js`](src/rules.js) | 454 | the pieces, stones, the board, one fight, one move. Pure logic, never touches the page |
+| [`src/computer.js`](src/computer.js) | 117 | the computer player |
+| [`src/art.js`](src/art.js) | 240 | every stone and portrait as an SVG string (120 lines are drawing data) |
+| [`src/settings.js`](src/settings.js) | 95 | board size, run length, difficulties, the opponents and how they grow |
+| [`src/save.js`](src/save.js) | 79 | progress and settings in localStorage |
+| [`src/screen.js`](src/screen.js) | 255 | the state of a match and the `render…()` functions |
+| [`src/move.js`](src/move.js) | 202 | how a move plays out on screen, step by step |
+| [`src/run.js`](src/run.js) | 203 | the cards between matches, from difficulty to the end of a run |
+| [`src/controls.js`](src/controls.js) | 109 | the rules panel, mouse, touch and keys, and the start |
+
+## How the files fit together
 
 ```mermaid
 flowchart LR
-    subgraph page["index.html"]
-        core["<b>core</b><br/>rules engine<br/>+ computer player"]
-        art["<b>art</b><br/>draws stones and<br/>portraits as SVG"]
-        game["<b>game</b><br/>the page: screen, animation,<br/>cards, saves, input"]
+    subgraph logic["logic (no page)"]
+        rules["<b>rules.js</b><br/>pieces, board,<br/>fight, move"]
+        computer["<b>computer.js</b><br/>bestMove"]
     end
-    sheet["stone-sheet.js<br/>(a printable sheet of every stone)"]
+    art["<b>art.js</b><br/>drawStone,<br/>drawPortrait"]
+    subgraph page["the page"]
+        settings["<b>settings.js</b> · <b>save.js</b><br/>opponents, saves"]
+        screen["<b>screen.js</b><br/>render…()"]
+        move["<b>move.js</b><br/>makeMove, animate"]
+        run["<b>run.js</b><br/>cards between matches"]
+        controls["<b>controls.js</b><br/>input, start"]
+    end
+    sheet["stone-sheet.js<br/>(printable sheet)"]
 
-    game -- "play, bestMove, winnerOf ..." --> core
-    game -- "drawStone, drawPortrait ..." --> art
-    art -- "PIECES, SIDES" --> core
-    sheet -- "reads" --> core
-    sheet -- "reads" --> art
+    computer --> rules
+    art --> rules
+    screen --> art
+    screen --> rules
+    move --> screen
+    move --> computer
+    run --> settings
+    run --> move
+    controls --> run
+    sheet --> rules
+    sheet --> art
 ```
 
-| Script | What it knows | Never does |
+| Part | What it knows | Never does |
 |---|---|---|
-| **core** | the pieces, the board, one fight, one move, the computer player | touch the page |
+| **rules + computer** | the pieces, the board, one fight, one move, the computer player | touch the page |
 | **art** | how every stone, spike, shield and portrait looks | know the rules |
-| **game** | what is on screen, how a move plays out, the run, saving | decide who wins a fight |
+| **the page** | what is on screen, how a move plays out, the run, saving | decide who wins a fight |
 
-Naming: `render…()` updates the page, `draw…()` returns an SVG string. The engine uses the words of the rules: a move is a **clash**, then a **chain**, and stones get **taken**.
+Naming: `render…()` updates the page, `draw…()` returns an SVG string. The rules use the words of the rules: a move is a **clash**, then a **chain**, and stones get **taken**.
 
 ## The data
 
@@ -167,9 +192,9 @@ The difficulty only sets `maxDepth`, how many moves ahead it may look: Easy 1, N
 ```mermaid
 sequenceDiagram
     actor You
-    participant Page as game
-    participant Engine as core
-    participant Draw as art
+    participant Page as the page
+    participant Engine as rules + computer
+    participant Draw as art.js
 
     You->>Page: pick a stone, hover a square
     Page->>Engine: play(game, move) without luck
@@ -217,5 +242,5 @@ stateDiagram-v2
 
 The code is checked by behaviour, not by tests in the repo:
 
-- `node stone-sheet.js index.html` prints every stone's rating and writes `stones.html`. Its output should not change unless you meant to change a stone.
-- For rule changes, play a few seeded games in node with the `core` script (see how `stone-sheet.js` loads it) and compare the move records before and after.
+- `node stone-sheet.js` prints every stone's rating and writes `stones.html`. Its output should not change unless you meant to change a stone.
+- For rule changes, play a few seeded games in node with `src/rules.js` and `src/computer.js` (see how `stone-sheet.js` loads them) and compare the move records before and after.

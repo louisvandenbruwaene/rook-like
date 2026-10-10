@@ -1,10 +1,9 @@
 // Builds an HTML sheet of every stone and level, drawn with the game's own code, rated by single fights.
-const fs=require('fs');
-const html=fs.readFileSync(process.argv[2],'utf8');
-const core=html.match(/<script id="core">([\s\S]*?)<\/script>/)[1];
-const art=html.match(/<script id="art">([\s\S]*?)<\/script>/)[1];
-const defs=html.match(/<defs>[\s\S]*?<\/defs>/)[0];
-const E=new Function(core+'\n'+art+'\nreturn {PIECES,makeStone,drawStone};')();
+// Run it from anywhere: node stone-sheet.js  (writes stones.html in the current folder)
+const fs=require('fs'),path=require('path');
+const read=file=>fs.readFileSync(path.join(__dirname,file),'utf8');
+const defs=read('index.html').match(/<defs>[\s\S]*?<\/defs>/)[0];
+const E=new Function(read('src/rules.js')+'\n'+read('src/art.js')+'\nreturn {PIECES,makeStone,drawStone};')();
 const ORDER='PNBRQKSWEJGHO',DIRS={P:4,N:4};
 // every stone an opponent can bring: each piece, level and direction
 const all=[];for(const t of ORDER)for(let l=1;l<=5;l++)for(let d=0;d<(DIRS[t]||1);d++)all.push([t,l,d]);
