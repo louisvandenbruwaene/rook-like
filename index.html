@@ -18,7 +18,7 @@
 *,*::before,*::after{box-sizing:border-box}
 body{margin:0}
 [hidden]{display:none!important}
-h1,h2,button,.back,.runline,.nm,.pts,#status,#info b,#info .lvl,.kicker,.tag,.gain,.dex b{font-family:var(--f-display)}
+h1,h2,button,.back,.runline,.nm,.pts,#info b,#info .lvl,.kicker,.tag,.gain,.dex b{font-family:var(--f-display)}
 
 /* Your hand on the left, the board in the middle, the opponent's hidden hand on the right; stacked on phones.
    Every size follows the stone size --c, so the whole table fits the window. */
@@ -58,7 +58,7 @@ button.primary{background:var(--accent);color:#2a2410}
 .ladder i.boss.done{background:linear-gradient(#e2b6ff,#8b4fd6)}
 .runline{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-top:4px}
 
-.scores{display:grid;grid-template-columns:1fr minmax(120px,3fr) 1fr;gap:14px;align-items:center;max-width:calc(var(--c)*8.6 + 80px);width:100%;justify-self:center}
+.scores{display:grid;grid-template-columns:minmax(0,max-content) minmax(40px,1fr) minmax(0,max-content);gap:14px;align-items:center;max-width:calc(var(--c)*8.6 + 80px);width:100%;justify-self:center}
 .who{display:flex;align-items:center;gap:10px;min-width:0;padding:4px 10px;border-radius:14px;border:2px solid transparent;transition:border-color .2s}
 .who.turn{border-color:currentColor}
 .who.p1{flex-direction:row-reverse;text-align:right}
@@ -82,8 +82,6 @@ button.primary{background:var(--accent);color:#2a2410}
 #info{min-height:1.5em;max-width:calc(var(--c)*4.4);justify-self:center;text-align:center;font-size:15px;color:var(--muted)}
 #info b{font-weight:600;color:var(--ink)}
 #info .lvl{color:var(--accent);font-weight:600}
-#status{font-size:17px;max-width:calc(var(--c)*4.4);justify-self:center;color:var(--muted);min-height:1.4em;text-align:center}
-#status b{color:var(--accent);font-weight:600}
 
 .tug{display:flex;height:8px;border-radius:99px;background:rgba(10,14,26,.5);overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,.5)}
 .tug div{transition:width .35s ease-out}
@@ -202,19 +200,18 @@ body.slow{--t:4}
 <div class="wrap">
   <div class="top">
     <div class="title"><a class="back" href="../index.html">← All games</a><h1>Chain Stones</h1></div>
-    <div class="run"><div class="ladder" id="ladder"></div><div class="runline"><span id="runNow"></span><span id="runBest"></span></div></div>
-    <div class="controls"><button id="bRules">How to play</button><button id="bSlow" aria-pressed="false" title="Slow motion (S)">Slow-mo</button></div>
+    <div class="run"><div class="ladder" id="ladder"></div><div class="runline"><span id="runNow"></span></div></div>
+    <div class="controls"><button id="bRules" title="Rules">?</button><button id="bSlow" aria-pressed="false" title="Slow motion (S)">Slow</button></div>
   </div>
   <div class="scores">
-    <div class="who p0" id="side0"><span class="nm">You</span><span class="pts" id="s0">0</span><span class="spk" id="k0" title="Spikes left: breaks a tie on points"></span></div>
+    <div class="who p0" id="side0"><span class="nm">You</span><span class="pts" id="s0">0</span><span class="spk" id="k0" title="Spikes left"></span></div>
     <div class="tug" aria-hidden="true"><div class="t0" id="tug0"></div><div class="t1" id="tug1"></div></div>
-    <div class="who p1" id="side1"><div class="face" id="foeFace"></div><span class="nm" id="foeName"></span><span class="pts" id="s1">0</span><span class="spk" id="k1" title="Spikes left: breaks a tie on points"></span></div>
+    <div class="who p1" id="side1"><div class="face" id="foeFace"></div><span class="nm" id="foeName"></span><span class="pts" id="s1">0</span><span class="spk" id="k1" title="Spikes left"></span></div>
   </div>
   <div class="table">
     <div class="hand" id="hand"></div>
     <div class="mid">
       <div class="boardwrap"><div class="board" id="board"></div></div>
-      <div id="status" aria-live="polite"></div>
       <div id="info"></div>
     </div>
     <div class="hand backs" id="backs"></div>
@@ -223,7 +220,7 @@ body.slow{--t:4}
 <template id="rulesT">
   <h2>How to play</h2>
   <ul>
-    <li>A run is <b>20 matches</b>. Lose one and the run is over. Match 20 is the boss.</li>
+    <li>A run is <b>20 matches</b>. Lose one and the run is over. Match 20 is the boss. At the start of a run you pick Easy, Normal or Hard: how many moves ahead your opponents look.</li>
     <li>Take turns placing a stone from your hand on an empty square of the 4 × 4 board. You never see the opponent's hand.</li>
     <li>Your hand: Tiny Tim, Tiny Tony and Tiny Ted (pawns), Sir Gallops (knight), Mitre Mandy (bishop), Castle Carl (rook), Her Majesty Mayhem (queen) and Old King Coal (king). Your stones face up the board, the opponent's are turned round and face down. Each level adds a spike to every side that has some, up to 5.</li>
     <li><b>Old King Coal</b> has golden shields on every side: every spike that touches him breaks, and he can never be taken.</li>
@@ -550,6 +547,11 @@ const FOES=[
 ];
 const BOSS={name:'The Obsidian Monarch',line:'Nineteen boards behind you. One crown ahead.',deck:'O1 Q1 Q1 R1 B1 N1 N1> K1',rare:'O',face:'boss',boss:true};
 
+// Difficulty, picked at the start of a run: how many moves ahead the opponent looks (its own move counts as one).
+// Hard looks as deep as it can in its thinking time, which in the last moves of a match is to the very end.
+const LEVELS={easy:{name:'Easy',depth:1},normal:{name:'Normal',depth:2},hard:{name:'Hard',depth:99}};
+const level=()=>LEVELS[save.run.level||'hard']; // runs from before difficulties were added play on hard
+
 const nameOf=code=>{const s=stoneOf(code,0);return stoneName(s)+(PIECES[s.t].fixed?'':` Lv ${s.l}`);};
 const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]];}return a;};
 function newRun(){
@@ -778,15 +780,14 @@ function renderLadder(){
   const r=save.run;let h='';
   for(let m=1;m<=RUN;m++)h+=`<i class="${m===RUN?'boss ':''}${m<r.m?'done':m===r.m?'now':''}"></i>`;
   $('#ladder').innerHTML=h;
-  $('#runNow').textContent=r.m===RUN?'Match 20: the boss':`Match ${r.m} of ${RUN}`;
-  $('#runBest').textContent=save.champs?`Crowns won: ${save.champs}`:`Best run: ${save.best?`match ${save.best}`:'none yet'}`;
+  $('#runNow').textContent=`${r.m} / ${RUN}`+(r.level?` · ${level().name}`:'');
   if($('#record'))$('#record').textContent=`Runs: ${save.runs}. Best: ${save.best?'match '+save.best:'none'}. Crowns: ${save.champs}.`;
 }
 function renderSides(){
   const view=shown?{own:shown,at:game.at}:game,pts=[score(view,0),score(view,1)]; // during a move: the colours on screen
   const total=pts[0]+pts[1]+handValue(game.hands[0])+handValue(game.hands[1])||1;
   for(const p of [0,1]){
-    $('#s'+p).textContent=pts[p];$('#k'+p).textContent=spikes(view,p)+' spikes';
+    $('#s'+p).textContent=pts[p];$('#k'+p).textContent='▲'+spikes(view,p);
     $('#tug'+p).style.width=100*pts[p]/total+'%';
     $('#side'+p).classList.toggle('turn',!full(game)&&game.turn===p);
   }
@@ -798,8 +799,7 @@ function showInfo(){
   // Under the board: the stone under the mouse, or else the one selected in your hand.
   const s=hover>=0&&game.own[hover]>=0?game.at[hover]:sel>=0?game.hands[0][sel]:null;
   if(!s)return void($('#info').innerHTML='');
-  const P=PIECES[s.t],extra=s.poison?` · <span class="bad">poisoned, turns in ${s.poison.due-game.moves}</span>`:P.pope&&s.grounded?' · <span class="bad">grounded</span>':'';
-  $('#info').innerHTML=`<b>${stoneName(s)}</b>${P.chess?` (${P.chess})`:''}${P.fixed?'':` <span class="lvl">Lv ${s.l}</span>`} · ${P.text}${extra}`;
+  $('#info').innerHTML=`<b>${stoneName(s)}</b>${PIECES[s.t].fixed?'':` <span class="lvl">Lv ${s.l}</span>`}`;
 }
 function select(i){sel=i;renderHand();renderBoard();showInfo();}
 function renderHand(){
@@ -859,7 +859,6 @@ function paint(cells){
   for(const i of cells){const [cls,inner]=cellView(i,null,new Map(),false);els[i].className=cls;els[i].innerHTML=inner;}
   flips.clear();broken.clear();fx.clear();
 }
-function setStatus(html){$('#status').innerHTML=html;}
 function bees(cell){
   // The Beekeeper's swarm: a few bees fly out to the eight squares around him and back.
   const {x,y,size}=cellBox(cell);
@@ -894,7 +893,7 @@ function move(h,cell){
   render();showInfo();
   pop(cell,stoneName(stone),'tag p'+me,T(1300),-cellBox(cell).size*.62);
   const end=animate(after),flipped=after.flips.length>0;
-  report(before,after,cell,me,stone,end);
+  report(before,after,cell,me,end);
   later(end+(flipped?560:300),()=>{shown=null;pending=[];stepNow=-1;before=null;busy=false;render();next(flipped);});
 }
 function animate(a){
@@ -926,32 +925,20 @@ function animate(a){
   }
   return t;
 }
-function report(before,a,cell,me,stone,end){
-  // The status line and the +/- pop: what the move won and lost, counting the new stone as the mover's.
-  const won=[],lost=[];
-  for(let i=0;i<N*N;i++){const was=i===cell?me:before.own[i];if(a.own[i]!==was&&isPlayer(a.own[i]))(a.own[i]===me?won:lost).push(i);}
-  const net=score(a,me)-score(before,me)-1,turns=a.flips.length,rubble=a.flips.some(f=>f[1]===RUBBLE);
+function report(before,a,cell,me,end){
+  // The +/- pop: what the move won and lost, counting the new stone as the mover's.
+  const net=score(a,me)-score(before,me)-1;
   if(net)later(end+140,()=>pop(cell,(net>0?'+':'−')+Math.abs(net),net>0?'gain':'gain bad',T(1200)));
-  const who=me===0?'You':foe.name,stones=k=>`<b>${k}</b> stone${k>1?'s':''}`;
-  let msg=won.length?`${who} took ${stones(won.length)}`:'';
-  if(lost.length)msg+=(msg?', but lost ':`${who} lost `)+stones(lost.length);
-  if(!msg)msg=a.broke.length&&!turns?`${who} broke spikes, no one won the clash`:`${who} placed ${stoneName(stone)}`;
-  if(turns>1)msg+=`, in a chain of ${turns} turns`;
-  if(rubble)msg+='. Prince Joey collapsed into rubble';
-  if(a.winner!==undefined&&before.winner===undefined)msg+=a.winner===me?`. ${who} took the Pope`:`. ${who} lost the Pope`;
-  setStatus(msg+'.');
 }
 function next(justActed){
   if(full(game))return later(500,finish);
   if(game.turn===1){
     busy=true;
-    if(!justActed)setStatus(`${foe.name} is thinking…`);
     renderHand();
-    later(justActed?700:350,()=>move(...think(game,foe.boss?1600:1000)));
+    later(justActed?700:350,()=>move(...think(game,foe.boss?1600:1000,Math.random,level().depth)));
     return;
   }
   busy=false;
-  if(!justActed)setStatus('Your turn. Pick a stone, then a square.');
   renderHand();renderBoard();
 }
 
@@ -971,10 +958,9 @@ const upgrade=(from,to)=>`<span class="arrow">${stoneSVG(stoneOf(from,0),0,'')}<
 function intro(){
   const r=save.run,m=r.m;foe=foeOf(m);
   save.best=Math.max(save.best,m);store();renderLadder();
-  card(m===RUN?'Final match':`Match ${m} of ${RUN}`,
+  card(m===RUN?'Boss':`${m} / ${RUN}`,
     `<div class="big${foe.boss?' boss':''}">${faceSVG(foe)}</div><h2>${foe.name}</h2><q>${foe.line}</q>
-<p>${firstOf(m)===0?'You place first.':`${foe.name} places first.`} Their 8 stones stay hidden until played${m>1?`, and they are ${(m-1)*LEVELS_PER_WIN+(foe.boss?BOSS_EXTRA:0)} levels stronger for your ${m-1} win${m>2?'s':''}`:''}.</p>
-<p class="kicker muted">Your stones</p><div class="deckrow">${deckRow(r.deck)}</div>`,
+<div class="deckrow">${deckRow(r.deck)}</div>`,
     {button:{label:'Fight',onClick:begin}});
 }
 function begin(){
@@ -1000,24 +986,28 @@ const nextMatch=()=>{save.run.m++;store();intro();};
 function rewards(kicker){
   // After a win the opponent shows three random stones from the deck they just played; take one or keep your hand.
   const r=save.run,used=shuffle([...new Set(deckFor(foe,r.m-1).split(' '))]).slice(0,3);
-  card(kicker,`<h2>Take a stone from ${foe.name}</h2><p>It takes the place of a stone you pick, for the rest of this run.</p>`,
+  card(kicker,'<h2>Take one</h2>',
     {picks:used.map(code=>({html:`<span class="arrow">${stoneSVG(stoneOf(code,0),0,'')}</span>${nameOf(code)}`,onPick:()=>replaceWith(kicker,code)})),
-     button:{label:'Keep my hand',onClick:nextMatch}});
+     button:{label:'Skip',onClick:nextMatch}});
 }
 function replaceWith(kicker,code){
   // A new stone joins your hand of eight: it takes the place of a stone you choose.
   const r=save.run;
-  card(kicker,`<h2>${nameOf(code)} joins you</h2><p>Pick the stone that makes room.</p>`,
+  card(kicker,'<h2>Swap for</h2>',
     {picks:r.deck.map((c,i)=>({html:upgrade(c,code)+nameOf(c),onPick:()=>{acquire(i,code);nextMatch();}}))});
 }
 function acquire(i,code){const r=save.run;r.deck[i]=code;if(!r.changed.includes(i))r.changed.push(i);}
+function chooseLevel(){
+  card('New run','',
+    {picks:Object.entries(LEVELS).map(([k,L])=>({html:L.name,onPick:()=>{save.run.level=k;store();renderLadder();intro();}}))});
+}
 function endRun(won,text){
   // Offer every stone you gained this run; the one picked replaces its slot in the starting hand for good.
   const r=save.run,keep=r.changed.filter(i=>r.deck[i]!==save.meta[i]);
-  const newRunNow=()=>{newRun();intro();};
+  const newRunNow=()=>{newRun();chooseLevel();};
   r.over=true;store();
   card(won?'Champion':`Run over at match ${r.m}`,`<h2>${won?'You took the crown!':'Defeated'}</h2><p>${text}</p>`+
-    (keep.length?'<p>Keep one stone you gained this run. It replaces the one in its place in your starting hand, for good.</p>':''),
+    (keep.length?'<p class="kicker muted">Keep one</p>':''),
     keep.length?{picks:keep.map(i=>({html:upgrade(save.meta[i],r.deck[i])+nameOf(r.deck[i]),onPick:()=>{save.meta[i]=r.deck[i];newRunNow();}}))}
                :{button:{label:'New run',onClick:newRunNow}});
 }
@@ -1042,11 +1032,9 @@ let touchTap=false;
 $('#board').addEventListener('click',e=>{
   const c=e.target.closest('.cell');if(!c||!yourTurn())return;
   const i=+c.dataset.i;if(game.own[i]>=0)return;
-  if(sel<0){setStatus('Pick a stone from your hand first.');return;}
+  if(sel<0)return;
   if(touchTap&&hover!==i){ // touch has no hover: the first tap previews, a second tap on the same square places
     hover=i;renderBoard();
-    const k=gain(game,sel,i);
-    setStatus(`${k>0?`Wins <b>${k}</b> point${k>1?'s':''}. `:k<0?`Loses <b>${-k}</b> point${k<-1?'s':''}. `:''}Tap again to place.`);
     return;
   }
   move(sel,i);
@@ -1066,9 +1054,10 @@ $('#bSlow').onclick=()=>setSlow(!cfg.slow);
 $('#bRules').onclick=rules;
 setSlow(!!cfg.slow);
 
-if(!save.run||save.run.over)newRun();
+const startRun=!save.run||save.run.over;
+if(startRun)newRun();
 foe=foeOf(save.run.m);game=newGame(N,[[],[]],0);render();
-intro();
+startRun?chooseLevel():intro();
 </script>
 </body>
 </html>
