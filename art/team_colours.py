@@ -3,6 +3,7 @@
 Every portrait in art/stones/<piece>.png gets one detail in its team's colour: a blue copy in art/stones/you/ and a
 red copy in art/stones/opponent/. Only the pixels of that detail change: each one takes the shade of the team's colour
 closest to it in brightness, so the shading stays as drawn. The script checks that no other pixel changed.
+The portraits in art/stones/ themselves are the untouched PixelLab originals: the script only reads them.
 
 Run it from anywhere after changing a portrait: python3 art/team_colours.py   (needs Pillow and numpy)
 """
