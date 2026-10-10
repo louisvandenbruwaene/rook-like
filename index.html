@@ -227,7 +227,7 @@ const PIECES={
   N:{name:'Sir Gallops',chess:'knight',base:[2,1,0,0],val:1,text:'an L: two forward, one to the right'},
   B:{name:'Mitre Mandy',chess:'bishop',base:[2,2,0,0],val:1,text:'two sides of one corner, so she points diagonally'},
   R:{name:'Castle Carl',chess:'rook',base:[2,2,2,2],val:1,text:'two on every side, straight power'},
-  Q:{name:'Her Majesty Mayhem',chess:'queen',base:[3,3,3,3],val:1,text:'three on every side; she only joins late in a run'},
+  Q:{name:'Her Majesty Mayhem',chess:'queen',base:[3,3,3,3],val:1,text:'three on every side, and she only joins late in a run'},
   K:{name:'Old King Coal',chess:'king',base:[1,1,1,1],val:3,text:'one on every side, and he counts as 3'},
 };
 const rotate=(s,quarters)=>s.map((_,side)=>s[((side-quarters)%4+4)%4]); // turn a spike pattern clockwise
