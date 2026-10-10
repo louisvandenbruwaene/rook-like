@@ -15,13 +15,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
 <style>
-*,*::before,*::after{box-sizing:border-box}
-body{margin:0}
-[hidden]{display:none!important}
-h1,h2,button,.back,.runline,.nm,.pts,#info b,#info .lvl,.kicker,.tag,.gain,.dex b{font-family:var(--f-display)}
-
-/* Your hand on the left, the board in the middle, the opponent's hidden hand on the right; stacked on phones.
-   Every size follows the stone size --c, so the whole table fits the window. */
+/* ===== Base =====
+   Your hand on the left, the board in the middle, the opponent's hidden hand on the right; stacked on phones.
+   Every size follows the stone size --c, so the whole table fits the window. --t stretches every animation in slow motion. */
 :root{
   --c:clamp(56px,min(calc((100vh - 250px)/4.4),calc((100vw - 120px)/9.2)),128px);--gap:calc(var(--c)*.13);
   --bg:#162034; --panel:#212d45; --panel2:#2c3b59; --ink:#eef2fb; --muted:#9eadc8; --line:#3a4a6a;
@@ -32,22 +28,29 @@ h1,h2,button,.back,.runline,.nm,.pts,#info b,#info .lvl,.kicker,.tag,.gain,.dex 
   --t:1;
   color-scheme:dark;
 }
-body{background:radial-gradient(ellipse at 50% -10%,#2b3d66 0%,var(--bg) 60%) fixed var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;min-height:100vh;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+body.slow{--t:4}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:radial-gradient(ellipse at 50% -10%,#2b3d66 0%,var(--bg) 60%) fixed var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;min-height:100vh;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+h1,h2,button,.back,.runline,.nm,.pts,#info b,#info .lvl,.kicker,.tag,.gain,.dex b{font-family:var(--f-display)}
 .wrap{max-width:1300px;margin:0 auto;padding:max(10px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) 10px max(14px,env(safe-area-inset-left));display:grid;gap:10px;min-height:100vh;align-content:start}
+
+/* ===== Buttons ===== */
+button{font-size:16px;font-weight:600;border:0;border-radius:10px;padding:9px 14px;background:var(--panel2);color:var(--ink);cursor:pointer;box-shadow:0 3px 0 #0e1422;transition:transform .06s}
+button:hover{filter:brightness(1.12)}
+button:active{transform:translateY(2px);box-shadow:0 1px 0 #0e1422}
+button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+button.primary,#bSlow[aria-pressed="true"]{background:var(--accent);color:#2a2410}
+.linkbtn{background:none;box-shadow:none;color:var(--muted);font-size:13px;padding:4px 0;text-decoration:underline}
+
+/* ===== Top bar: title, run ladder, buttons ===== */
 .top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 14px}
 .title{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;min-width:0}
 .back{color:var(--muted);text-decoration:none;font-size:14px;width:100%}
 .back:hover{color:var(--accent)}
 h1{font-weight:700;font-size:28px;margin:0;letter-spacing:-.01em}
 .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-button{font-size:16px;font-weight:600;border:0;border-radius:10px;padding:9px 14px;background:var(--panel2);color:var(--ink);cursor:pointer;box-shadow:0 3px 0 #0e1422;transition:transform .06s}
-button:hover{filter:brightness(1.12)}
-button:active{transform:translateY(2px);box-shadow:0 1px 0 #0e1422}
-button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
-button.primary{background:var(--accent);color:#2a2410}
-#bSlow[aria-pressed="true"]{background:var(--accent);color:#2a2410}
-
-/* Run ladder: twenty pips, the last one is the boss. */
+/* Twenty pips, the last one is the boss. */
 .run{flex:1;min-width:200px;max-width:520px}
 .ladder{display:flex;gap:4px;align-items:center}
 .ladder i{flex:1;height:10px;border-radius:3px;background:rgba(10,14,26,.55);box-shadow:inset 0 1px 2px rgba(0,0,0,.5)}
@@ -56,8 +59,9 @@ button.primary{background:var(--accent);color:#2a2410}
 .ladder i.boss{flex:1.8;background:#2a1838;box-shadow:inset 0 0 0 2px #7d4bb8}
 .ladder i.boss.now{box-shadow:0 0 0 2px var(--accent),inset 0 0 0 2px #7d4bb8}
 .ladder i.boss.done{background:linear-gradient(#e2b6ff,#8b4fd6)}
-.runline{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-top:4px}
+.runline{font-size:13px;color:var(--muted);margin-top:4px}
 
+/* ===== Scores: you, the tug of war, the opponent ===== */
 .scores{display:grid;grid-template-columns:minmax(0,max-content) minmax(40px,1fr) minmax(0,max-content);gap:14px;align-items:center;max-width:calc(var(--c)*8.6 + 80px);width:100%;justify-self:center}
 .who{display:flex;align-items:center;gap:10px;min-width:0;padding:4px 10px;border-radius:14px;border:2px solid transparent;transition:border-color .2s}
 .who.turn{border-color:currentColor}
@@ -67,27 +71,29 @@ button.primary{background:var(--accent);color:#2a2410}
 .who .spk{font-size:13px;opacity:.6;font-variant-numeric:tabular-nums;white-space:nowrap}
 .p0{color:var(--blue)}.p1{color:var(--red)}
 .face{width:44px;height:44px;flex:none;border-radius:50%;overflow:hidden;box-shadow:0 0 0 2px currentColor}
+.tug{display:flex;height:8px;border-radius:99px;background:rgba(10,14,26,.5);overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,.5)}
+.tug div{transition:width .35s ease-out}
+.tug .t0{background:linear-gradient(90deg,#2f7fe0,var(--blue))}
+.tug .t1{background:linear-gradient(90deg,var(--red),#d8402f);margin-left:auto}
+
+/* ===== Table: the two hands around the board ===== */
 .table{display:grid;grid-template-columns:auto auto auto;gap:calc(var(--c)*.3);justify-content:center;align-items:center}
 .mid{display:grid;gap:8px}
 .hand{display:grid;grid-template-columns:repeat(2,var(--c));gap:var(--gap);align-content:center;min-height:calc(var(--c)*4 + var(--gap)*3)}
+.hand:not(.active) .hstone{opacity:.55;filter:saturate(.8)}
 .hstone{width:var(--c);height:var(--c);padding:0;background:none;box-shadow:none;border-radius:14px;transition:transform .15s,filter .15s,opacity .15s}
 .hstone:hover{filter:brightness(1.1)}
 .hstone.sel{transform:translateY(-6px) scale(1.06);background:radial-gradient(circle,rgba(243,197,74,.4) 0%,rgba(243,197,74,0) 70%)}
 .hstone:disabled{cursor:default}
-.hand:not(.active) .hstone{opacity:.55;filter:saturate(.8)}
-.backs .back{width:var(--c);height:var(--c);filter:drop-shadow(0 4px 3px rgba(0,0,0,.45))}
 .hstone:disabled:hover{filter:none}
+.backs .back{width:var(--c);height:var(--c);filter:drop-shadow(0 4px 3px rgba(0,0,0,.45))}
 .face svg,.back svg,.big svg,.hstone svg,.cell svg.stone{width:100%;height:100%;display:block}
 .hstone svg,.cell svg.stone{overflow:visible;filter:drop-shadow(0 4px 3px rgba(0,0,0,.45))}
 #info{min-height:1.5em;max-width:calc(var(--c)*4.4);justify-self:center;text-align:center;font-size:15px;color:var(--muted)}
 #info b{font-weight:600;color:var(--ink)}
 #info .lvl{color:var(--accent);font-weight:600}
 
-.tug{display:flex;height:8px;border-radius:99px;background:rgba(10,14,26,.5);overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,.5)}
-.tug div{transition:width .35s ease-out}
-.tug .t0{background:linear-gradient(90deg,#2f7fe0,var(--blue))}
-.tug .t1{background:linear-gradient(90deg,var(--red),#d8402f);margin-left:auto}
-
+/* ===== Board ===== */
 .boardwrap{position:relative}
 .board{position:relative;display:grid;grid-template-columns:repeat(var(--n),var(--c));gap:var(--gap);padding:var(--gap);border-radius:20px;
   background:var(--grain),linear-gradient(160deg,#5d6880 0%,#454f68 50%,#363f56 100%);background-blend-mode:overlay,normal;
@@ -97,55 +103,28 @@ button.primary{background:var(--accent);color:#2a2410}
   box-shadow:inset 0 4px 10px rgba(0,0,0,.55),inset 0 -1px 0 rgba(255,255,255,.08),0 1px 0 rgba(255,255,255,.1)}
 .cell.open{cursor:pointer}
 .cell.open:hover{background:rgba(243,197,74,.16);box-shadow:inset 0 0 0 3px rgba(243,197,74,.55)}
+.cell.last::before{content:"";position:absolute;left:50%;bottom:-10px;width:22px;height:4px;margin-left:-11px;border-radius:2px;background:var(--accent);box-shadow:0 0 8px var(--accent);pointer-events:none}
+/* The preview: a ghost of the selected stone, yellow rings on stones you would take, red on stones you would lose, faded spikes. */
 .cell .ghost{position:absolute;inset:0;opacity:.72;pointer-events:none}
 .cell.lose::after,.cell.hit::after{content:"";position:absolute;inset:-4px;border-radius:16px;border:3px solid var(--accent);animation:pulse .9s ease-in-out infinite;pointer-events:none}
 .cell.lose::after{border-color:var(--red)}
 .cell.crack .brk{opacity:.3}
-.cell:not(.crack) .brk{transform-box:fill-box;transform-origin:50% 100%;animation:shatter calc(.45s*var(--t)) ease-in forwards}
+
+/* ===== A move: drop, shatter, turn over ===== */
 .cell.new svg.stone{animation:drop calc(.3s*var(--t)) cubic-bezier(.3,1.5,.5,1)}
+.cell:not(.crack) .brk{transform-box:fill-box;transform-origin:50% 100%;animation:shatter calc(.45s*var(--t)) ease-in forwards}
 .flipper{position:absolute;inset:0;transform-style:preserve-3d;animation:turn calc(.42s*var(--t)*var(--pace,1)) ease-in-out forwards}
 .flipper .side-a,.flipper .side-b{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden}
 .flipper .side-b{transform:rotateY(180deg)}
 .cell.flip::after{content:"";position:absolute;inset:6px;border-radius:14px;pointer-events:none;opacity:0;background:radial-gradient(rgba(255,255,255,.6),transparent 70%);animation:flash calc(.3s*var(--t)) ease-out calc(.2s*var(--t)) forwards}
-.cell.last::before{content:"";position:absolute;left:50%;bottom:-10px;width:22px;height:4px;margin-left:-11px;border-radius:2px;background:var(--accent);box-shadow:0 0 8px var(--accent);pointer-events:none}
-body.slow{--t:4}
-
+/* Pops over the board: the name of the stone placed, and the points won or lost. */
 .gain,.tag{position:absolute;font-weight:700;pointer-events:none;transform:translate(-50%,-50%);z-index:4;white-space:nowrap}
 .gain{font-size:26px;color:var(--accent);text-shadow:0 2px 0 #0e1422,0 0 10px rgba(0,0,0,.6);animation:rise calc(1.1s*var(--t)) ease-out forwards}
 .gain.bad{color:var(--red)}
 .tag{font-size:15px;color:var(--ink);background:#0e1422;border:2px solid currentColor;border-radius:99px;padding:1px 10px;animation:tagup calc(1.3s*var(--t)) ease-out forwards}
 .tag.p0{border-color:var(--blue)}.tag.p1{border-color:var(--red)}
-/* Full-screen cards between matches: the next opponent, rewards, the end of a run. */
-.modal{position:fixed;inset:0;display:grid;place-items:center;background:rgba(10,14,26,.72);backdrop-filter:blur(3px);z-index:10;padding:16px;overflow:auto}
-.card{background:var(--panel);border:2px solid var(--line);padding:22px 24px;border-radius:18px;text-align:center;display:grid;gap:12px;width:min(520px,100%);box-shadow:0 20px 50px rgba(0,0,0,.5);animation:drop .3s ease-out}
-.card h2{font-size:28px;margin:0}
-.card p{margin:0;color:var(--muted)}
-.card .kicker{font-size:14px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
-.card .kicker.muted{color:var(--muted)}
-.card .big{width:132px;height:132px;justify-self:center;border-radius:50%;overflow:hidden;box-shadow:0 0 0 4px var(--red),0 10px 24px rgba(0,0,0,.5)}
-.card .big.boss{box-shadow:0 0 0 4px #9b5de5,0 0 40px rgba(155,93,229,.6)}
-.card q{font-style:italic;color:var(--ink);font-size:17px}
-.picks{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
-.pick{display:grid;gap:6px;justify-items:center;padding:12px 8px;background:var(--panel2);border-radius:14px;font-size:14px;font-weight:600;line-height:1.3}
-.pick svg{width:76px;height:76px;overflow:visible}
-.pick .arrow{display:flex;align-items:center;gap:2px}
-.pick .arrow svg{width:56px;height:56px}
-.pick small{font-family:var(--f-body);font-weight:400;color:var(--muted)}
-.deckrow{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
-.deckrow svg{width:52px;height:52px;overflow:visible}
 
-.card.rules{text-align:left;width:min(760px,100%);line-height:1.5}
-.rules ul{margin:0;padding-left:20px}
-.rules li{margin:4px 0}
-.dex{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin-top:10px}
-.dex div{display:grid;grid-template-columns:52px 52px 1fr;gap:8px;align-items:center;background:var(--panel2);border-radius:12px;padding:8px}
-.dex svg{width:100%;height:auto;overflow:visible}
-.dex b{font-weight:600;display:block}
-.dex span{font-size:13px;color:var(--muted)}
-.record{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
-.linkbtn{background:none;box-shadow:none;color:var(--muted);font-size:13px;padding:4px 0;text-decoration:underline}
-
-/* Rare stones on the board: poison, the flying Pope, and one-off effects of a fight. */
+/* ===== Rare stones: poison, the flying Pope, and one-off effects of a fight ===== */
 .cell.poisoned svg.stone{filter:drop-shadow(0 0 7px #7dff5a) drop-shadow(0 4px 3px rgba(0,0,0,.45))}
 .cell.poisoned::before{content:"";position:absolute;inset:18% 22% auto;height:60%;pointer-events:none;z-index:2;
   background:radial-gradient(circle at 30% 20%,#9dff6a 0 4px,transparent 5px),radial-gradient(circle at 70% 45%,#7de04a 0 3px,transparent 4px),radial-gradient(circle at 45% 75%,#9dff6a 0 3px,transparent 4px);
@@ -163,27 +142,68 @@ body.slow{--t:4}
 .cell.crumble svg.stone{animation:crumble calc(.5s*var(--t)) ease-in-out}
 .bee{position:absolute;width:10px;height:7px;margin:-3px 0 0 -5px;border-radius:50%;z-index:5;pointer-events:none;
   background:repeating-linear-gradient(90deg,#ffd34d 0 3px,#1d1d1d 3px 5px);box-shadow:0 -3px 0 -1px rgba(255,255,255,.8);animation:bee calc(1s*var(--t)) ease-in-out forwards}
-#info .bad{color:#9dff6a;font-weight:700}
+
+/* ===== Cards between matches: the next opponent, rewards, the end of a run ===== */
+.modal{position:fixed;inset:0;display:grid;place-items:center;background:rgba(10,14,26,.72);backdrop-filter:blur(3px);z-index:10;padding:16px;overflow:auto}
+#rmodal{z-index:11}
+.card{background:var(--panel);border:2px solid var(--line);padding:22px 24px;border-radius:18px;text-align:center;display:grid;gap:12px;width:min(520px,100%);box-shadow:0 20px 50px rgba(0,0,0,.5);animation:drop .3s ease-out}
+.card h2{font-size:28px;margin:0}
+.card p{margin:0;color:var(--muted)}
+.card .kicker{font-size:14px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.card .kicker.muted{color:var(--muted)}
+.card .big{width:132px;height:132px;justify-self:center;border-radius:50%;overflow:hidden;box-shadow:0 0 0 4px var(--red),0 10px 24px rgba(0,0,0,.5)}
+.card .big.boss{box-shadow:0 0 0 4px #9b5de5,0 0 40px rgba(155,93,229,.6)}
+.card q{font-style:italic;color:var(--ink);font-size:17px}
+.picks{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.pick{display:grid;gap:6px;justify-items:center;padding:12px 8px;background:var(--panel2);border-radius:14px;font-size:14px;font-weight:600;line-height:1.3}
+.pick svg{width:76px;height:76px;overflow:visible}
+.pick .arrow{display:flex;align-items:center;gap:2px}
+.pick .arrow svg{width:56px;height:56px}
+.deckrow{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+.deckrow svg{width:52px;height:52px;overflow:visible}
+
+/* ===== Rules ===== */
+.card.rules{text-align:left;width:min(760px,100%);line-height:1.5}
+.rules ul{margin:0;padding-left:20px}
+.rules li{margin:4px 0}
+.rules .foot{display:flex;justify-content:space-between;align-items:center}
+.dex{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin-top:10px}
+.dex div{display:grid;grid-template-columns:52px 52px 1fr;gap:8px;align-items:center;background:var(--panel2);border-radius:12px;padding:8px}
+.dex svg{width:100%;height:auto;overflow:visible}
+.dex b{font-weight:600;display:block}
+.dex span{font-size:13px;color:var(--muted)}
+.record{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+
+/* ===== Keyframes ===== */
+@keyframes drop{0%{transform:scale(1.35);opacity:0}100%{transform:scale(1);opacity:1}}
+@keyframes shatter{0%{transform:none;opacity:1}35%{transform:scale(1.25);opacity:1}100%{transform:translateY(-6px) scale(.2) rotate(40deg);opacity:0}}
+@keyframes turn{0%{transform:perspective(500px) rotateY(0)}50%{transform:perspective(500px) rotateY(90deg) scale(1.1)}100%{transform:perspective(500px) rotateY(180deg)}}
+@keyframes flash{0%{opacity:1;transform:scale(.4)}100%{opacity:0;transform:scale(1.5)}}
+@keyframes pulse{0%,100%{opacity:.35}50%{opacity:1}}
+@keyframes rise{0%{opacity:0;margin-top:10px}20%{opacity:1}100%{opacity:0;margin-top:-40px}}
+@keyframes tagup{0%{opacity:0;margin-top:0}15%{opacity:1;margin-top:-8px}75%{opacity:1}100%{opacity:0;margin-top:-22px}}
 @keyframes drip{0%{opacity:0;transform:translateY(-4px)}30%{opacity:1}100%{opacity:0;transform:translateY(14px)}}
 @keyframes hover{0%,100%{transform:translateY(-7%)}50%{transform:translateY(-14%)}}
 @keyframes shadow{0%,100%{transform:scaleX(1);opacity:.8}50%{transform:scaleX(.8);opacity:.5}}
 @keyframes flame{from{transform:scaleY(.75)}to{transform:scaleY(1.15)}}
 @keyframes crumble{0%,100%{transform:none}20%{transform:translateX(-4%) rotate(-4deg)}40%{transform:translateX(4%) rotate(4deg)}60%{transform:translateX(-3%) rotate(-2deg)}80%{transform:translateX(2%)}}
 @keyframes bee{0%{transform:translate(0,0) scale(.4);opacity:0}15%{opacity:1}55%{transform:translate(var(--dx),var(--dy)) scale(1)}100%{transform:translate(0,0) scale(.4);opacity:0}}
-@keyframes shatter{0%{transform:none;opacity:1}35%{transform:scale(1.25);opacity:1}100%{transform:translateY(-6px) scale(.2) rotate(40deg);opacity:0}}
-@keyframes pulse{0%,100%{opacity:.35}50%{opacity:1}}
-@keyframes drop{0%{transform:scale(1.35);opacity:0}100%{transform:scale(1);opacity:1}}
-@keyframes turn{0%{transform:perspective(500px) rotateY(0)}50%{transform:perspective(500px) rotateY(90deg) scale(1.1)}100%{transform:perspective(500px) rotateY(180deg)}}
-@keyframes rise{0%{opacity:0;margin-top:10px}20%{opacity:1}100%{opacity:0;margin-top:-40px}}
-@keyframes tagup{0%{opacity:0;margin-top:0}15%{opacity:1;margin-top:-8px}75%{opacity:1}100%{opacity:0;margin-top:-22px}}
-@keyframes flash{0%{opacity:1;transform:scale(.4)}100%{opacity:0;transform:scale(1.5)}}
-@media (prefers-reduced-motion:reduce){.cell:not(.crack) .brk{animation:none;opacity:0}.flipper{animation:none;transform:rotateY(180deg)}.cell.new svg.stone,.cell.flip::after,.cell.hit::after,.gain,.tag,.card{animation:none}}
+
+/* ===== Reduced motion, and phones ===== */
+@media (prefers-reduced-motion:reduce){
+  .cell:not(.crack) .brk{animation:none;opacity:0}
+  .flipper{animation:none;transform:rotateY(180deg)}
+  .cell.new svg.stone,.cell.flip::after,.cell.hit::after,.gain,.tag,.card{animation:none}
+}
 @media (max-width:760px){
   :root{--c:calc((100vw - 60px)/4.5)}
   .table{grid-template-columns:1fr}
   .hand{grid-template-columns:repeat(4,var(--c));min-height:0;justify-content:center}
-  .backs{order:-1;display:flex;justify-content:center;gap:4px}.backs .back{width:calc(var(--c)*.4);height:calc(var(--c)*.4)}
-  h1{font-size:23px}button{font-size:14px;padding:8px 11px}.who .nm{font-size:15px}
+  .backs{order:-1;display:flex;justify-content:center;gap:4px}
+  .backs .back{width:calc(var(--c)*.4);height:calc(var(--c)*.4)}
+  h1{font-size:23px}
+  button{font-size:14px;padding:8px 11px}
+  .who .nm{font-size:15px}
 }
 </style>
 </head>
@@ -197,6 +217,7 @@ body.slow{--t:4}
     <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".38"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/></linearGradient>
   </defs>
 </svg>
+
 <div class="wrap">
   <div class="top">
     <div class="title"><a class="back" href="../index.html">← All games</a><h1>Chain Stones</h1></div>
@@ -235,372 +256,512 @@ body.slow{--t:4}
   </ul>
   <div class="dex" id="dex"></div>
   <p class="record" id="record"></p>
-  <div style="display:flex;justify-content:space-between;align-items:center"><button class="linkbtn" id="bQuit">Give up this run</button><button class="primary" id="bClose">Back to the game</button></div>
+  <div class="foot"><button class="linkbtn" id="bQuit">Give up this run</button><button class="primary" id="bClose">Back to the game</button></div>
 </template>
 <div class="modal" id="modal" hidden><div class="card" id="mcard"></div></div>
-<div class="modal" id="rmodal" hidden style="z-index:11"><div class="card rules" id="rcard"></div></div>
+<div class="modal" id="rmodal" hidden><div class="card rules" id="rcard"></div></div>
 
 <script id="core">
-/* Rules engine, shared by the game and the computer player.
-   Squares are numbered row by row. own[i] is -1 (empty), 0 (you), 1 (the opponent) or 2 (rubble, nobody's); at[i] is the stone on it.
-   A stone is {t: piece letter, l: level, f: facing, d: variant, s: spikes [top, right, bottom, left]}, plus, when they apply,
-   poison {by, due} and grounded (a Pope whose jet pack is gone). */
-const RIGHT=1,DOWN=2,STEP=[[0,-1],[1,0],[0,1],[-1,0]],RUBBLE=2;
-const opposite=side=>(side+2)%4;
-const MAXL=5;
-// The pieces. Chess pieces grow by one spike on every spiked side per level; the rare stones follow their own table.
-// variants: names of the four turned versions (a quarter turn clockwise each). Abilities are listed per piece.
-const PIECES={
-  P:{name:'Tiny Tim',chess:'pawn',base:[1,0,0,0],variants:['Tiny Tim','Tiny Tony','Tiny Tom','Tiny Ted'],text:'a single spike'},
-  N:{name:'Sir Gallops',chess:'knight',base:[2,0,0,2],variants:['Sir Gallops','Sir Trots','Sir Canters','Sir Prances'],text:'two sides of one corner'},
-  B:{name:'Mitre Mandy',chess:'bishop',base:[2,0,2,0],text:'spikes up and down'},
-  R:{name:'Castle Carl',chess:'rook',base:[0,2,0,2],text:'spikes left and right'},
-  Q:{name:'Her Majesty Mayhem',chess:'queen',base:[2,2,2,2],text:'spikes on every side'},
-  K:{name:'Old King Coal',chess:'king',base:[0,0,0,0],shield:true,fixed:true,text:'golden shields on every side: every spike that touches him breaks, and he can never be taken'},
-  S:{name:'Serpent',rare:true,poison:true,levels:[[2,0,0,0],[2,1,0,0],[3,1,0,0],[3,1,0,1],[4,1,0,1]],text:'poisons every stone its spikes hit'},
-  W:{name:'Old Woman',rare:true,cure:true,levels:[[0,1,0,1],[1,1,0,1],[1,1,1,1],[2,1,1,1],[2,2,1,1]],text:'cures her poisoned neighbours, and becomes the Grand Empress the first time she does'},
-  E:{name:'Grand Empress',rare:true,poison:true,levels:[[3,2,2,3],[4,3,3,4],[5,4,4,5],[5,5,5,5],[5,5,5,5]],text:'knight, queen and serpent in one: her spikes poison'},
-  J:{name:'Prince Joey',rare:true,shaky:true,levels:[[3,1,2,0],[3,2,2,0],[4,2,3,0],[4,3,3,0],[5,3,4,0]],text:'every time he changes colour, a 1 in 3 chance he collapses into rubble'},
-  G:{name:'Gorilla',rare:true,fur:true,levels:[[3,1,0,1],[4,1,0,1],[4,2,0,1],[5,2,0,2],[5,2,1,2]],text:'thick fur: he loses at most one spike in a fight'},
-  H:{name:'Beekeeper',rare:true,swarm:true,levels:[[1,0,0,0],[1,0,1,0],[1,1,1,0],[2,1,1,0],[2,1,1,1]],text:'when placed, his swarm breaks one spike on every enemy side around him and grounds a Pope'},
-  O:{name:'The Pope',rare:true,pope:true,levels:[[0,2,0,2],[1,2,0,2],[1,3,1,2],[2,3,1,3],[2,4,2,3]],text:'flies on a jet pack until a swarm grounds him, and whoever loses the Pope loses the match'},
-  X:{name:'Rubble',base:[0,0,0,0],fixed:true,text:'what is left of Prince Joey, nobody\'s stone'},
+/* =====================================================================
+   RULES ENGINE
+   The board, the stones and one move, plus the computer player.
+   Shared by the game below and by stone-sheet.js; it never touches the page.
+
+   Squares are numbered row by row. own[i] is EMPTY, 0 (you), 1 (the opponent)
+   or RUBBLE (nobody's), and at[i] is the stone on square i.
+   A stone is {t: piece letter, l: level, f: facing, d: variant,
+   s: spikes [top, right, bottom, left]}, plus, when they apply,
+   poison {by, due} and grounded (a Pope whose jet pack is gone).
+   ===================================================================== */
+
+/* ---------- Constants ---------- */
+
+const EMPTY = -1;
+const RUBBLE = 2;
+const MAXL = 5; // the highest level, and the most spikes on one side
+// sides are numbered clockwise from the top: 0 top, 1 right, 2 bottom, 3 left
+const RIGHT = 1;
+const DOWN = 2;
+// prettier-ignore
+const STEP = [[0, -1], [1, 0], [0, 1], [-1, 0]]; // (dx, dy) towards each side
+const opposite = (side) => (side + 2) % 4;
+const isPlayer = (o) => o === 0 || o === 1;
+
+/* ---------- The pieces ----------
+   Chess pieces grow by one spike on every spiked side per level; the rare stones follow their own table.
+   variants: names of the four turned versions, a quarter turn clockwise each.
+   The flags (shield, fixed, poison, cure, shaky, fur, swarm, pope) switch on each piece's power. */
+
+// prettier-ignore
+const PIECES = {
+  P: { name: 'Tiny Tim',           chess: 'pawn',   base: [1, 0, 0, 0], variants: ['Tiny Tim', 'Tiny Tony', 'Tiny Tom', 'Tiny Ted'],
+       text: 'a single spike' },
+  N: { name: 'Sir Gallops',        chess: 'knight', base: [2, 0, 0, 2], variants: ['Sir Gallops', 'Sir Trots', 'Sir Canters', 'Sir Prances'],
+       text: 'two sides of one corner' },
+  B: { name: 'Mitre Mandy',        chess: 'bishop', base: [2, 0, 2, 0], text: 'spikes up and down' },
+  R: { name: 'Castle Carl',        chess: 'rook',   base: [0, 2, 0, 2], text: 'spikes left and right' },
+  Q: { name: 'Her Majesty Mayhem', chess: 'queen',  base: [2, 2, 2, 2], text: 'spikes on every side' },
+  K: { name: 'Old King Coal',      chess: 'king',   base: [0, 0, 0, 0], shield: true, fixed: true,
+       text: 'golden shields on every side: every spike that touches him breaks, and he can never be taken' },
+
+  //                                          level 1       level 2       level 3       level 4       level 5
+  S: { name: 'Serpent',       poison: true, levels: [[2, 0, 0, 0], [2, 1, 0, 0], [3, 1, 0, 0], [3, 1, 0, 1], [4, 1, 0, 1]],
+       text: 'poisons every stone its spikes hit' },
+  W: { name: 'Old Woman',     cure: true,   levels: [[0, 1, 0, 1], [1, 1, 0, 1], [1, 1, 1, 1], [2, 1, 1, 1], [2, 2, 1, 1]],
+       text: 'cures her poisoned neighbours, and becomes the Grand Empress the first time she does' },
+  E: { name: 'Grand Empress', poison: true, levels: [[3, 2, 2, 3], [4, 3, 3, 4], [5, 4, 4, 5], [5, 5, 5, 5], [5, 5, 5, 5]],
+       text: 'knight, queen and serpent in one: her spikes poison' },
+  J: { name: 'Prince Joey',   shaky: true,  levels: [[3, 1, 2, 0], [3, 2, 2, 0], [4, 2, 3, 0], [4, 3, 3, 0], [5, 3, 4, 0]],
+       text: 'every time he changes colour, a 1 in 3 chance he collapses into rubble' },
+  G: { name: 'Gorilla',       fur: true,    levels: [[3, 1, 0, 1], [4, 1, 0, 1], [4, 2, 0, 1], [5, 2, 0, 2], [5, 2, 1, 2]],
+       text: 'thick fur: he loses at most one spike in a fight' },
+  H: { name: 'Beekeeper',     swarm: true,  levels: [[1, 0, 0, 0], [1, 0, 1, 0], [1, 1, 1, 0], [2, 1, 1, 0], [2, 1, 1, 1]],
+       text: 'when placed, his swarm breaks one spike on every enemy side around him and grounds a Pope' },
+  O: { name: 'The Pope',      pope: true,   levels: [[0, 2, 0, 2], [1, 2, 0, 2], [1, 3, 1, 2], [2, 3, 1, 3], [2, 4, 2, 3]],
+       text: 'flies on a jet pack until a swarm grounds him, and whoever loses the Pope loses the match' },
+
+  X: { name: 'Rubble', base: [0, 0, 0, 0], fixed: true, text: "what is left of Prince Joey, nobody's stone" },
 };
-const rotate=(s,quarters)=>s.map((_,side)=>s[((side-quarters)%4+4)%4]); // turn a spike pattern clockwise
-function spikesAt(t,l){
-  const P=PIECES[t];
-  return P.levels?P.levels[l-1].slice():P.base.map(x=>x?Math.min(MAXL,x+l-1):0);
+
+/* ---------- Stones ---------- */
+
+// Turns a spike pattern clockwise by a number of quarter turns.
+const rotate = (s, quarters) => s.map((_, side) => s[(((side - quarters) % 4) + 4) % 4]);
+
+function spikesAt(t, l) {
+  const P = PIECES[t];
+  return P.levels ? P.levels[l - 1].slice() : P.base.map((x) => (x ? Math.min(MAXL, x + l - 1) : 0));
 }
-function mkStone(t,l,f,d=0){
-  // d picks one of the four turned variants (only pieces that have variants turn).
-  // f is the facing: 0 points up the board (you), 1 points down (the opponent), so the pattern turns half way round.
-  if(!PIECES[t].variants)d=0;
-  return {t,l,f,d,s:rotate(spikesAt(t,l),d+2*f)};
+
+// d picks one of the four turned variants (only pieces that have variants turn).
+// f is the facing: 0 points up the board (you), 1 points down (the opponent), so the pattern turns half way round.
+function mkStone(t, l, f, d = 0) {
+  if (!PIECES[t].variants) d = 0;
+  return { t, l, f, d, s: rotate(spikesAt(t, l), d + 2 * f) };
 }
-const stoneName=stone=>PIECES[stone.t].variants?PIECES[stone.t].variants[stone.d]:PIECES[stone.t].name;
+
+const stoneName = (stone) => (PIECES[stone.t].variants ? PIECES[stone.t].variants[stone.d] : PIECES[stone.t].name);
+const spikeCount = (stone) => stone.s.reduce((a, b) => a + b, 0);
+// The king can never be taken, and a flying Pope not yet.
+const takeable = (stone) => !PIECES[stone.t].shield && !(PIECES[stone.t].pope && !stone.grounded);
+
 // Decks are written as codes: piece letter, level, and for a turned stone its direction, e.g. N2, P1> or N1v.
-const DIRECTIONS='^>v<';
-function parseCode(code){
-  const [,t,l,dir]=/^([A-Z])(\d)([\^>v<]?)$/.exec(code);
-  return {t,l:+l,d:dir?DIRECTIONS.indexOf(dir):0};
+const DIRECTIONS = '^>v<';
+function parseCode(code) {
+  const [, t, l, dir] = /^([A-Z])(\d)([\^>v<]?)$/.exec(code);
+  return { t, l: +l, d: dir ? DIRECTIONS.indexOf(dir) : 0 };
 }
-const stoneOf=(code,f)=>{const {t,l,d}=parseCode(code);return mkStone(t,l,f,d);};
-const withLevel=(code,l)=>code[0]+l+code.slice(2);
-function neighbour(n,cell,side){
-  const x=cell%n+STEP[side][0],y=(cell/n|0)+STEP[side][1];
-  return x<0||y<0||x>=n||y>=n?-1:y*n+x;
+function stoneOf(code, f) {
+  const { t, l, d } = parseCode(code);
+  return mkStone(t, l, f, d);
 }
-const distance=(n,a,b)=>Math.abs(a%n-b%n)+Math.abs((a/n|0)-(b/n|0));
-function newGame(n,hands,first){return {n,own:new Int8Array(n*n).fill(-1),at:new Array(n*n).fill(null),hands,turn:first,first,moves:0};}
-const over=g=>g.winner!==undefined||!g.own.includes(-1); // a full board, or a Pope was taken
-const full=over;
-function score(g,p){let k=0;for(let i=0;i<g.own.length;i++)if(g.own[i]===p)k++;return k;}
-function spikes(g,p){let k=0;for(let i=0;i<g.own.length;i++)if(g.own[i]===p)k+=g.at[i].s.reduce((a,b)=>a+b,0);return k;}
+
+/* ---------- The board ---------- */
+
+// The square next to `cell` on `side`, or -1 off the board.
+function neighbour(n, cell, side) {
+  const x = (cell % n) + STEP[side][0];
+  const y = ((cell / n) | 0) + STEP[side][1];
+  return x < 0 || y < 0 || x >= n || y >= n ? -1 : y * n + x;
+}
+const distance = (n, a, b) => Math.abs((a % n) - (b % n)) + Math.abs(((a / n) | 0) - ((b / n) | 0));
+
+function newGame(n, hands, first) {
+  return {
+    n,
+    own: new Int8Array(n * n).fill(EMPTY),
+    at: new Array(n * n).fill(null),
+    hands,
+    turn: first,
+    first,
+    moves: 0,
+  };
+}
+
+// A match ends when the board is full or a Pope was taken.
+const over = (g) => g.winner !== undefined || !g.own.includes(EMPTY);
+
+function score(g, p) {
+  let k = 0;
+  for (let i = 0; i < g.own.length; i++) if (g.own[i] === p) k++;
+  return k;
+}
+function spikes(g, p) {
+  let k = 0;
+  for (let i = 0; i < g.own.length; i++) if (g.own[i] === p) k += spikeCount(g.at[i]);
+  return k;
+}
+
 // Who wins a finished match: the Pope, then points, then spikes left, then whoever placed first (the other side moved last).
-function winnerOf(g){
-  if(g.winner!==undefined)return g.winner;
-  const edge=score(g,0)-score(g,1)||spikes(g,0)-spikes(g,1);
-  return edge?(edge>0?0:1):g.first;
+function winnerOf(g) {
+  if (g.winner !== undefined) return g.winner;
+  const edge = score(g, 0) - score(g, 1) || spikes(g, 0) - spikes(g, 1);
+  return edge ? (edge > 0 ? 0 : 1) : g.first;
 }
-const isPlayer=o=>o===0||o===1;
-const takeable=stone=>!PIECES[stone.t].shield&&!(PIECES[stone.t].pope&&!stone.grounded); // the king never, a flying Pope not yet
 
-/* ---------- One fight ---------- */
-// Facing spikes break off one for one, and a spike that hits is gone: the winner always spends at least one spike.
-// So 2 v 1 ends 1 v 0, 1 v 0 ends 0 v 0 and 2 v 2 ends 0 v 0. A golden shield breaks every spike that touches it,
-// and a gorilla loses at most one spike in a fight.
-const spent=(mine,theirs)=>mine>theirs?Math.max(theirs,1):Math.min(mine,theirs);
-function breakSpikes(g,cell,side,count,step){
-  if(PIECES[g.at[cell].t].fur)count=Math.min(count,1);
-  if(!count)return;
-  const s=g.at[cell].s.slice();s[side]-=count;
-  g.at[cell]={...g.at[cell],s};
-  g.broke.push([cell,side,count,step]);
+/* ---------- One fight ----------
+   Facing spikes break off one for one, and a spike that hits is gone: the winner always spends at least one spike.
+   So 2 v 1 ends 1 v 0, 1 v 0 ends 0 v 0 and 2 v 2 ends 0 v 0. A golden shield breaks every spike that touches it,
+   and a gorilla loses at most one spike in a fight. */
+
+const spent = (mine, theirs) => (mine > theirs ? Math.max(theirs, 1) : Math.min(mine, theirs));
+
+function breakSpikes(g, cell, side, count, step) {
+  if (PIECES[g.at[cell].t].fur) count = Math.min(count, 1);
+  if (!count) return;
+  const s = g.at[cell].s.slice();
+  s[side] -= count;
+  g.at[cell] = { ...g.at[cell], s };
+  g.broke.push([cell, side, count, step]);
 }
-function fight(g,i,side,q,step){
-  // The stones on i and q meet across one line. Returns the spikes before the fight, [spikes of i, spikes of q],
-  // and the winner's square (or -1): the winner takes the other stone if it can be taken.
-  const e=opposite(side),A=g.at[i],B=g.at[q],a=A.s[side],b=B.s[e];
-  poisonHit(g,i,q,a);poisonHit(g,q,i,b);
-  if(PIECES[A.t].shield||PIECES[B.t].shield){
-    if(PIECES[A.t].shield)breakSpikes(g,q,e,b,step);
-    if(PIECES[B.t].shield)breakSpikes(g,i,side,a,step);
-    return [a,b,-1];
+
+// A poisonous stone that hits with at least one spike poisons the other stone, win or lose. Two moves later
+// that stone goes to the poisoner's side, unless an Old Woman of its own colour cures it first.
+function poisonHit(g, from, to, hits) {
+  if (!hits || !PIECES[g.at[from].t].poison || !takeable(g.at[to])) return;
+  g.at[to] = { ...g.at[to], poison: { by: g.own[from], due: g.moves + 2 } };
+}
+
+// The stones on i and q meet across one line. Returns the spikes before the fight, [spikes of i, spikes of q],
+// and the winner's square (or -1): the winner takes the other stone if it can be taken.
+function fight(g, i, side, q, step) {
+  const e = opposite(side);
+  const A = g.at[i];
+  const B = g.at[q];
+  const a = A.s[side];
+  const b = B.s[e];
+  poisonHit(g, i, q, a);
+  poisonHit(g, q, i, b);
+  if (PIECES[A.t].shield || PIECES[B.t].shield) {
+    if (PIECES[A.t].shield) breakSpikes(g, q, e, b, step);
+    if (PIECES[B.t].shield) breakSpikes(g, i, side, a, step);
+    return [a, b, -1];
   }
-  breakSpikes(g,i,side,spent(a,b),step);
-  breakSpikes(g,q,e,spent(b,a),step);
-  return [a,b,a>b?i:b>a?q:-1];
-}
-function poisonHit(g,from,to,spikes){
-  // A poisonous stone that hits with at least one spike poisons the other stone, win or lose. Two moves later
-  // that stone goes to the poisoner's side, unless an Old Woman of its own colour cures it first.
-  if(!spikes||!PIECES[g.at[from].t].poison||!takeable(g.at[to]))return;
-  g.at[to]={...g.at[to],poison:{by:g.own[from],due:g.moves+2}};
+  breakSpikes(g, i, side, spent(a, b), step);
+  breakSpikes(g, q, e, spent(b, a), step);
+  return [a, b, a > b ? i : b > a ? q : -1];
 }
 
-/* ---------- One move ---------- */
-function play(g,handIndex,cell,luck){
-  // Returns the game after the player to move puts stone handIndex on cell. luck() decides Prince Joey's collapses;
-  // without it (the computer's search, the preview) he never collapses. Besides the board it records, per step
-  // (step 0 is the new stone's own fights, then one step per fight of the chain):
-  // lines: every fight as [from, to, spikes from, spikes to, step]; flips: colour changes as [cell, new owner, step];
-  // broke: spikes broken as [cell, side, count, step]; promoted: Old Women who became the Grand Empress as [cell, step].
-  const me=g.turn;
-  const a={n:g.n,own:g.own.slice(),at:g.at.slice(),hands:g.hands.slice(),turn:1-me,first:g.first,moves:g.moves+1,winner:g.winner,
-    lines:[],flips:[],broke:[],luck};
-  a.hands[me]=g.hands[me].filter((_,i)=>i!==handIndex);
-  a.own[cell]=me;a.at[cell]=g.hands[me][handIndex];
-  if(PIECES[a.at[cell].t].swarm)swarm(a,cell);
-  newStoneFights(a,cell);
-  let step=spreadFights(a,cell,1);
-  step=cures(a,step); // an Old Woman cures before the poison takes effect
-  step=poisonWorks(a,step);
-  step=cures(a,step);
+/* ---------- One move ----------
+   play() returns the game after the player to move puts stone handIndex on cell. luck() decides Prince Joey's
+   collapses; without it (the computer's search, the preview) he never collapses. Besides the board it records,
+   per step (step 0 is the new stone's own fights, then one step per fight of the chain):
+     lines:    every fight as [from, to, spikes from, spikes to, step]
+     flips:    colour changes as [cell, new owner, step] (plus Joey's old stone when he collapses)
+     broke:    spikes broken as [cell, side, count, step]
+     promoted: Old Women who became the Grand Empress as [cell, step] */
+
+function play(g, handIndex, cell, luck) {
+  const me = g.turn;
+  const a = {
+    n: g.n,
+    own: g.own.slice(),
+    at: g.at.slice(),
+    hands: g.hands.slice(),
+    turn: 1 - me,
+    first: g.first,
+    moves: g.moves + 1,
+    winner: g.winner,
+    lines: [],
+    flips: [],
+    broke: [],
+    luck,
+  };
+  a.hands[me] = g.hands[me].filter((_, i) => i !== handIndex);
+  a.own[cell] = me;
+  a.at[cell] = g.hands[me][handIndex];
+  if (PIECES[a.at[cell].t].swarm) swarm(a, cell);
+  newStoneFights(a, cell);
+  let step = spreadFights(a, cell, 1);
+  step = cures(a, step); // an Old Woman cures before the poison takes effect
+  step = poisonWorks(a, step);
+  step = cures(a, step);
   delete a.luck;
   return a;
 }
-function flip(a,c,step){
-  // The stone on c changes colour, unless it cannot be taken. A Pope that changes colour loses the match for his side,
-  // and Prince Joey may collapse into rubble.
-  const stone=a.at[c],owner=1-a.own[c];
-  if(!takeable(stone))return false;
-  if(PIECES[stone.t].pope&&a.winner===undefined)a.winner=owner;
-  if(PIECES[stone.t].shaky&&a.luck&&a.luck()<1/3){
-    a.own[c]=RUBBLE;a.at[c]=mkStone('X',1,0);a.flips.push([c,RUBBLE,step,stone]);return true; // keeps Joey for the animation
-  }
-  a.own[c]=owner;a.at[c]={...stone,poison:undefined};a.flips.push([c,owner,step]);
-  return true;
-}
-function swarm(a,cell){
-  // The Beekeeper's swarm stings the eight squares around him: one spike off every spiked enemy side, and a Pope is grounded.
-  const n=a.n,x=cell%n,y=cell/n|0,me=a.own[cell];
-  for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
-    const X=x+dx,Y=y+dy,q=Y*n+X;
-    if((!dx&&!dy)||X<0||Y<0||X>=n||Y>=n||a.own[q]!==1-me)continue;
-    for(let side=0;side<4;side++)if(a.at[q].s[side]>0)breakSpikes(a,q,side,1,0);
-    if(PIECES[a.at[q].t].pope)a.at[q]={...a.at[q],grounded:true};
+
+// The Beekeeper's swarm stings the eight squares around him: one spike off every spiked enemy side, and a Pope is grounded.
+function swarm(a, cell) {
+  const n = a.n;
+  const x = cell % n;
+  const y = (cell / n) | 0;
+  const me = a.own[cell];
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      const X = x + dx;
+      const Y = y + dy;
+      const q = Y * n + X;
+      if ((!dx && !dy) || X < 0 || Y < 0 || X >= n || Y >= n || a.own[q] !== 1 - me) continue;
+      for (let side = 0; side < 4; side++) if (a.at[q].s[side] > 0) breakSpikes(a, q, side, 1, 0);
+      if (PIECES[a.at[q].t].pope) a.at[q] = { ...a.at[q], grounded: true };
+    }
   }
 }
-function newStoneFights(a,cell){
-  // Step 0: the new stone fights every enemy neighbour at once. Each win takes that stone;
-  // losing any of these fights gets the new stone taken.
-  const me=a.own[cell],won=[];
-  let lost=false;
-  for(let side=0;side<4;side++){
-    const q=neighbour(a.n,cell,side);
-    if(q<0||a.own[q]!==1-me)continue;
-    const [x,y,winner]=fight(a,cell,side,q,0);
-    if(!x&&!y)continue;
-    a.lines.push([cell,q,x,y,0]);
-    if(winner===cell)won.push(q);
-    if(winner===q)lost=true;
+
+// Step 0: the new stone fights every enemy neighbour at once. Each win takes that stone;
+// losing any of these fights gets the new stone taken.
+function newStoneFights(a, cell) {
+  const me = a.own[cell];
+  const won = [];
+  let lost = false;
+  for (let side = 0; side < 4; side++) {
+    const q = neighbour(a.n, cell, side);
+    if (q < 0 || a.own[q] !== 1 - me) continue;
+    const [x, y, winner] = fight(a, cell, side, q, 0);
+    if (!x && !y) continue;
+    a.lines.push([cell, q, x, y, 0]);
+    if (winner === cell) won.push(q);
+    if (winner === q) lost = true;
   }
-  for(const q of won)flip(a,q,0);
-  if(lost)flip(a,cell,0);
+  for (const q of won) flip(a, q, 0);
+  if (lost) flip(a, cell, 0);
 }
-function spreadFights(a,origin,step){
-  // Then, as long as two stones of different colours touch with a spike between them, the line closest to the
-  // origin fights. Every fight uses up at least one spike, so this always ends, and when it does no two stones of
-  // different colours touch with a spike between them. Returns the next free step number.
-  for(;;step++){
-    const line=closestOpenLine(a,origin);
-    if(!line)return step;
-    const [,i,side,q]=line,[x,y,winner]=fight(a,i,side,q,step);
-    a.lines.push([i,q,x,y,step]);
-    if(winner>=0)flip(a,winner===i?q:i,step);
+
+// Then, as long as two stones of different colours touch with a spike between them, the line closest to the
+// origin fights. Every fight uses up at least one spike, so this always ends, and when it does no two stones of
+// different colours touch with a spike between them. Returns the next free step number.
+function spreadFights(a, origin, step) {
+  for (; ; step++) {
+    const line = closestOpenLine(a, origin);
+    if (!line) return step;
+    const [, i, side, q] = line;
+    const [x, y, winner] = fight(a, i, side, q, step);
+    a.lines.push([i, q, x, y, step]);
+    if (winner >= 0) flip(a, winner === i ? q : i, step);
   }
 }
-function poisonWorks(a,step){
-  // Poison that is due: the stone goes to the poisoner's side, and the fights spread from it.
-  for(let c=0;c<a.own.length;c++){
-    const p=a.at[c]&&a.at[c].poison;
-    if(!p||p.due>a.moves)continue;
-    a.at[c]={...a.at[c],poison:undefined};
-    if(!isPlayer(a.own[c])||a.own[c]===p.by)continue;
-    if(flip(a,c,step))step=spreadFights(a,c,step+1);
+
+// Two stones of different colours with a spike between them.
+const isOpen = (g, i, side, q) =>
+  q >= 0 &&
+  isPlayer(g.own[i]) &&
+  isPlayer(g.own[q]) &&
+  g.own[q] !== g.own[i] &&
+  (g.at[i].s[side] > 0 || g.at[q].s[opposite(side)] > 0);
+
+// Lines are checked to the right and downwards from every stone, so each line is seen once; the first of
+// equally close lines wins, which is row by row from the top left.
+function closestOpenLine(g, origin) {
+  let best = null;
+  for (let i = 0; i < g.own.length; i++) {
+    if (g.own[i] < 0) continue;
+    for (const side of [RIGHT, DOWN]) {
+      const q = neighbour(g.n, i, side);
+      if (!isOpen(g, i, side, q)) continue;
+      const dist = Math.min(distance(g.n, i, origin), distance(g.n, q, origin));
+      if (!best || dist < best[0]) best = [dist, i, side, q];
+    }
+  }
+  return best;
+}
+
+// Poison that is due: the stone goes to the poisoner's side, and the fights spread from it.
+function poisonWorks(a, step) {
+  for (let c = 0; c < a.own.length; c++) {
+    const p = a.at[c] && a.at[c].poison;
+    if (!p || p.due > a.moves) continue;
+    a.at[c] = { ...a.at[c], poison: undefined };
+    if (!isPlayer(a.own[c]) || a.own[c] === p.by) continue;
+    if (flip(a, c, step)) step = spreadFights(a, c, step + 1);
   }
   return step;
 }
-function cures(a,step){
-  // An Old Woman cures every poisoned stone of her colour that touches her, and the first cure makes her the Grand Empress.
-  // Her new spikes fight at once, spreading from her square. Returns the next free step number.
-  for(let c=0;c<a.own.length;c++){
-    if(!a.at[c]||!a.at[c].poison||!isPlayer(a.own[c]))continue;
-    for(let side=0;side<4;side++){
-      const w=neighbour(a.n,c,side);
-      if(w<0||a.own[w]!==a.own[c]||!PIECES[a.at[w].t].cure)continue;
-      a.at[c]={...a.at[c],poison:undefined};
-      const old=a.at[w];a.at[w]={...mkStone('E',old.l,old.f),poison:old.poison};
-      a.promoted=(a.promoted||[]).concat([[w,step]]);
-      step=spreadFights(a,w,step);
+
+// An Old Woman cures every poisoned stone of her colour that touches her, and the first cure makes her the Grand Empress.
+// Her new spikes fight at once, spreading from her square. Returns the next free step number.
+function cures(a, step) {
+  for (let c = 0; c < a.own.length; c++) {
+    if (!a.at[c] || !a.at[c].poison || !isPlayer(a.own[c])) continue;
+    for (let side = 0; side < 4; side++) {
+      const w = neighbour(a.n, c, side);
+      if (w < 0 || a.own[w] !== a.own[c] || !PIECES[a.at[w].t].cure) continue;
+      a.at[c] = { ...a.at[c], poison: undefined };
+      const old = a.at[w];
+      a.at[w] = { ...mkStone('E', old.l, old.f), poison: old.poison };
+      a.promoted = (a.promoted || []).concat([[w, step]]);
+      step = spreadFights(a, w, step);
       break;
     }
   }
   return step;
 }
-const isOpen=(g,i,side,q)=>q>=0&&isPlayer(g.own[i])&&isPlayer(g.own[q])&&g.own[q]!==g.own[i] // two stones of different colours
-  &&(g.at[i].s[side]>0||g.at[q].s[opposite(side)]>0);                                          // with a spike between them
-function closestOpenLine(g,origin){
-  // Lines are checked to the right and downwards from every stone, so each line is seen once; the first of
-  // equally close lines wins, which is row by row from the top left.
-  let best=null;
-  for(let i=0;i<g.own.length;i++){
-    if(g.own[i]<0)continue;
-    for(const side of [RIGHT,DOWN]){
-      const q=neighbour(g.n,i,side);
-      if(!isOpen(g,i,side,q))continue;
-      const dist=Math.min(distance(g.n,i,origin),distance(g.n,q,origin));
-      if(!best||dist<best[0])best=[dist,i,side,q];
-    }
+
+// The stone on c changes colour, unless it cannot be taken. A Pope that changes colour loses the match for his side,
+// and Prince Joey may collapse into rubble.
+function flip(a, c, step) {
+  const stone = a.at[c];
+  const owner = 1 - a.own[c];
+  if (!takeable(stone)) return false;
+  if (PIECES[stone.t].pope && a.winner === undefined) a.winner = owner;
+  if (PIECES[stone.t].shaky && a.luck && a.luck() < 1 / 3) {
+    a.own[c] = RUBBLE;
+    a.at[c] = mkStone('X', 1, 0);
+    a.flips.push([c, RUBBLE, step, stone]); // keeps Joey for the animation
+    return true;
   }
-  return best;
+  a.own[c] = owner;
+  a.at[c] = { ...stone, poison: undefined };
+  a.flips.push([c, owner, step]);
+  return true;
 }
 
-/* ---------- Helpers for the computer player ---------- */
-const gain=(g,h,c)=>score(play(g,h,c),g.turn)-score(g,g.turn);
-function legal(g){
-  // Stones with the same piece, level and variant play alike, so only the first of each is tried.
-  const seen=new Set(),moves=[];
-  g.hands[g.turn].forEach((s,h)=>{
-    const key=s.t+s.l+s.d;
-    if(seen.has(key))return;seen.add(key);
-    for(let c=0;c<g.own.length;c++)if(g.own[c]<0)moves.push([h,c]);
+/* =====================================================================
+   COMPUTER PLAYER
+   Negamax with alpha-beta pruning and iterative deepening: it searches one move deeper each round until its
+   thinking time is up or it reaches maxDepth (the difficulty).
+   A position is worth: point difference x2000, plus spike difference x2 (at most 640, so a point always
+   outweighs them), plus 1 for having placed first, the same order of tiebreaks as winnerOf.
+   Taking the Pope ends the match and is worth more than any score.
+   ===================================================================== */
+
+let deadline = 0;
+let aborted = false;
+let nodes = 0;
+const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
+
+// The points a move wins for the player making it.
+const gain = (g, h, c) => score(play(g, h, c), g.turn) - score(g, g.turn);
+
+// Every move of the player to move. Stones with the same piece, level and variant play alike, so only the first of each is tried.
+function legal(g) {
+  const seen = new Set();
+  const moves = [];
+  g.hands[g.turn].forEach((s, h) => {
+    const key = s.t + s.l + s.d;
+    if (seen.has(key)) return;
+    seen.add(key);
+    for (let c = 0; c < g.own.length; c++) if (g.own[c] < 0) moves.push([h, c]);
   });
   return moves;
 }
 
-/* Computer player: negamax with alpha-beta and iterative deepening. Scores are point differences x2000,
-   plus spike differences x2 (at most 640, so a point always outweighs them), plus 1 for having placed first:
-   the same order of tiebreaks as winnerOf. Taking the Pope ends the match and is worth more than any score. */
-let deadline=0,aborted=false,nodes=0;
-const now=()=>typeof performance!=='undefined'?performance.now():Date.now();
-const lead=g=>{
-  const me=g.turn,you=1-me;
-  if(g.winner!==undefined)return g.winner===me?1e6:-1e6;
-  return (score(g,me)-score(g,you))*2000+(spikes(g,me)-spikes(g,you))*2+(g.first===me?1:-1);
-};
-function ordered(g){return legal(g).map(m=>[m,gain(g,...m)]).sort((x,y)=>y[1]-x[1]).map(x=>x[0]);}
-function evaluate(g){
-  if(over(g))return lead(g);
-  let best=0;for(const m of legal(g))best=Math.max(best,gain(g,...m));
-  return lead(g)+1200*best; // the side to move can cash in its best capture next
+// The position from the point of view of the player to move.
+function lead(g) {
+  const me = g.turn;
+  const you = 1 - me;
+  if (g.winner !== undefined) return g.winner === me ? 1e6 : -1e6;
+  return (score(g, me) - score(g, you)) * 2000 + (spikes(g, me) - spikes(g, you)) * 2 + (g.first === me ? 1 : -1);
 }
-function nega(g,depth,alpha,beta){
-  if((++nodes&255)===0&&now()>deadline)aborted=true;
-  if(aborted)return 0;
-  if(over(g))return lead(g);
-  if(depth===0)return evaluate(g);
-  let best=-1e9;
-  for(const m of ordered(g)){
-    const v=-nega(play(g,...m),depth-1,-beta,-alpha);
-    if(aborted)return 0;
-    best=Math.max(best,v);alpha=Math.max(alpha,v);
-    if(alpha>=beta)break;
+
+// Moves sorted best capture first, which makes alpha-beta cut far more.
+const ordered = (g) =>
+  legal(g)
+    .map((m) => [m, gain(g, ...m)])
+    .sort((x, y) => y[1] - x[1])
+    .map((x) => x[0]);
+
+// At the end of the search: the position, plus most of the best capture the side to move can make next.
+function evaluate(g) {
+  if (over(g)) return lead(g);
+  let best = 0;
+  for (const m of legal(g)) best = Math.max(best, gain(g, ...m));
+  return lead(g) + 1200 * best;
+}
+
+function nega(g, depth, alpha, beta) {
+  if ((++nodes & 255) === 0 && now() > deadline) aborted = true;
+  if (aborted) return 0;
+  if (over(g)) return lead(g);
+  if (depth === 0) return evaluate(g);
+  let best = -1e9;
+  for (const m of ordered(g)) {
+    const v = -nega(play(g, ...m), depth - 1, -beta, -alpha);
+    if (aborted) return 0;
+    best = Math.max(best, v);
+    alpha = Math.max(alpha, v);
+    if (alpha >= beta) break;
   }
   return best;
 }
-function think(g,ms,rnd=Math.random,maxDepth=99){
-  // Starts from a greedy move, then searches one move deeper each round until the time is up.
-  const moves=ordered(g),pick=list=>list[rnd()*list.length|0];
-  const gains=moves.map(m=>gain(g,...m)),top=Math.max(...gains);
-  let best=pick(moves.filter((_,i)=>gains[i]===top));
-  deadline=now()+ms;
-  const empties=g.own.filter(o=>o<0).length;
-  for(let depth=1;depth<=Math.min(maxDepth,empties);depth++){
-    aborted=false;nodes=0;
-    let alpha=-1e9;const scored=[];
-    for(const m of [best,...moves.filter(m=>m!==best)]){
-      const v=-nega(play(g,...m),depth-1,-1e9,-(alpha-1)); // the window keeps ties exact so we can pick among them
-      if(aborted)break;
-      scored.push([m,v]);alpha=Math.max(alpha,v);
+
+// The move to play: [hand index, square]. Starts from a greedy move, then searches one move deeper each round.
+// Among equally good moves it picks at random (rnd), so it does not always play the same game.
+function think(g, ms, rnd = Math.random, maxDepth = 99) {
+  const moves = ordered(g);
+  const pick = (list) => list[(rnd() * list.length) | 0];
+  const gains = moves.map((m) => gain(g, ...m));
+  const top = Math.max(...gains);
+  let best = pick(moves.filter((_, i) => gains[i] === top));
+  deadline = now() + ms;
+  const empties = g.own.filter((o) => o < 0).length;
+  for (let depth = 1; depth <= Math.min(maxDepth, empties); depth++) {
+    aborted = false;
+    nodes = 0;
+    let alpha = -1e9;
+    const scored = [];
+    for (const m of [best, ...moves.filter((m) => m !== best)]) {
+      const v = -nega(play(g, ...m), depth - 1, -1e9, -(alpha - 1)); // the window keeps ties exact so we can pick among them
+      if (aborted) break;
+      scored.push([m, v]);
+      alpha = Math.max(alpha, v);
     }
-    if(aborted)break;
-    best=pick(scored.filter(x=>x[1]>=alpha).map(x=>x[0]));
+    if (aborted) break;
+    best = pick(scored.filter((x) => x[1] >= alpha).map((x) => x[0]));
   }
   return best;
 }
-if(typeof module!=='undefined')module.exports={PIECES,MAXL,RUBBLE,mkStone,stoneName,parseCode,stoneOf,withLevel,newGame,over,full,score,spikes,winnerOf,play,gain,legal,think};
+
+if (typeof module !== 'undefined')
+  module.exports = {
+    PIECES,
+    MAXL,
+    RUBBLE,
+    mkStone,
+    stoneName,
+    parseCode,
+    stoneOf,
+    newGame,
+    over,
+    score,
+    spikes,
+    winnerOf,
+    play,
+    gain,
+    legal,
+    think,
+  };
 </script>
 
-<script>
-const $=s=>document.querySelector(s);
-const N=4,RUN=20,BASE='P1^ P1> P1< N1 B1 R1 Q1 K1'; // Tiny Tim, Tony and Ted; Tiny Tom comes from the first opponents
+<script id="art">
+/* =====================================================================
+   ART
+   Every stone and portrait is an SVG string drawn in code. Shared with stone-sheet.js.
+   ===================================================================== */
 
-/* Settings and the saved run live in localStorage. */
-function load(key,fallback){try{return Object.assign(fallback,JSON.parse(localStorage.getItem(key)||'{}'));}catch(e){return fallback;}}
-const cfg=load('chainstones-cfg',{slow:false});
-const save=load('chainstones-run',{meta:BASE.split(' '),best:0,runs:0,champs:0,run:null});
-// Saves from before the rare stones and the golden king start over with the new starting hand.
-if(save.version!==2){save.meta=BASE.split(' ');save.run=null;save.version=2;}
-function store(){try{localStorage.setItem('chainstones-run',JSON.stringify(save));localStorage.setItem('chainstones-cfg',JSON.stringify(cfg));}catch(e){}}
-const T=ms=>ms*(cfg.slow?4:1); // every timing goes through T so slow-mo stretches the whole move
-const later=(ms,fn)=>timers.push(setTimeout(fn,T(ms)));
+/* ---------- Colours ---------- */
 
-/* Opponents. Each plays one deck, its rare stone included, and every match you have won makes it stronger. The boss plays match 20. */
-const FOES=[
-  {name:'Pawnbroker Pete',line:'Everything has a price. My gorilla collects.',deck:'P1^ P1> P1v P1< N1 B1 G1 K1',rare:'G',face:'pete'},
-  {name:'Sir Neighsalot',line:'Hold your horses. All of them.',deck:'N1 N1> N1v P1^ P1> H1 R1 K1',rare:'H',face:'neigh'},
-  {name:'Madame Swerve',line:'Darling, I never take the straight road.',deck:'B1 B1 S1 P1^ P1> P1v N1 K1',rare:'S',face:'swerve'},
-  {name:'Blocky Barb',line:'Square deal. Square face. Square loss.',deck:'R1 R1 P1^ P1> P1v P1< N1 K1',face:'barb'},
-  {name:'Lady Lux',line:'I brought my sisters. You brought Tiny Tims.',deck:'Q1 W1 B1 P1^ P1> P1v N1 K1',rare:'W',face:'lux'},
-  {name:'Uncle Gambit',line:'I sacrifice. You suffer.',deck:'N1 B1 R1 J1 P1^ P1> P1v K1',rare:'J',face:'gambit'},
+// Spike colours: you, the opponent, rubble. The stone bodies use the gradients in the page's <defs>.
+const STONE = [
+  { lite: '#bfe0ff', mid: '#5aa6f5', dark: '#123a6e' },
+  { lite: '#ffd0c4', mid: '#f06a55', dark: '#6e1a12' },
+  { lite: '#8a8a96', mid: '#55555f', dark: '#0b0b0e' },
 ];
-const BOSS={name:'The Obsidian Monarch',line:'Nineteen boards behind you. One crown ahead.',deck:'O1 Q1 Q1 R1 B1 N1 N1> K1',rare:'O',face:'boss',boss:true};
+const INK = '#2a1e1a';
+const SKIN = '#f2c9a0';
 
-// Difficulty, picked at the start of a run: how many moves ahead the opponent looks (its own move counts as one).
-// Hard looks as deep as it can in its thinking time, which in the last moves of a match is to the very end.
-const LEVELS={easy:{name:'Easy',depth:1},normal:{name:'Normal',depth:2},hard:{name:'Hard',depth:99}};
-const level=()=>LEVELS[save.run.level||'hard']; // runs from before difficulties were added play on hard
+/* ---------- Characters: drawn in a 56 x 56 box that sits on the stone's face ---------- */
 
-const nameOf=code=>{const s=stoneOf(code,0);return stoneName(s)+(PIECES[s.t].fixed?'':` Lv ${s.l}`);};
-const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]];}return a;};
-function newRun(){
-  // Each of the six regulars shows up three times in a random order, plus one extra, then the boss.
-  // Lady Lux, whose Old Woman cures poison, always comes before Madame Swerve and her Serpent.
-  const order=shuffle([0,1,2,3,4,5,0,1,2,3,4,5,0,1,2,3,4,5,Math.random()*6|0]);
-  const lux=order.indexOf(4),swerve=order.indexOf(2);
-  if(swerve<lux)[order[swerve],order[lux]]=[order[lux],order[swerve]];
-  save.run={m:1,deck:save.meta.slice(),order,changed:[]};save.runs++;store();
-}
-// Every match you have won adds LEVELS_PER_WIN levels to the opponent's stones, most valuable first and round robin,
-// never above 5; the king and rubble never change. The boss starts BOSS_EXTRA levels ahead.
-const LEVELS_PER_WIN=1,BOSS_EXTRA=6,GROWTH='OEQGJRBSNHWP';
-function strengthen(deck,levels){
-  const stones=deck.split(' ').map(c=>({t:c[0],l:+c[1],dir:c.slice(2)}));
-  const order=stones.filter(st=>GROWTH.includes(st.t)).sort((a,b)=>GROWTH.indexOf(a.t)-GROWTH.indexOf(b.t));
-  for(let added=0,round=0;added<levels&&round<MAXL;round++)
-    for(const st of order)if(added<levels&&st.l<MAXL){st.l++;added++;}
-  return stones.map(st=>st.t+st.l+st.dir).join(' ');
-}
-const deckFor=(f,wins)=>strengthen(f.deck,wins*LEVELS_PER_WIN+(f.boss?BOSS_EXTRA:0));
-const foeOf=m=>m===RUN?BOSS:FOES[save.run.order[m-1]];
-const firstOf=m=>m===RUN?1:m%2?0:1; // you place first in odd matches, the boss always first
-
-/* ---------- Drawing ---------- */
-const STONE=[{lite:'#bfe0ff',mid:'#5aa6f5',dark:'#123a6e'},{lite:'#ffd0c4',mid:'#f06a55',dark:'#6e1a12'},{lite:'#8a8a96',mid:'#55555f',dark:'#0b0b0e'}]; // you, the opponent, rubble
-const INK='#2a1e1a',SKIN='#f2c9a0';
-// Characters drawn in a 56 x 56 box that sits on the stone's face.
-const ART={
-  P:`<path d="M17 54 Q18 38 28 36 Q38 38 39 54 Z" fill="#e3d6bd" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>
+const ART = {
+  P: `<path d="M17 54 Q18 38 28 36 Q38 38 39 54 Z" fill="#e3d6bd" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>
 <path d="M20 44 q-5 4 -3 9 M36 44 q5 4 3 9" stroke="${INK}" stroke-width="2" fill="none" stroke-linecap="round"/>
 <circle cx="28" cy="24" r="11" fill="${SKIN}" stroke="${INK}" stroke-width="2"/>
 <path d="M21 20 L26 18.5 M35 20 L30 18.5" stroke="${INK}" stroke-width="1.8" stroke-linecap="round"/>
 <circle cx="24" cy="24" r="1.7" fill="${INK}"/><circle cx="32" cy="24" r="1.7" fill="${INK}"/>
 <path d="M23.5 30.5 q2 -2 3.5 0 q2 2 3.5 0 q1 -1.5 2 0" fill="none" stroke="${INK}" stroke-width="1.6" stroke-linecap="round"/>
 <path d="M40 13 q4 5 0 7.5 q-4 -2.5 0 -7.5 Z" fill="#9fd8ff" stroke="${INK}" stroke-width="1.2"/>`,
-  N:`<path d="M41 54 L40 34 Q42 21 36 14 L38 5 L31.5 10.5 L28 5 L26.5 12 Q17 14 11 26 Q8 31 12.5 34.5 Q17 37 22 33 L26 32 Q24 43 18 54 Z" fill="#e7c398" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>
+  N: `<path d="M41 54 L40 34 Q42 21 36 14 L38 5 L31.5 10.5 L28 5 L26.5 12 Q17 14 11 26 Q8 31 12.5 34.5 Q17 37 22 33 L26 32 Q24 43 18 54 Z" fill="#e7c398" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>
 <path d="M36 14 Q47 21 45 34 Q48 44 46 54 L41 54 L40 34 Q42 21 36 14 Z" fill="#7a4a2a" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>
 <circle cx="26" cy="19.5" r="5" fill="#fff" stroke="${INK}" stroke-width="1.6"/><circle cx="27.3" cy="21" r="2.3" fill="${INK}"/>
 <circle cx="14" cy="29" r="1.4" fill="${INK}"/>
 <path d="M14.5 34 L14.5 38 L18 38 L18 33.5" fill="#fff" stroke="${INK}" stroke-width="1.3" stroke-linejoin="round"/>`,
-  B:`<path d="M17 55 Q24 47 22.5 43 Q17 37 22 33 L34 33 Q39 37 33.5 43 Q32 47 39 55 Z" fill="#8a4fd1" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>
+  B: `<path d="M17 55 Q24 47 22.5 43 Q17 37 22 33 L34 33 Q39 37 33.5 43 Q32 47 39 55 Z" fill="#8a4fd1" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>
 <path d="M22.6 42.5 Q28 45 33.4 42.5" fill="none" stroke="#f3c54a" stroke-width="2.2"/>
 <circle cx="28" cy="25" r="7.5" fill="${SKIN}" stroke="${INK}" stroke-width="2"/>
 <path d="M21.5 20.5 Q20.5 10 28 2.5 Q35.5 10 34.5 20.5 Z" fill="#fbefd9" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>
 <path d="M30.5 6 L25.5 14" stroke="${INK}" stroke-width="1.6"/><path d="M21.5 18 H34.5" stroke="#f3c54a" stroke-width="2"/>
 <path d="M24 25 q1.5 -1.5 3 0" stroke="${INK}" stroke-width="1.4" fill="none"/><circle cx="31.5" cy="25" r="1.3" fill="${INK}"/>
 <path d="M25.5 28.5 q2.5 2 5 0" stroke="#c0304e" stroke-width="1.6" fill="none" stroke-linecap="round"/>`,
-  R:`<rect x="11" y="43" width="34" height="13" fill="#2fa7a0" stroke="${INK}" stroke-width="2"/>
+  R: `<rect x="11" y="43" width="34" height="13" fill="#2fa7a0" stroke="${INK}" stroke-width="2"/>
 <rect x="22" y="43" width="12" height="4" fill="#c99868"/>
 <rect x="13" y="9" width="30" height="32" fill="#c99868" stroke="${INK}" stroke-width="2"/>
 <path d="M13 9 H43 V17 H39 V14 H17 V17 H13 Z" fill="#4a2f1c"/>
@@ -609,7 +770,7 @@ const ART={
 <rect x="30.5" y="23" width="4" height="4" fill="#4a3b9a"/><rect x="34.5" y="23" width="4.5" height="4" fill="#fff"/>
 <rect x="25.5" y="27" width="5" height="4" fill="#8a5a3a"/><rect x="21.5" y="32" width="13" height="3.5" fill="#6b3a24"/>
 <rect x="21.5" y="35.5" width="4" height="3" fill="#6b3a24"/><rect x="30.5" y="35.5" width="4" height="3" fill="#6b3a24"/>`,
-  Q:`<path d="M13 54 Q9 30 15.5 17 Q28 6 40.5 17 Q47 30 43 54 Q37 47 37 36 L19 36 Q19 47 13 54 Z" fill="#f0bf48" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>
+  Q: `<path d="M13 54 Q9 30 15.5 17 Q28 6 40.5 17 Q47 30 43 54 Q37 47 37 36 L19 36 Q19 47 13 54 Z" fill="#f0bf48" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>
 <path d="M17 56 Q19 43 28 42 Q37 43 39 56 Z" fill="#d6427a" stroke="${INK}" stroke-width="2"/>
 <ellipse cx="28" cy="28" rx="10" ry="12" fill="${SKIN}" stroke="${INK}" stroke-width="2"/>
 <path d="M18.5 22 Q24 14 33 17 Q37 19 38 24 Q33 18 25 20 Z" fill="#f0bf48" stroke="${INK}" stroke-width="1.5" stroke-linejoin="round"/>
@@ -618,7 +779,7 @@ const ART={
 <path d="M21.5 27 l-2 -1.5 M34.5 27 l2 -1.5 M23 28 l-1 1.6 M33 28 l1 1.6" stroke="${INK}" stroke-width="1.2" stroke-linecap="round"/>
 <circle cx="21" cy="32" r="2.3" fill="#ff8aa8" opacity=".6"/><circle cx="35" cy="32" r="2.3" fill="#ff8aa8" opacity=".6"/>
 <path d="M25 34 q3 2.6 6 0 q-3 -1.2 -6 0 Z" fill="#e0304e" stroke="#a01d35" stroke-width=".8"/><circle cx="34" cy="35.5" r=".9" fill="${INK}"/>`,
-  K:`<circle cx="28" cy="31" r="12.5" fill="${SKIN}" stroke="${INK}" stroke-width="2"/>
+  K: `<circle cx="28" cy="31" r="12.5" fill="${SKIN}" stroke="${INK}" stroke-width="2"/>
 <path d="M15.5 31 Q15 52 28 54 Q41 52 40.5 31 Q37 40 28 40 Q19 40 15.5 31 Z" fill="#8a5a3a" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>
 <path d="M20 37.5 Q28 31.5 36 37.5 Q28 35.5 20 37.5 Z" fill="#6a4228" stroke="${INK}" stroke-width="1.2" stroke-linejoin="round"/>
 <circle cx="23.5" cy="29" r="1.8" fill="${INK}"/><circle cx="32.5" cy="29" r="1.8" fill="${INK}"/>
@@ -626,14 +787,14 @@ const ART={
 <path d="M13 22 L13 6 L20.5 12.5 L28 2 L35.5 12.5 L43 6 L43 22 Z" fill="#ffcf3f" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>
 <rect x="13" y="17.5" width="30" height="4.5" fill="#e0a92e" stroke="${INK}" stroke-width="1.4"/>
 <circle cx="20.5" cy="14.5" r="2" fill="#4aa3ff" stroke="${INK}" stroke-width="1"/><circle cx="28" cy="12" r="2.4" fill="#e0304e" stroke="${INK}" stroke-width="1"/><circle cx="35.5" cy="14.5" r="2" fill="#3cc47a" stroke="${INK}" stroke-width="1"/>`,
-  S:`<path d="M10 50 Q4 40 14 36 Q26 33 24 26 Q22 18 30 15" fill="none" stroke="${INK}" stroke-width="9" stroke-linecap="round"/>
+  S: `<path d="M10 50 Q4 40 14 36 Q26 33 24 26 Q22 18 30 15" fill="none" stroke="${INK}" stroke-width="9" stroke-linecap="round"/>
 <path d="M10 50 Q4 40 14 36 Q26 33 24 26 Q22 18 30 15" fill="none" stroke="#5fb24a" stroke-width="6" stroke-linecap="round"/>
 <path d="M12 46 L16 44 M15 38 L19 37 M22 30 L26 30 M24 22 L28 22" stroke="#2f6e27" stroke-width="1.6" stroke-linecap="round"/>
 <path d="M27 8 Q40 4 46 13 Q46 22 36 23 Q27 22 26 15 Z" fill="#6cc153" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>
 <circle cx="37" cy="12" r="2.2" fill="#ffe14a" stroke="${INK}" stroke-width="1"/><path d="M37 10.6 V13.4" stroke="${INK}" stroke-width="1"/>
 <path d="M40 21 L41 26 L43 21 M44 18 L49 20 M49 20 L52 18 M49 20 L52 22" fill="#fff" stroke="${INK}" stroke-width="1.2" stroke-linejoin="round"/>
 <path d="M44 18 L49 20" stroke="#e0304e" stroke-width="1.6"/>`,
-  W:`<path d="M15 55 Q16 40 28 38 Q40 40 41 55 Z" fill="#8a6d9e" stroke="${INK}" stroke-width="2"/>
+  W: `<path d="M15 55 Q16 40 28 38 Q40 40 41 55 Z" fill="#8a6d9e" stroke="${INK}" stroke-width="2"/>
 <path d="M17 44 Q28 50 39 44 L38 41 Q28 46 18 41 Z" fill="#c9b6d6" stroke="${INK}" stroke-width="1.2"/>
 <circle cx="28" cy="26" r="11" fill="${SKIN}" stroke="${INK}" stroke-width="2"/>
 <path d="M17 24 Q18 12 28 12 Q38 12 39 24 Q34 17 28 17 Q22 17 17 24 Z" fill="#d6d6dc" stroke="${INK}" stroke-width="1.6"/>
@@ -642,7 +803,7 @@ const ART={
 <circle cx="23.5" cy="26" r="1" fill="${INK}"/><circle cx="32.5" cy="26" r="1" fill="${INK}"/>
 <path d="M24 32 q4 2.4 8 0" stroke="${INK}" stroke-width="1.5" fill="none" stroke-linecap="round"/>
 <path d="M44 20 Q49 20 49 25 M48 24 L45 55" fill="none" stroke="#7a4a2a" stroke-width="2.6" stroke-linecap="round"/>`,
-  E:`<path d="M12 55 Q14 38 28 37 Q42 38 44 55 Z" fill="#6a2fb0" stroke="${INK}" stroke-width="2"/>
+  E: `<path d="M12 55 Q14 38 28 37 Q42 38 44 55 Z" fill="#6a2fb0" stroke="${INK}" stroke-width="2"/>
 <path d="M18 42 Q24 50 28 44 Q32 50 38 42" fill="none" stroke="#6cc153" stroke-width="2.4" stroke-linecap="round"/><circle cx="38" cy="42" r="1.8" fill="#6cc153" stroke="${INK}" stroke-width=".8"/>
 <circle cx="28" cy="27" r="10.5" fill="${SKIN}" stroke="${INK}" stroke-width="2"/>
 <path d="M18 26 Q18 14 28 14 Q38 14 38 26 Q34 20 28 20 Q22 20 18 26 Z" fill="#d6d6dc" stroke="${INK}" stroke-width="1.5"/>
@@ -650,7 +811,7 @@ const ART={
 <circle cx="20.5" cy="11.5" r="1.8" fill="#6cc153" stroke="${INK}" stroke-width=".8"/><circle cx="28" cy="9" r="2.2" fill="#e0304e" stroke="${INK}" stroke-width=".8"/><circle cx="35.5" cy="11.5" r="1.8" fill="#4aa3ff" stroke="${INK}" stroke-width=".8"/>
 <path d="M22.5 27 q2 -2 4 0 M29.5 27 q2 -2 4 0" stroke="${INK}" stroke-width="1.6" fill="none" stroke-linecap="round"/>
 <path d="M24 32.5 q4 2 8 0" stroke="#a01d35" stroke-width="1.6" fill="none" stroke-linecap="round"/>`,
-  J:`<path d="M15 55 Q16 41 28 39 Q40 41 41 55 Z" fill="#3b9ad8" stroke="${INK}" stroke-width="2"/>
+  J: `<path d="M15 55 Q16 41 28 39 Q40 41 41 55 Z" fill="#3b9ad8" stroke="${INK}" stroke-width="2"/>
 <path d="M28 39 L25 55 M28 39 L31 55" stroke="#ffd34d" stroke-width="2"/>
 <circle cx="28" cy="27" r="11.5" fill="${SKIN}" stroke="${INK}" stroke-width="2"/>
 <path d="M16 17 L19 7 L23 13 L28 4 L31 12 L36 8 L37 17 Z" fill="#ffcf3f" stroke="${INK}" stroke-width="1.7" stroke-linejoin="round" transform="rotate(-14 27 13)"/>
@@ -658,85 +819,102 @@ const ART={
 <circle cx="33" cy="25" r="2.4" fill="#fff" stroke="${INK}" stroke-width="1.2"/><circle cx="31.9" cy="25.4" r="1.1" fill="${INK}"/>
 <path d="M22 33 Q28 37 34 32" fill="none" stroke="${INK}" stroke-width="1.6" stroke-linecap="round"/>
 <rect x="26" y="33.5" width="3" height="3" fill="#fff" stroke="${INK}" stroke-width=".8"/><rect x="29" y="33.3" width="3" height="3" fill="#fff" stroke="${INK}" stroke-width=".8"/>`,
-  G:`<path d="M9 55 Q8 38 28 35 Q48 38 47 55 Z" fill="#3d3a40" stroke="${INK}" stroke-width="2"/>
+  G: `<path d="M9 55 Q8 38 28 35 Q48 38 47 55 Z" fill="#3d3a40" stroke="${INK}" stroke-width="2"/>
 <circle cx="28" cy="26" r="14" fill="#3d3a40" stroke="${INK}" stroke-width="2"/>
 <path d="M17 26 Q17 16 28 16 Q39 16 39 26 Q39 36 28 37 Q17 36 17 26 Z" fill="#8c7b78" stroke="${INK}" stroke-width="1.5"/>
 <path d="M17.5 21 Q28 15 38.5 21 L38 24 Q28 19 18 24 Z" fill="#2a272c"/>
 <circle cx="23.5" cy="24" r="1.8" fill="${INK}"/><circle cx="32.5" cy="24" r="1.8" fill="${INK}"/>
 <ellipse cx="28" cy="29.5" rx="5" ry="3" fill="#5d4f4c"/><circle cx="26" cy="29.5" r="1" fill="${INK}"/><circle cx="30" cy="29.5" r="1" fill="${INK}"/>
 <path d="M23 33.5 Q28 31.5 33 33.5" stroke="${INK}" stroke-width="1.5" fill="none"/>`,
-  H:`<path d="M15 55 Q16 40 28 38 Q40 40 41 55 Z" fill="#f2e6c4" stroke="${INK}" stroke-width="2"/>
+  H: `<path d="M15 55 Q16 40 28 38 Q40 40 41 55 Z" fill="#f2e6c4" stroke="${INK}" stroke-width="2"/>
 <circle cx="28" cy="27" r="10.5" fill="${SKIN}" stroke="${INK}" stroke-width="2"/>
 <path d="M14 18 Q28 4 42 18 Z" fill="#f2e6c4" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/><path d="M10 19 H46" stroke="${INK}" stroke-width="2.4" stroke-linecap="round"/>
 <path d="M14 19 L15 38 M42 19 L41 38 M17 19 V38 M21 19 V38 M25 19 V38 M29 19 V38 M33 19 V38 M37 19 V38 M40 19 V38 M15 24 H41 M15 29 H41 M15 34 H41" stroke="${INK}" stroke-opacity=".28" stroke-width=".9"/>
 <circle cx="24" cy="27" r="1.6" fill="${INK}"/><circle cx="32" cy="27" r="1.6" fill="${INK}"/><path d="M25 32 q3 2 6 0" stroke="${INK}" stroke-width="1.4" fill="none"/>
 <g transform="translate(43 44)"><ellipse rx="5" ry="3.6" fill="#ffd34d" stroke="${INK}" stroke-width="1.2"/><path d="M-1.5 -3.4 V3.4 M1.5 -3.4 V3.4" stroke="${INK}" stroke-width="1.4"/><ellipse cx="-1" cy="-4.5" rx="3" ry="2" fill="#fff" fill-opacity=".8" stroke="${INK}" stroke-width=".8"/></g>`,
-  O:`<path d="M13 55 Q15 39 28 37 Q41 39 43 55 Z" fill="#fbfbf6" stroke="${INK}" stroke-width="2"/>
+  O: `<path d="M13 55 Q15 39 28 37 Q41 39 43 55 Z" fill="#fbfbf6" stroke="${INK}" stroke-width="2"/>
 <path d="M28 38 V55 M23 46 H33" stroke="#e0a92e" stroke-width="2.4"/>
 <circle cx="28" cy="29" r="9.5" fill="${SKIN}" stroke="${INK}" stroke-width="2"/>
 <path d="M19.5 22 Q19 8 28 2 Q37 8 36.5 22 Z" fill="#fbfbf6" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>
 <path d="M28 6 V18 M24 11 H32" stroke="#e0a92e" stroke-width="2.2" stroke-linecap="round"/>
 <path d="M24 29 q1.5 -1.5 3 0 M29 29 q1.5 -1.5 3 0" stroke="${INK}" stroke-width="1.4" fill="none" stroke-linecap="round"/>
 <path d="M25 33.5 q3 2 6 0" stroke="${INK}" stroke-width="1.4" fill="none" stroke-linecap="round"/>`,
-  X:`<path d="M6 30 L14 18 L24 22 L30 12 L42 16 L50 28 L46 44 L32 50 L18 48 L8 42 Z" fill="#26262c" stroke="#0b0b0e" stroke-width="2" stroke-linejoin="round"/>
+  X: `<path d="M6 30 L14 18 L24 22 L30 12 L42 16 L50 28 L46 44 L32 50 L18 48 L8 42 Z" fill="#26262c" stroke="#0b0b0e" stroke-width="2" stroke-linejoin="round"/>
 <path d="M14 18 L20 32 L30 12 M20 32 L32 30 L42 16 M32 30 L46 44 M20 32 L18 48 M32 30 L32 50" fill="none" stroke="#45454f" stroke-width="1.4"/>
-<path d="M22 26 L26 24 M36 22 L38 26" stroke="#6a6a76" stroke-width="1.2"/>`
+<path d="M22 26 L26 24 M36 22 L38 26" stroke="#6a6a76" stroke-width="1.2"/>`,
 };
-function spike(x,base,hw,tip,cls,P){
-  return `<g${cls}><path d="M${x-hw} ${base} L${x} ${tip} L${x} ${base}Z" fill="${P.lite}"/><path d="M${x} ${tip} L${x+hw} ${base} L${x} ${base}Z" fill="${P.mid}"/><path d="M${x-hw} ${base} L${x} ${tip} L${x+hw} ${base}" fill="none" stroke="${P.dark}" stroke-width="1.8" stroke-linejoin="round"/></g>`;
+
+/* ---------- Stones: spikes, body, the whole stone, the back of a hidden stone ---------- */
+
+// One faceted spike pointing up from (x, base) to the tip: a light half and a dark half.
+function spike(x, base, hw, tip, cls, P) {
+  return `<g${cls}><path d="M${x - hw} ${base} L${x} ${tip} L${x} ${base}Z" fill="${P.lite}"/><path d="M${x} ${tip} L${x + hw} ${base} L${x} ${base}Z" fill="${P.mid}"/><path d="M${x - hw} ${base} L${x} ${tip} L${x + hw} ${base}" fill="none" stroke="${P.dark}" stroke-width="1.8" stroke-linejoin="round"/></g>`;
 }
-const stoneBody=owner=>`<rect x="15" y="19" width="70" height="70" rx="12" fill="${STONE[owner].dark}"/>
+const stoneBody = (owner) => `<rect x="15" y="19" width="70" height="70" rx="12" fill="${STONE[owner].dark}"/>
 <rect x="15" y="15" width="70" height="70" rx="12" fill="url(#body${owner})" stroke="${STONE[owner].dark}" stroke-width="2.5"/>
 <rect x="18" y="18" width="64" height="64" rx="9" fill="url(#sheen)"/>`;
-function stoneSVG(stone,owner,cls='stone',brk){
+function stoneSVG(stone, owner, cls = 'stone', brk) {
   // Spikes are faceted triangles outside the square, light half and dark half; the character sits on top.
   // brk[d] extra spikes on side d are drawn breaking off.
-  const P=STONE[owner];
-  let sp='';
-  if(PIECES[stone.t].shield)for(let d=0;d<4;d++)sp+=`<rect x="25" y="5.5" width="50" height="10" rx="5" fill="url(#gold)" stroke="#8a5a00" stroke-width="2" transform="rotate(${d*90} 50 50)"/>`; // golden shields
-  for(let d=0;d<4;d++){
-    const k=stone.s[d],tot=k+(brk?brk[d]:0);if(!tot)continue;
-    const w=tot<=3?18:tot===4?14.5:12,hw=tot<=3?7.5:w/2;
-    let g='';for(let j=0;j<tot;j++)g+=spike(50+(j-(tot-1)/2)*w,17,hw,1,j>=k?' class="brk"':'',P);
-    sp+=`<g transform="rotate(${d*90} 50 50)">${g}</g>`;
+  const P = STONE[owner];
+  let sp = '';
+  if (PIECES[stone.t].shield) {
+    // golden shields, one per side
+    for (let d = 0; d < 4; d++) {
+      sp += `<rect x="25" y="5.5" width="50" height="10" rx="5" fill="url(#gold)" stroke="#8a5a00" stroke-width="2" transform="rotate(${d * 90} 50 50)"/>`;
+    }
+  }
+  for (let d = 0; d < 4; d++) {
+    const k = stone.s[d];
+    const tot = k + (brk ? brk[d] : 0);
+    if (!tot) continue;
+    const w = tot <= 3 ? 18 : tot === 4 ? 14.5 : 12;
+    const hw = tot <= 3 ? 7.5 : w / 2;
+    let g = '';
+    for (let j = 0; j < tot; j++) g += spike(50 + (j - (tot - 1) / 2) * w, 17, hw, 1, j >= k ? ' class="brk"' : '', P);
+    sp += `<g transform="rotate(${d * 90} 50 50)">${g}</g>`;
   }
   return `<svg class="${cls}" viewBox="0 0 100 100" aria-hidden="true">${sp}${stoneBody(owner)}
 <g transform="translate(18.5 17) scale(1.13)">${ART[stone.t]}</g></svg>`;
 }
-const backSVG=()=>`<svg viewBox="0 0 100 100">${stoneBody(1)}<text x="50" y="66" text-anchor="middle" font-family="Fredoka,system-ui" font-weight="700" font-size="44" fill="#ffe0d6" opacity=".85">?</text></svg>`;
-const FACES={
-  pete:`<rect width="100" height="100" fill="#6b5a3e"/><path d="M14 100 Q16 74 50 70 Q84 74 86 100Z" fill="#3a2f2a"/><path d="M42 72 L50 84 L58 72Z" fill="#fff"/><path d="M40 80 L50 76 L60 80 L60 86 L50 82 L40 86Z" fill="#c43c3c"/>
+const backSVG = () =>
+  `<svg viewBox="0 0 100 100">${stoneBody(1)}<text x="50" y="66" text-anchor="middle" font-family="Fredoka,system-ui" font-weight="700" font-size="44" fill="#ffe0d6" opacity=".85">?</text></svg>`;
+
+/* ---------- Opponent portraits, 100 x 100 ---------- */
+
+const FACES = {
+  pete: `<rect width="100" height="100" fill="#6b5a3e"/><path d="M14 100 Q16 74 50 70 Q84 74 86 100Z" fill="#3a2f2a"/><path d="M42 72 L50 84 L58 72Z" fill="#fff"/><path d="M40 80 L50 76 L60 80 L60 86 L50 82 L40 86Z" fill="#c43c3c"/>
 <ellipse cx="50" cy="46" rx="25" ry="28" fill="#f0c49a" stroke="${INK}" stroke-width="2.5"/><ellipse cx="42" cy="26" rx="10" ry="4" fill="#fff" opacity=".35"/>
 <circle cx="40" cy="44" r="3" fill="${INK}"/><circle cx="60" cy="44" r="8" fill="rgba(200,230,255,.35)" stroke="#e0a92e" stroke-width="2.5"/><circle cx="60" cy="44" r="3" fill="${INK}"/><path d="M68 47 Q74 60 70 72" stroke="#e0a92e" stroke-width="1.5" fill="none"/>
 <path d="M30 60 Q38 52 50 58 Q62 52 70 60 Q66 64 62 60 Q56 62 50 61 Q44 62 38 60 Q34 64 30 60Z" fill="#5a3a22" stroke="${INK}" stroke-width="1.5"/>`,
-  neigh:`<rect width="100" height="100" fill="#3d5470"/><path d="M14 100 Q16 76 50 72 Q84 76 86 100Z" fill="#8a96a8" stroke="${INK}" stroke-width="2"/>
+  neigh: `<rect width="100" height="100" fill="#3d5470"/><path d="M14 100 Q16 76 50 72 Q84 76 86 100Z" fill="#8a96a8" stroke="${INK}" stroke-width="2"/>
 <path d="M50 6 Q68 0 74 20 Q64 12 56 16Z" fill="#e0304e" stroke="${INK}" stroke-width="2"/>
 <path d="M26 72 L26 36 Q26 14 50 14 Q74 14 74 36 L74 72 Z" fill="#b8c2d0" stroke="${INK}" stroke-width="2.5"/>
 <path d="M30 40 H70 V48 H30Z" fill="#1a2030"/><path d="M50 14 V40 M50 48 V72" stroke="#8a96a8" stroke-width="3"/>
 <g fill="#1a2030"><circle cx="38" cy="58" r="1.8"/><circle cx="44" cy="62" r="1.8"/><circle cx="56" cy="62" r="1.8"/><circle cx="62" cy="58" r="1.8"/></g>
 <circle cx="40" cy="44" r="2.2" fill="#ffe08a"/><circle cx="60" cy="44" r="2.2" fill="#ffe08a"/>`,
-  swerve:`<rect width="100" height="100" fill="#5b3d75"/><circle cx="50" cy="20" r="18" fill="#a23ec6" stroke="${INK}" stroke-width="2.5"/><path d="M20 60 Q18 28 50 26 Q82 28 80 60 Q76 76 70 90 L30 90 Q24 76 20 60Z" fill="#a23ec6" stroke="${INK}" stroke-width="2.5"/>
+  swerve: `<rect width="100" height="100" fill="#5b3d75"/><circle cx="50" cy="20" r="18" fill="#a23ec6" stroke="${INK}" stroke-width="2.5"/><path d="M20 60 Q18 28 50 26 Q82 28 80 60 Q76 76 70 90 L30 90 Q24 76 20 60Z" fill="#a23ec6" stroke="${INK}" stroke-width="2.5"/>
 <path d="M18 100 Q22 80 50 78 Q78 80 82 100Z" fill="#f3c54a" stroke="${INK}" stroke-width="2"/>
 <ellipse cx="50" cy="54" rx="20" ry="23" fill="#d9a07a" stroke="${INK}" stroke-width="2.5"/>
 <path d="M30 46 H70 L68 54 Q60 58 54 52 H46 Q40 58 32 54Z" fill="#14141c" stroke="${INK}" stroke-width="1.5"/><path d="M34 48 L40 48" stroke="#fff" stroke-width="2" opacity=".6"/>
 <path d="M42 66 Q50 72 58 66 Q50 69 42 66Z" fill="#c0304e" stroke="#801a30" stroke-width="1.5"/>`,
-  barb:`<rect width="100" height="100" fill="#3e6b4a"/><rect x="18" y="80" width="64" height="20" fill="#d9c13a" stroke="${INK}" stroke-width="2.5"/>
+  barb: `<rect width="100" height="100" fill="#3e6b4a"/><rect x="18" y="80" width="64" height="20" fill="#d9c13a" stroke="${INK}" stroke-width="2.5"/>
 <rect x="24" y="20" width="52" height="58" fill="#e8b590" stroke="${INK}" stroke-width="2.5"/><rect x="24" y="14" width="52" height="16" fill="#e0603a" stroke="${INK}" stroke-width="2.5"/><rect x="24" y="30" width="8" height="18" fill="#e0603a"/><rect x="68" y="30" width="8" height="18" fill="#e0603a"/>
 <rect x="32" y="40" width="14" height="10" fill="none" stroke="${INK}" stroke-width="3"/><rect x="54" y="40" width="14" height="10" fill="none" stroke="${INK}" stroke-width="3"/><path d="M46 44 H54" stroke="${INK}" stroke-width="3"/>
 <rect x="37" y="43" width="5" height="5" fill="${INK}"/><rect x="58" y="43" width="5" height="5" fill="${INK}"/>
 <rect x="38" y="62" width="24" height="5" fill="#8a3a2a"/><rect x="34" y="58" width="5" height="5" fill="#8a3a2a"/><rect x="61" y="58" width="5" height="5" fill="#8a3a2a"/>`,
-  lux:`<rect width="100" height="100" fill="#7a3550"/><path d="M18 76 Q14 30 50 20 Q86 30 82 76 Q70 66 70 50 L30 50 Q30 66 18 76Z" fill="#2a1a24" stroke="${INK}" stroke-width="2.5"/>
+  lux: `<rect width="100" height="100" fill="#7a3550"/><path d="M18 76 Q14 30 50 20 Q86 30 82 76 Q70 66 70 50 L30 50 Q30 66 18 76Z" fill="#2a1a24" stroke="${INK}" stroke-width="2.5"/>
 <path d="M10 100 Q14 78 30 80 Q40 86 50 82 Q60 86 70 80 Q86 78 90 100Z" fill="#ff8ac4" stroke="${INK}" stroke-width="2"/><g fill="#ffb6dc"><circle cx="20" cy="86" r="6"/><circle cx="34" cy="88" r="6"/><circle cx="66" cy="88" r="6"/><circle cx="80" cy="86" r="6"/></g>
 <ellipse cx="50" cy="52" rx="20" ry="24" fill="#f5cfb0" stroke="${INK}" stroke-width="2.5"/>
 <path d="M36 48 q5 4 10 0 M54 48 q5 4 10 0" stroke="${INK}" stroke-width="2.4" fill="none" stroke-linecap="round"/><path d="M36 48 l-3 -3 M38 49 l-2 -4 M64 48 l3 -3 M62 49 l2 -4" stroke="${INK}" stroke-width="1.6"/>
 <circle cx="35" cy="58" r="4" fill="#ff8aa8" opacity=".6"/><circle cx="65" cy="58" r="4" fill="#ff8aa8" opacity=".6"/>
 <path d="M43 64 Q50 70 57 64 Q50 61 43 64Z" fill="#e0304e" stroke="#a01d35" stroke-width="1.2"/><circle cx="62" cy="64" r="1.6" fill="${INK}"/>`,
-  gambit:`<rect width="100" height="100" fill="#4a4a52"/><path d="M14 100 Q16 76 50 72 Q84 76 86 100Z" fill="#6b4a2a" stroke="${INK}" stroke-width="2"/>
+  gambit: `<rect width="100" height="100" fill="#4a4a52"/><path d="M14 100 Q16 76 50 72 Q84 76 86 100Z" fill="#6b4a2a" stroke="${INK}" stroke-width="2"/>
 <ellipse cx="50" cy="50" rx="24" ry="27" fill="#e8b78e" stroke="${INK}" stroke-width="2.5"/>
 <path d="M22 34 Q28 14 52 14 Q76 16 80 30 L86 34 Q60 30 22 36Z" fill="#7a7a6a" stroke="${INK}" stroke-width="2.5" stroke-linejoin="round"/>
 <path d="M34 40 L44 42 M56 38 L66 36" stroke="${INK}" stroke-width="2.5" stroke-linecap="round"/><circle cx="40" cy="47" r="2.8" fill="${INK}"/><path d="M56 47 q4 -3 8 0" stroke="${INK}" stroke-width="2.4" fill="none"/>
 <path d="M34 60 Q50 76 68 58 Q50 66 34 60Z" fill="#fff" stroke="${INK}" stroke-width="2"/><rect x="54" y="61" width="5" height="5" fill="#f3c54a" stroke="${INK}" stroke-width="1"/>`,
-  boss:`<rect width="100" height="100" fill="#140d1e"/><circle cx="50" cy="56" r="44" fill="#9b5de5" opacity=".18"/>
+  boss: `<rect width="100" height="100" fill="#140d1e"/><circle cx="50" cy="56" r="44" fill="#9b5de5" opacity=".18"/>
 <path d="M12 100 Q16 74 50 70 Q84 74 88 100Z" fill="#2a1f38" stroke="#9b5de5" stroke-width="2"/>
 <path d="M26 74 Q22 40 50 34 Q78 40 74 74 Q62 84 50 84 Q38 84 26 74Z" fill="#241a30" stroke="#9b5de5" stroke-width="2.5"/>
 <path d="M36 52 L46 56 L36 58Z M64 52 L54 56 L64 58Z" fill="#e2b6ff"/><circle cx="41" cy="55" r="7" fill="#c78bff" opacity=".35"/><circle cx="59" cy="55" r="7" fill="#c78bff" opacity=".35"/>
@@ -744,320 +922,749 @@ const FACES={
 <path d="M18 38 L18 8 L30 22 L40 2 L50 18 L60 2 L70 22 L82 8 L82 38 Z" fill="#1c1428" stroke="#e2b6ff" stroke-width="2.5" stroke-linejoin="round"/>
 <g fill="#c78bff"><circle cx="30" cy="30" r="3"/><circle cx="50" cy="28" r="4"/><circle cx="70" cy="30" r="3"/></g>`,
 };
-const faceSVG=f=>`<svg viewBox="0 0 100 100" aria-hidden="true">${FACES[f.face]}</svg>`;
+const faceSVG = (f) => `<svg viewBox="0 0 100 100" aria-hidden="true">${FACES[f.face]}</svg>`;
+</script>
 
-/* ---------- Match state ---------- */
-let game=null,foe=null,timers=[];
-let sel=-1,hover=-1,last=-1,busy=true; // selected hand stone, square under the mouse, last square played
-// While a move plays out, the board shows `shown` owners instead of the final ones, and marks fresh, flipped and broken stones.
-// Spikes that break in a later step of the chain stay drawn whole until `stepNow` reaches their step.
-// flips maps a square that is turning over to the colour it turns from.
-let shown=null,fresh=new Set(),flips=new Map(),broken=new Map(),pending=[],stepNow=-1;
-let before=null,fx=new Map(); // the board before the move (for stones that change shape later in it), and one-off effects per square
-const yourTurn=()=>!busy&&!full(game)&&game.turn===0;
-const handValue=hand=>hand.reduce((a,s)=>a+PIECES[s.t].val,0);
-function brokenBySquare(broke){
-  const m=new Map();
-  for(const [i,side,k] of broke){if(!m.has(i))m.set(i,[0,0,0,0]);m.get(i)[side]+=k;}
+<script id="game">
+/* =====================================================================
+   GAME
+   The page: settings and saves, opponents, rendering, a move's animation,
+   the cards between matches, and input.
+   ===================================================================== */
+
+const $ = (s) => document.querySelector(s);
+
+/* ---------- Settings ---------- */
+
+const N = 4; // the board is N x N
+const RUN = 20; // matches in a run; the last one is the boss
+const BASE = 'P1^ P1> P1< N1 B1 R1 Q1 K1'; // the first starting hand: Tiny Tim, Tony and Ted; Tiny Tom comes from the first opponents
+// the computer's thinking time per move
+const THINK_MS = 1000;
+const BOSS_THINK_MS = 1600;
+
+// Difficulty, picked at the start of a run: how many moves ahead the opponent looks (its own move counts as one).
+// Hard looks as deep as it can in its thinking time, which in the last moves of a match is to the very end.
+const LEVELS = {
+  easy: { name: 'Easy', depth: 1 },
+  normal: { name: 'Normal', depth: 2 },
+  hard: { name: 'Hard', depth: 99 },
+};
+
+/* ---------- Opponents ----------
+   Each plays one deck, its rare stone included. The boss plays the last match. */
+
+// prettier-ignore
+const FOES = [
+  { name: 'Pawnbroker Pete', face: 'pete',   deck: 'P1^ P1> P1v P1< N1 B1 G1 K1', line: 'Everything has a price. My gorilla collects.' },
+  { name: 'Sir Neighsalot',  face: 'neigh',  deck: 'N1 N1> N1v P1^ P1> H1 R1 K1', line: 'Hold your horses. All of them.' },
+  { name: 'Madame Swerve',   face: 'swerve', deck: 'B1 B1 S1 P1^ P1> P1v N1 K1',  line: 'Darling, I never take the straight road.' },
+  { name: 'Blocky Barb',     face: 'barb',   deck: 'R1 R1 P1^ P1> P1v P1< N1 K1', line: 'Square deal. Square face. Square loss.' },
+  { name: 'Lady Lux',        face: 'lux',    deck: 'Q1 W1 B1 P1^ P1> P1v N1 K1',  line: 'I brought my sisters. You brought Tiny Tims.' },
+  { name: 'Uncle Gambit',    face: 'gambit', deck: 'N1 B1 R1 J1 P1^ P1> P1v K1',  line: 'I sacrifice. You suffer.' },
+];
+// prettier-ignore
+const BOSS = { name: 'The Obsidian Monarch', face: 'boss', boss: true, deck: 'O1 Q1 Q1 R1 B1 N1 N1> K1', line: 'Nineteen boards behind you. One crown ahead.' };
+// Lady Lux's Old Woman cures the poison of Madame Swerve's Serpent
+const LUX = 4;
+const SWERVE = 2;
+
+// Every match you have won adds LEVELS_PER_WIN levels to the opponent's stones, most valuable first and round robin,
+// never above MAXL; the king and rubble never change. The boss starts BOSS_EXTRA levels ahead.
+const LEVELS_PER_WIN = 1;
+const BOSS_EXTRA = 6;
+const GROWTH = 'OEQGJRBSNHWP';
+
+function strengthen(deck, levels) {
+  const stones = deck.split(' ').map((c) => ({ t: c[0], l: +c[1], dir: c.slice(2) }));
+  const order = stones.filter((st) => GROWTH.includes(st.t)).sort((a, b) => GROWTH.indexOf(a.t) - GROWTH.indexOf(b.t));
+  for (let added = 0, round = 0; added < levels && round < MAXL; round++) {
+    for (const st of order) {
+      if (added < levels && st.l < MAXL) {
+        st.l++;
+        added++;
+      }
+    }
+  }
+  return stones.map((st) => st.t + st.l + st.dir).join(' ');
+}
+const deckFor = (f, wins) => strengthen(f.deck, wins * LEVELS_PER_WIN + (f.boss ? BOSS_EXTRA : 0));
+const foeOf = (m) => (m === RUN ? BOSS : FOES[save.run.order[m - 1]]);
+const firstOf = (m) => (m === RUN ? 1 : m % 2 ? 0 : 1); // you place first in odd matches, the boss always first
+
+/* ---------- Saved data ----------
+   Settings and the run live in localStorage. A run is {m: match number, deck, order: opponents,
+   changed: hand slots that got a new stone, level, over}. meta is the starting hand, kept between runs. */
+
+function load(key, fallback) {
+  try {
+    return Object.assign(fallback, JSON.parse(localStorage.getItem(key) || '{}'));
+  } catch (e) {
+    return fallback;
+  }
+}
+const cfg = load('chainstones-cfg', { slow: false });
+const save = load('chainstones-run', { meta: BASE.split(' '), best: 0, runs: 0, champs: 0, run: null });
+// Saves from before the rare stones and the golden king start over with the new starting hand.
+if (save.version !== 2) {
+  save.meta = BASE.split(' ');
+  save.run = null;
+  save.version = 2;
+}
+
+function store() {
+  try {
+    localStorage.setItem('chainstones-run', JSON.stringify(save));
+    localStorage.setItem('chainstones-cfg', JSON.stringify(cfg));
+  } catch (e) {}
+}
+
+const level = () => LEVELS[save.run.level || 'hard']; // runs from before difficulties were added play on hard
+
+/* ---------- Helpers ---------- */
+
+const shuffle = (a) => {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = (Math.random() * (i + 1)) | 0;
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+};
+const nameOf = (code) => {
+  const s = stoneOf(code, 0);
+  return stoneName(s) + (PIECES[s.t].fixed ? '' : ` Lv ${s.l}`);
+};
+
+// Every timing goes through T, so slow motion stretches the whole move; later() timers are cleared when a run is given up.
+let timers = [];
+const T = (ms) => ms * (cfg.slow ? 4 : 1);
+const later = (ms, fn) => timers.push(setTimeout(fn, T(ms)));
+
+/* ---------- State ---------- */
+
+let game = null;
+let foe = null;
+// What the player is doing: the hand stone selected, the square under the mouse, the last square played,
+// and busy while a move plays out or the computer thinks.
+const ui = { sel: -1, hover: -1, last: -1, busy: true };
+// While a move plays out the board shows `shown` owners instead of the final ones (game.own).
+// before: the game before the move. pending: its broken spikes, drawn whole until `step` reaches theirs.
+// fresh: the new stone. flips: squares turning over, mapped to the colour they turn from.
+// broken: spikes breaking this step. fx: one-off effects per square.
+const anim = {
+  shown: null,
+  before: null,
+  pending: [],
+  step: -1,
+  fresh: new Set(),
+  flips: new Map(),
+  broken: new Map(),
+  fx: new Map(),
+};
+
+const yourTurn = () => !ui.busy && !over(game) && game.turn === 0;
+
+function brokenBySquare(broke) {
+  const m = new Map();
+  for (const [i, side, k] of broke) {
+    if (!m.has(i)) m.set(i, [0, 0, 0, 0]);
+    m.get(i)[side] += k;
+  }
   return m;
 }
-function stoneShown(i){
-  // The stone on square i as it looks now: its final spikes plus the ones that only break in a later step.
-  // An Old Woman stays an Old Woman until her promotion step, and Prince Joey stays Joey until he collapses.
-  let stone=game.at[i];
-  if(before){ // only while a move plays out
-    for(const [w,k] of game.promoted||[])if(w===i&&k>stepNow)stone={...mkStone('W',stone.l,stone.f),poison:stone.poison};
-    for(const [c,o,k,old] of game.flips)if(c===i&&o===RUBBLE&&k>stepNow)stone=old;
+
+// The stone on square i as it looks now: its final spikes plus the ones that only break in a later step.
+// An Old Woman stays an Old Woman until her promotion step, and Prince Joey stays Joey until he collapses.
+function stoneShown(i) {
+  let stone = game.at[i];
+  if (anim.before) {
+    for (const [w, k] of game.promoted || []) {
+      if (w === i && k > anim.step) stone = { ...mkStone('W', stone.l, stone.f), poison: stone.poison };
+    }
+    for (const [c, o, k, old] of game.flips) if (c === i && o === RUBBLE && k > anim.step) stone = old;
   }
-  const s=stone.s.slice();let later=false;
-  for(const [c,side,k,w] of pending)if(c===i&&w>stepNow){s[side]+=k;later=true;}
-  return later?{...stone,s}:stone;
+  const s = stone.s.slice();
+  let changed = false;
+  for (const [c, side, k, w] of anim.pending) {
+    if (c === i && w > anim.step) {
+      s[side] += k;
+      changed = true;
+    }
+  }
+  return changed ? { ...stone, s } : stone;
 }
 
 /* ---------- Rendering ---------- */
-function render(){renderSides();renderHand();renderBoard();}
-function renderLadder(){
-  const r=save.run;let h='';
-  for(let m=1;m<=RUN;m++)h+=`<i class="${m===RUN?'boss ':''}${m<r.m?'done':m===r.m?'now':''}"></i>`;
-  $('#ladder').innerHTML=h;
-  $('#runNow').textContent=`${r.m} / ${RUN}`+(r.level?` · ${level().name}`:'');
-  if($('#record'))$('#record').textContent=`Runs: ${save.runs}. Best: ${save.best?'match '+save.best:'none'}. Crowns: ${save.champs}.`;
+
+function render() {
+  renderSides();
+  renderHand();
+  renderBoard();
 }
-function renderSides(){
-  const view=shown?{own:shown,at:game.at}:game,pts=[score(view,0),score(view,1)]; // during a move: the colours on screen
-  const total=pts[0]+pts[1]+handValue(game.hands[0])+handValue(game.hands[1])||1;
-  for(const p of [0,1]){
-    $('#s'+p).textContent=pts[p];$('#k'+p).textContent='▲'+spikes(view,p);
-    $('#tug'+p).style.width=100*pts[p]/total+'%';
-    $('#side'+p).classList.toggle('turn',!full(game)&&game.turn===p);
+
+function renderLadder() {
+  const r = save.run;
+  let h = '';
+  for (let m = 1; m <= RUN; m++) {
+    const state = m < r.m ? 'done' : m === r.m ? 'now' : '';
+    h += `<i class="${m === RUN ? 'boss ' : ''}${state}"></i>`;
   }
-  $('#foeFace').innerHTML=faceSVG(foe);$('#foeName').textContent=foe.name;
-  $('#backs').innerHTML=game.hands[1].map(()=>`<div class="back">${backSVG()}</div>`).join('');
-  $('#backs').classList.toggle('active',!full(game)&&game.turn===1);
+  $('#ladder').innerHTML = h;
+  $('#runNow').textContent = `${r.m} / ${RUN}` + (r.level ? ` · ${level().name}` : '');
+  if ($('#record'))
+    $('#record').textContent =
+      `Runs: ${save.runs}. Best: ${save.best ? 'match ' + save.best : 'none'}. Crowns: ${save.champs}.`;
 }
-function showInfo(){
-  // Under the board: the stone under the mouse, or else the one selected in your hand.
-  const s=hover>=0&&game.own[hover]>=0?game.at[hover]:sel>=0?game.hands[0][sel]:null;
-  if(!s)return void($('#info').innerHTML='');
-  $('#info').innerHTML=`<b>${stoneName(s)}</b>${PIECES[s.t].fixed?'':` <span class="lvl">Lv ${s.l}</span>`}`;
+
+// Points, spikes left and the tug of war, counted from the colours on screen during a move.
+function renderSides() {
+  const view = anim.shown ? { own: anim.shown, at: game.at } : game;
+  for (const p of [0, 1]) {
+    const pts = score(view, p);
+    $('#s' + p).textContent = pts;
+    $('#k' + p).textContent = '▲' + spikes(view, p);
+    $('#tug' + p).style.width = (100 * pts) / (N * N) + '%';
+    $('#side' + p).classList.toggle('turn', !over(game) && game.turn === p);
+  }
+  $('#foeFace').innerHTML = faceSVG(foe);
+  $('#foeName').textContent = foe.name;
+  $('#backs').innerHTML = game.hands[1].map(() => `<div class="back">${backSVG()}</div>`).join('');
 }
-function select(i){sel=i;renderHand();renderBoard();showInfo();}
-function renderHand(){
-  const el=$('#hand');
-  el.classList.toggle('active',!full(game)&&game.turn===0);
-  el.innerHTML='';
-  game.hands[0].forEach((s,i)=>{
-    const b=document.createElement('button');
-    b.className='hstone'+(yourTurn()&&sel===i?' sel':'');b.disabled=!yourTurn();
-    b.setAttribute('aria-label',`${stoneName(s)}, level ${s.l}`);
-    b.innerHTML=stoneSVG(s,0);
-    b.onclick=()=>select(sel===i?-1:i);
+
+// Under the board: the stone under the mouse, or else the one selected in your hand.
+function showInfo() {
+  const s = ui.hover >= 0 && game.own[ui.hover] >= 0 ? game.at[ui.hover] : ui.sel >= 0 ? game.hands[0][ui.sel] : null;
+  $('#info').innerHTML = s
+    ? `<b>${stoneName(s)}</b>${PIECES[s.t].fixed ? '' : ` <span class="lvl">Lv ${s.l}</span>`}`
+    : '';
+}
+
+function select(i) {
+  ui.sel = i;
+  renderHand();
+  renderBoard();
+  showInfo();
+}
+
+function renderHand() {
+  const el = $('#hand');
+  el.classList.toggle('active', !over(game) && game.turn === 0);
+  el.innerHTML = '';
+  game.hands[0].forEach((s, i) => {
+    const b = document.createElement('button');
+    b.className = 'hstone' + (yourTurn() && ui.sel === i ? ' sel' : '');
+    b.disabled = !yourTurn();
+    b.setAttribute('aria-label', `${stoneName(s)}, level ${s.l}`);
+    b.innerHTML = stoneSVG(s, 0);
+    b.onclick = () => select(ui.sel === i ? -1 : i);
     el.appendChild(b);
   });
 }
-function cellView(i,pv,crack,canPlace){
-  // Class list and contents of square i. pv is the preview of the selected stone on the hovered square, if any.
-  const own=shown||game.own,cls=['cell'];
-  if(own[i]<0&&canPlace)cls.push('open');
-  if(pv&&game.own[i]===1&&pv.own[i]===0)cls.push('hit');
-  if(pv&&(game.own[i]===0||i===hover)&&pv.own[i]===1)cls.push('lose');
-  if(fresh.has(i))cls.push('new');
-  if(flips.has(i))cls.push('flip');
-  if(crack.has(i))cls.push('crack');
-  if(i===last&&!busy)cls.push('last');
-  if(fx.has(i))cls.push(fx.get(i));
-  let inner='';
-  if(own[i]>=0){
-    const stone=crack.has(i)?pv.at[i]:stoneShown(i),brk=crack.get(i)||broken.get(i);
-    if(stone.poison&&own[i]!==RUBBLE)cls.push('poisoned');
-    const flying=PIECES[stone.t].pope&&!stone.grounded;
-    if(flying)cls.push('flying');
-    const from=flips.has(i)&&own[i]===RUBBLE&&stoneShown(i).t==='X'?game.flips.find(f=>f[0]===i&&f[1]===RUBBLE)[3]:stone;
-    inner=flips.has(i)
-      ?`<div class="flipper"><div class="side-a">${stoneSVG(from,flips.get(i),'stone',brk)}</div><div class="side-b">${stoneSVG(stone,own[i],'stone',brk)}</div></div>`
-      :stoneSVG(stone,own[i],'stone',brk);
-    if(flying)inner=`<div class="jets"><i></i><i></i></div>`+inner;
-    if(stone.poison&&own[i]!==RUBBLE)inner+=`<div class="venom" title="poisoned">${Math.max(1,stone.poison.due-game.moves)}</div>`;
+
+// Class list and contents of square i. pv is the preview of the selected stone on the hovered square, if any,
+// and crack its spikes that would break.
+function cellView(i, pv, crack, canPlace) {
+  const own = anim.shown || game.own;
+  const cls = ['cell'];
+  if (own[i] < 0 && canPlace) cls.push('open');
+  if (pv && game.own[i] === 1 && pv.own[i] === 0) cls.push('hit');
+  if (pv && (game.own[i] === 0 || i === ui.hover) && pv.own[i] === 1) cls.push('lose');
+  if (anim.fresh.has(i)) cls.push('new');
+  if (anim.flips.has(i)) cls.push('flip');
+  if (crack.has(i)) cls.push('crack');
+  if (i === ui.last && !ui.busy) cls.push('last');
+  if (anim.fx.has(i)) cls.push(anim.fx.get(i));
+
+  let inner = '';
+  if (own[i] >= 0) {
+    const stone = crack.has(i) ? pv.at[i] : stoneShown(i);
+    const brk = crack.get(i) || anim.broken.get(i);
+    const poisoned = stone.poison && own[i] !== RUBBLE;
+    const flying = PIECES[stone.t].pope && !stone.grounded;
+    if (poisoned) cls.push('poisoned');
+    if (flying) cls.push('flying');
+    if (anim.flips.has(i)) {
+      // A collapsing Joey turns over from Joey himself, any other stone from its own picture in the old colour.
+      const from =
+        own[i] === RUBBLE && stoneShown(i).t === 'X' ? game.flips.find((f) => f[0] === i && f[1] === RUBBLE)[3] : stone;
+      inner = `<div class="flipper"><div class="side-a">${stoneSVG(from, anim.flips.get(i), 'stone', brk)}</div><div class="side-b">${stoneSVG(stone, own[i], 'stone', brk)}</div></div>`;
+    } else {
+      inner = stoneSVG(stone, own[i], 'stone', brk);
+    }
+    if (flying) inner = `<div class="jets"><i></i><i></i></div>` + inner;
+    if (poisoned) inner += `<div class="venom" title="poisoned">${Math.max(1, stone.poison.due - game.moves)}</div>`;
   }
-  if(pv&&i===hover)inner=`<div class="ghost">${stoneSVG(pv.at[i],0,'stone',crack.get(i))}</div>`;
-  return [cls.join(' '),inner];
+  if (pv && i === ui.hover) inner = `<div class="ghost">${stoneSVG(pv.at[i], 0, 'stone', crack.get(i))}</div>`;
+  return [cls.join(' '), inner];
 }
-function renderBoard(){
-  const canPlace=yourTurn()&&sel>=0;
-  // Preview of the selected stone on the hovered square: yellow = stones you would take,
-  // red = stones you would lose, faded spikes = spikes that would break.
-  const pv=canPlace&&hover>=0&&game.own[hover]<0?play(game,sel,hover):null,crack=pv?brokenBySquare(pv.broke):new Map();
-  let html='';
-  for(let i=0;i<N*N;i++){const [cls,inner]=cellView(i,pv,crack,canPlace);html+=`<div class="${cls}" data-i="${i}">${inner}</div>`;}
-  $('#board').style.setProperty('--n',N);
-  $('#board').innerHTML=html;
-  fresh.clear();flips.clear();broken.clear();fx.clear();
+
+// Preview of the selected stone on the hovered square: yellow = stones you would take,
+// red = stones you would lose, faded spikes = spikes that would break.
+function renderBoard() {
+  const canPlace = yourTurn() && ui.sel >= 0;
+  const pv = canPlace && ui.hover >= 0 && game.own[ui.hover] < 0 ? play(game, ui.sel, ui.hover) : null;
+  const crack = pv ? brokenBySquare(pv.broke) : new Map();
+  let html = '';
+  for (let i = 0; i < N * N; i++) {
+    const [cls, inner] = cellView(i, pv, crack, canPlace);
+    html += `<div class="${cls}" data-i="${i}">${inner}</div>`;
+  }
+  $('#board').style.setProperty('--n', N);
+  $('#board').innerHTML = html;
+  anim.fresh.clear();
+  clearStepMarks();
 }
-function paint(cells){
-  // Redraws only these squares, so animations running on the other squares are not cut off.
-  const els=$('#board').children;
-  for(const i of cells){const [cls,inner]=cellView(i,null,new Map(),false);els[i].className=cls;els[i].innerHTML=inner;}
-  flips.clear();broken.clear();fx.clear();
+
+// Redraws only these squares, so animations running on the other squares are not cut off.
+function paint(cells) {
+  const els = $('#board').children;
+  for (const i of cells) {
+    const [cls, inner] = cellView(i, null, new Map(), false);
+    els[i].className = cls;
+    els[i].innerHTML = inner;
+  }
+  clearStepMarks();
 }
-function bees(cell){
-  // The Beekeeper's swarm: a few bees fly out to the eight squares around him and back.
-  const {x,y,size}=cellBox(cell);
-  for(let k=0;k<12;k++){
-    const a=k*30*Math.PI/180,el=document.createElement('div');el.className='bee';
-    el.style.setProperty('--dx',Math.cos(a)*size*1.1+'px');el.style.setProperty('--dy',Math.sin(a)*size*1.1+'px');
-    el.style.animationDelay=k*25+'ms';place(el,x,y,T(1100));
+
+function clearStepMarks() {
+  anim.flips.clear();
+  anim.broken.clear();
+  anim.fx.clear();
+}
+
+/* ---------- Effects over the board ---------- */
+
+function cellBox(cell) {
+  const C = $('#board').querySelectorAll('.cell')[cell];
+  return { x: C.offsetLeft + C.offsetWidth / 2, y: C.offsetTop + C.offsetHeight / 2, size: C.offsetHeight };
+}
+
+// Puts an effect on the board at (x, y). With ms it removes itself after that time.
+function place(el, x, y, ms) {
+  el.style.left = x + 'px';
+  el.style.top = y + 'px';
+  $('.boardwrap').appendChild(el);
+  if (ms) timers.push(setTimeout(() => el.remove(), ms));
+  return el;
+}
+
+// A short text over a square: the name of a stone just placed, or the points a move won.
+function pop(cell, text, cls, ms, dy = 0) {
+  const { x, y } = cellBox(cell);
+  const el = document.createElement('div');
+  el.className = cls;
+  el.textContent = text;
+  place(el, x, y + dy, ms);
+}
+
+// The Beekeeper's swarm: a few bees fly out to the eight squares around him and back.
+function bees(cell) {
+  const { x, y, size } = cellBox(cell);
+  for (let k = 0; k < 12; k++) {
+    const a = (k * 30 * Math.PI) / 180;
+    const el = document.createElement('div');
+    el.className = 'bee';
+    el.style.setProperty('--dx', Math.cos(a) * size * 1.1 + 'px');
+    el.style.setProperty('--dy', Math.sin(a) * size * 1.1 + 'px');
+    el.style.animationDelay = k * 25 + 'ms';
+    place(el, x, y, T(1100));
   }
 }
 
-/* ---------- Effects on the board ---------- */
-function cellBox(cell){const C=$('#board').querySelectorAll('.cell')[cell];return {x:C.offsetLeft+C.offsetWidth/2,y:C.offsetTop+C.offsetHeight/2,size:C.offsetHeight};}
-function place(el,x,y,ms){
-  // Puts an effect on the board at (x, y). With ms it removes itself after that time.
-  el.style.left=x+'px';el.style.top=y+'px';$('.boardwrap').appendChild(el);
-  if(ms)timers.push(setTimeout(()=>el.remove(),ms));
-  return el;
+/* ---------- A move ----------
+   One step per fight: step 0 is the new stone's own fights, then every fight of the chain in turn. */
+
+// before step 0, per step, and per step in which a stone turns over
+const FIRST_MS = 260;
+const STEP_MS = 240;
+const TURN_MS = 440;
+
+function move(h, cell) {
+  if (ui.busy && game.turn === 0) return;
+  ui.busy = true;
+  const me = game.turn;
+  const stone = game.hands[me][h];
+  const after = play(game, h, cell, Math.random);
+  anim.before = game;
+  anim.shown = game.own.slice();
+  anim.shown[cell] = me;
+  anim.fresh.add(cell);
+  anim.pending = after.broke;
+  anim.step = -1;
+  game = after;
+  ui.sel = -1;
+  ui.hover = -1;
+  ui.last = cell;
+  render();
+  showInfo();
+  pop(cell, stoneName(stone), 'tag p' + me, T(1300), -cellBox(cell).size * 0.62);
+  const end = animate(after);
+  const flipped = after.flips.length > 0;
+  popGain(anim.before, after, cell, me, end);
+  later(end + (flipped ? 560 : 300), () => {
+    anim.shown = null;
+    anim.pending = [];
+    anim.step = -1;
+    anim.before = null;
+    ui.busy = false;
+    render();
+    next(flipped);
+  });
 }
-function pop(cell,text,cls,ms,dy=0){
-  const {x,y}=cellBox(cell),el=document.createElement('div');el.className=cls;el.textContent=text;place(el,x,y+dy,ms);
-}
-/* ---------- A move ---------- */
-// One step per fight: step 0 is the new stone's own fights, then every fight of the chain in turn.
-const FIRST_MS=260,STEP_MS=240,TURN_MS=440; // before step 0, per step, and per step in which a stone turns over
-function move(h,cell){
-  if(busy&&game.turn===0)return;
-  busy=true;
-  const me=game.turn,stone=game.hands[me][h],after=play(game,h,cell,Math.random);
-  before=game;
-  shown=before.own.slice();shown[cell]=me;
-  game=after;sel=-1;hover=-1;last=cell;fresh.add(cell);pending=after.broke;stepNow=-1;
-  render();showInfo();
-  pop(cell,stoneName(stone),'tag p'+me,T(1300),-cellBox(cell).size*.62);
-  const end=animate(after),flipped=after.flips.length>0;
-  report(before,after,cell,me,end);
-  later(end+(flipped?560:300),()=>{shown=null;pending=[];stepNow=-1;before=null;busy=false;render();next(flipped);});
-}
-function animate(a){
-  // Plays the steps one after another: the spikes that break shatter, and a stone turns over only if it changes colour.
-  // A stone can change colour more than once in a chain, so every flip carries the owner it turns to. Returns the end time.
-  const lastStep=Math.max(0,...a.lines.map(l=>l[4]),...a.flips.map(f=>f[2]),...(a.promoted||[]).map(p=>p[1]));
-  const pace=Math.min(1,12/(lastStep+1)); // a chain longer than 12 fights plays faster, so a move never drags
-  $('#board').style.setProperty('--pace',pace);
-  let t=FIRST_MS;
-  const promos=a.promoted||[],cell=last;
-  if(PIECES[a.at[cell].t].swarm||PIECES[stoneShown(cell).t].swarm)later(FIRST_MS-200,()=>bees(cell));
-  for(let k=0;k<=lastStep;k++){
-    const lines=a.lines.filter(l=>l[4]===k),turns=a.flips.filter(f=>f[2]===k),breaks=a.broke.filter(b=>b[3]===k),crowned=promos.filter(p=>p[1]===k);
-    if(!lines.length&&!turns.length&&!breaks.length&&!crowned.length)continue;
-    later(t,()=>{
-      stepNow=k;broken=brokenBySquare(breaks);
-      for(const [i,q,x,y] of lines){ // a shield that breaks spikes flashes gold, a poisonous bite splashes green
-        for(const [s,o,hit] of [[i,q,x],[q,i,y]]){
-          if(PIECES[a.at[s].t].shield)fx.set(s,'shieldhit');
-          else if(hit&&PIECES[stoneShown(s).t].poison)fx.set(o,'bitten');
+
+// Plays the steps one after another: the spikes that break shatter, and a stone turns over only if it changes colour.
+// A stone can change colour more than once in a chain, so every flip carries the owner it turns to. Returns the end time.
+function animate(a) {
+  const promos = a.promoted || [];
+  const cell = ui.last;
+  const lastStep = Math.max(0, ...a.lines.map((l) => l[4]), ...a.flips.map((f) => f[2]), ...promos.map((p) => p[1]));
+  const pace = Math.min(1, 12 / (lastStep + 1)); // a chain longer than 12 fights plays faster, so a move never drags
+  $('#board').style.setProperty('--pace', pace);
+  if (PIECES[a.at[cell].t].swarm || PIECES[stoneShown(cell).t].swarm) later(FIRST_MS - 200, () => bees(cell));
+
+  let t = FIRST_MS;
+  for (let k = 0; k <= lastStep; k++) {
+    const lines = a.lines.filter((l) => l[4] === k);
+    const turns = a.flips.filter((f) => f[2] === k);
+    const breaks = a.broke.filter((b) => b[3] === k);
+    const crowned = promos.filter((p) => p[1] === k);
+    if (!lines.length && !turns.length && !breaks.length && !crowned.length) continue;
+    later(t, () => {
+      anim.step = k;
+      anim.broken = brokenBySquare(breaks);
+      // A shield that breaks spikes flashes gold, a poisonous bite splashes green.
+      for (const [i, q, x, y] of lines) {
+        for (const [s, o, hit] of [
+          [i, q, x],
+          [q, i, y],
+        ]) {
+          if (PIECES[a.at[s].t].shield) anim.fx.set(s, 'shieldhit');
+          else if (hit && PIECES[stoneShown(s).t].poison) anim.fx.set(o, 'bitten');
         }
       }
-      for(const [i,o] of turns){flips.set(i,shown[i]);shown[i]=o;if(o===RUBBLE)fx.set(i,'crumble');}
-      for(const [w] of crowned)fx.set(w,'crowned');
-      paint(new Set([...turns.map(f=>f[0]),...breaks.map(b=>b[0]),...crowned.map(c=>c[0]),...fx.keys()]));
+      for (const [i, o] of turns) {
+        anim.flips.set(i, anim.shown[i]);
+        anim.shown[i] = o;
+        if (o === RUBBLE) anim.fx.set(i, 'crumble');
+      }
+      for (const [w] of crowned) anim.fx.set(w, 'crowned');
+      paint(
+        new Set([
+          ...turns.map((f) => f[0]),
+          ...breaks.map((b) => b[0]),
+          ...crowned.map((c) => c[0]),
+          ...anim.fx.keys(),
+        ]),
+      );
       renderSides();
     });
-    t+=(turns.length||crowned.length?TURN_MS:STEP_MS)*pace;
+    t += (turns.length || crowned.length ? TURN_MS : STEP_MS) * pace;
   }
   return t;
 }
-function report(before,a,cell,me,end){
-  // The +/- pop: what the move won and lost, counting the new stone as the mover's.
-  const net=score(a,me)-score(before,me)-1;
-  if(net)later(end+140,()=>pop(cell,(net>0?'+':'−')+Math.abs(net),net>0?'gain':'gain bad',T(1200)));
-}
-function next(justActed){
-  if(full(game))return later(500,finish);
-  if(game.turn===1){
-    busy=true;
-    renderHand();
-    later(justActed?700:350,()=>move(...think(game,foe.boss?1600:1000,Math.random,level().depth)));
-    return;
-  }
-  busy=false;
-  renderHand();renderBoard();
+
+// The +/- pop after a move: the points it won or lost, not counting the new stone itself.
+function popGain(before, after, cell, me, end) {
+  const net = score(after, me) - score(before, me) - 1;
+  if (net)
+    later(end + 140, () => pop(cell, (net > 0 ? '+' : '−') + Math.abs(net), net > 0 ? 'gain' : 'gain bad', T(1200)));
 }
 
-/* ---------- Run flow: intro, match, reward or end of run ---------- */
-const closeModal=()=>{$('#modal').hidden=true;};
-function card(kicker,html,{picks=[],button}={}){
-  // A card between matches: a small kicker line, its text, then stones to pick from or one button.
-  $('#mcard').innerHTML=`<div class="kicker">${kicker}</div>${html}
-${picks.length?`<div class="picks">${picks.map(p=>`<button class="pick">${p.html}</button>`).join('')}</div>`:''}
-${button?`<div><button class="primary">${button.label}</button></div>`:''}`;
-  $('#modal').hidden=false;
-  document.querySelectorAll('#mcard .pick').forEach((el,k)=>el.onclick=()=>{closeModal();picks[k].onPick();});
-  if(button){const b=$('#mcard .primary');b.onclick=()=>{closeModal();button.onClick();};b.focus();}
+// After a move: the end of the match, the computer's turn, or yours.
+function next(justActed) {
+  if (over(game)) return later(500, finish);
+  if (game.turn === 1) {
+    ui.busy = true;
+    renderHand();
+    later(justActed ? 700 : 350, () =>
+      move(...think(game, foe.boss ? BOSS_THINK_MS : THINK_MS, Math.random, level().depth)),
+    );
+    return;
+  }
+  ui.busy = false;
+  renderHand();
+  renderBoard();
 }
-const deckRow=codes=>codes.map(c=>stoneSVG(stoneOf(c,0),0,'')).join('');
-const upgrade=(from,to)=>`<span class="arrow">${stoneSVG(stoneOf(from,0),0,'')}<span>→</span>${stoneSVG(stoneOf(to,0),0,'')}</span>`;
-function intro(){
-  const r=save.run,m=r.m;foe=foeOf(m);
-  save.best=Math.max(save.best,m);store();renderLadder();
-  card(m===RUN?'Boss':`${m} / ${RUN}`,
-    `<div class="big${foe.boss?' boss':''}">${faceSVG(foe)}</div><h2>${foe.name}</h2><q>${foe.line}</q>
-<div class="deckrow">${deckRow(r.deck)}</div>`,
-    {button:{label:'Fight',onClick:begin}});
+
+/* ---------- Cards between matches ----------
+   The order of a run: chooseLevel -> intro -> begin (the match) -> finish -> rewards -> intro ... -> endRun. */
+
+const closeModal = () => {
+  $('#modal').hidden = true;
+};
+
+// A card: a small kicker line, its content, then buttons to pick from and/or one main button.
+function card(kicker, html, { picks = [], button } = {}) {
+  $('#mcard').innerHTML = `<div class="kicker">${kicker}</div>${html}
+${picks.length ? `<div class="picks">${picks.map((p) => `<button class="pick">${p.html}</button>`).join('')}</div>` : ''}
+${button ? `<div><button class="primary">${button.label}</button></div>` : ''}`;
+  $('#modal').hidden = false;
+  document.querySelectorAll('#mcard .pick').forEach(
+    (el, k) =>
+      (el.onclick = () => {
+        closeModal();
+        picks[k].onPick();
+      }),
+  );
+  if (button) {
+    const b = $('#mcard .primary');
+    b.onclick = () => {
+      closeModal();
+      button.onClick();
+    };
+    b.focus();
+  }
 }
-function begin(){
-  const r=save.run,m=r.m,order='PNBRQK';
-  const mine=r.deck.map(c=>stoneOf(c,0)).sort((a,b)=>order.indexOf(a.t)-order.indexOf(b.t)||a.d-b.d||a.l-b.l);
-  const theirs=shuffle(deckFor(foeOf(m),m-1).split(' ').map(c=>stoneOf(c,1))); // you have won m-1 matches so far
-  game=newGame(N,[mine,theirs],firstOf(m));
-  sel=-1;hover=-1;last=-1;shown=null;busy=false;
-  render();showInfo();next();
+
+const stonePic = (code) => stoneSVG(stoneOf(code, 0), 0, '');
+const deckRow = (codes) => codes.map(stonePic).join('');
+const upgrade = (from, to) => `<span class="arrow">${stonePic(from)}<span>→</span>${stonePic(to)}</span>`;
+
+// Each of the six regulars shows up three times in a random order, plus one extra, then the boss.
+// Lady Lux always comes before Madame Swerve.
+function newRun() {
+  const order = shuffle([0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, (Math.random() * 6) | 0]);
+  const lux = order.indexOf(LUX);
+  const swerve = order.indexOf(SWERVE);
+  if (swerve < lux) [order[swerve], order[lux]] = [order[lux], order[swerve]];
+  save.run = { m: 1, deck: save.meta.slice(), order, changed: [] };
+  save.runs++;
+  store();
 }
-function finish(){
-  busy=true;render();
-  const r=save.run,pope=game.winner,won=winnerOf(game)===0;
-  // the tally that decided it: points, or spikes left when level on points, or who placed first when level on both
-  const [a,b]=[0,1].map(p=>score(game,p)),[sa,sb]=[0,1].map(p=>spikes(game,p));
-  const tally=a!==b?`${Math.max(a,b)} to ${Math.min(a,b)}`:sa!==sb?`on spikes, ${Math.max(sa,sb)} to ${Math.min(sa,sb)}`:'level on spikes, by placing first';
-  if(!won)return endRun(false,pope===1?`${foe.name} took your Pope.`:`${foe.name} wins ${tally}.`);
-  if(pope===0&&r.m===RUN){save.champs++;return endRun(true,`You took the Pope of ${foe.name}.`);}
-  if(r.m===RUN){save.champs++;return endRun(true,`You beat ${foe.name} ${tally}.`);}
-  store();rewards(pope===0?'Took the Pope':`Won ${tally}`);
+
+function chooseLevel() {
+  const picks = Object.entries(LEVELS).map(([k, L]) => ({
+    html: L.name,
+    onPick: () => {
+      save.run.level = k;
+      store();
+      renderLadder();
+      intro();
+    },
+  }));
+  card('New run', '', { picks });
 }
-const nextMatch=()=>{save.run.m++;store();intro();};
-function rewards(kicker){
-  // After a win the opponent shows three random stones from the deck they just played; take one or keep your hand.
-  const r=save.run,used=shuffle([...new Set(deckFor(foe,r.m-1).split(' '))]).slice(0,3);
-  card(kicker,'<h2>Take one</h2>',
-    {picks:used.map(code=>({html:`<span class="arrow">${stoneSVG(stoneOf(code,0),0,'')}</span>${nameOf(code)}`,onPick:()=>replaceWith(kicker,code)})),
-     button:{label:'Skip',onClick:nextMatch}});
-}
-function replaceWith(kicker,code){
-  // A new stone joins your hand of eight: it takes the place of a stone you choose.
-  const r=save.run;
-  card(kicker,'<h2>Swap for</h2>',
-    {picks:r.deck.map((c,i)=>({html:upgrade(c,code)+nameOf(c),onPick:()=>{acquire(i,code);nextMatch();}}))});
-}
-function acquire(i,code){const r=save.run;r.deck[i]=code;if(!r.changed.includes(i))r.changed.push(i);}
-function chooseLevel(){
-  card('New run','',
-    {picks:Object.entries(LEVELS).map(([k,L])=>({html:L.name,onPick:()=>{save.run.level=k;store();renderLadder();intro();}}))});
-}
-function endRun(won,text){
-  // Offer every stone you gained this run; the one picked replaces its slot in the starting hand for good.
-  const r=save.run,keep=r.changed.filter(i=>r.deck[i]!==save.meta[i]);
-  const newRunNow=()=>{newRun();chooseLevel();};
-  r.over=true;store();
-  card(won?'Champion':`Run over at match ${r.m}`,`<h2>${won?'You took the crown!':'Defeated'}</h2><p>${text}</p>`+
-    (keep.length?'<p class="kicker muted">Keep one</p>':''),
-    keep.length?{picks:keep.map(i=>({html:upgrade(save.meta[i],r.deck[i])+nameOf(r.deck[i]),onPick:()=>{save.meta[i]=r.deck[i];newRunNow();}}))}
-               :{button:{label:'New run',onClick:newRunNow}});
-}
-const pieceGuide=()=>[...'PNBRQKSWEJGHO'].map(t=>{
-  const P=PIECES[t],kind=P.chess?`The ${P.chess}`:'Rare stone',names=P.variants?` Comes in four turns: ${P.variants.join(', ')}.`:'';
-  const pics=P.fixed?stoneSVG(mkStone(t,1,0),0,''):stoneSVG(mkStone(t,1,0),0,'')+stoneSVG(mkStone(t,3,0),0,'');
-  return `<div>${pics}<p style="margin:0"><b>${P.name}</b><span>${kind}${P.fixed?'':', level 1 and 3'}: ${P.text}.${names}</span></p></div>`;}).join('');
-function rules(){
-  // The rules sit on their own layer, over the board or over a card between matches.
-  $('#rcard').innerHTML=$('#rulesT').innerHTML;$('#rmodal').hidden=false;
-  $('#dex').innerHTML=pieceGuide();
+
+// The next opponent, and your stones.
+function intro() {
+  const r = save.run;
+  const m = r.m;
+  foe = foeOf(m);
+  save.best = Math.max(save.best, m);
+  store();
   renderLadder();
-  $('#bClose').onclick=()=>{$('#rmodal').hidden=true;};
-  $('#bQuit').onclick=()=>{
-    if(!confirm('Give up this run? You still get to keep one upgraded stone.'))return;
-    $('#rmodal').hidden=true;timers.forEach(clearTimeout);timers=[];busy=true;endRun(false,'You gave up.');
+  card(
+    m === RUN ? 'Boss' : `${m} / ${RUN}`,
+    `<div class="big${foe.boss ? ' boss' : ''}">${faceSVG(foe)}</div><h2>${foe.name}</h2><q>${foe.line}</q>
+<div class="deckrow">${deckRow(r.deck)}</div>`,
+    { button: { label: 'Fight', onClick: begin } },
+  );
+}
+
+function begin() {
+  const r = save.run;
+  const m = r.m;
+  const order = 'PNBRQK';
+  const mine = r.deck
+    .map((c) => stoneOf(c, 0))
+    .sort((a, b) => order.indexOf(a.t) - order.indexOf(b.t) || a.d - b.d || a.l - b.l);
+  const theirs = shuffle(
+    deckFor(foeOf(m), m - 1)
+      .split(' ')
+      .map((c) => stoneOf(c, 1)),
+  ); // you have won m-1 matches so far
+  game = newGame(N, [mine, theirs], firstOf(m));
+  Object.assign(ui, { sel: -1, hover: -1, last: -1, busy: false });
+  anim.shown = null;
+  render();
+  showInfo();
+  next();
+}
+
+function finish() {
+  ui.busy = true;
+  render();
+  const r = save.run;
+  const pope = game.winner;
+  const won = winnerOf(game) === 0;
+  // The tally that decided it: points, or spikes left when level on points, or who placed first when level on both.
+  const [a, b] = [0, 1].map((p) => score(game, p));
+  const [sa, sb] = [0, 1].map((p) => spikes(game, p));
+  const tally =
+    a !== b
+      ? `${Math.max(a, b)} to ${Math.min(a, b)}`
+      : sa !== sb
+        ? `on spikes, ${Math.max(sa, sb)} to ${Math.min(sa, sb)}`
+        : 'level on spikes, by placing first';
+  if (!won) return endRun(false, pope === 1 ? `${foe.name} took your Pope.` : `${foe.name} wins ${tally}.`);
+  if (r.m === RUN) {
+    save.champs++;
+    return endRun(true, pope === 0 ? `You took the Pope of ${foe.name}.` : `You beat ${foe.name} ${tally}.`);
+  }
+  store();
+  rewards(pope === 0 ? 'Took the Pope' : `Won ${tally}`);
+}
+
+const nextMatch = () => {
+  save.run.m++;
+  store();
+  intro();
+};
+
+// After a win the opponent shows three random stones from the deck they just played; take one or skip.
+function rewards(kicker) {
+  const offer = shuffle([...new Set(deckFor(foe, save.run.m - 1).split(' '))]).slice(0, 3);
+  card(kicker, '<h2>Take one</h2>', {
+    picks: offer.map((code) => ({
+      html: `<span class="arrow">${stonePic(code)}</span>${nameOf(code)}`,
+      onPick: () => replaceWith(kicker, code),
+    })),
+    button: { label: 'Skip', onClick: nextMatch },
+  });
+}
+
+// The new stone takes the place of a stone you choose, for the rest of the run.
+function replaceWith(kicker, code) {
+  const r = save.run;
+  const picks = r.deck.map((c, i) => ({
+    html: upgrade(c, code) + nameOf(c),
+    onPick: () => {
+      acquire(i, code);
+      nextMatch();
+    },
+  }));
+  card(kicker, '<h2>Swap for</h2>', { picks });
+}
+
+function acquire(i, code) {
+  const r = save.run;
+  r.deck[i] = code;
+  if (!r.changed.includes(i)) r.changed.push(i);
+}
+
+// Offers every stone you gained this run; the one picked replaces its slot in the starting hand for good.
+function endRun(won, text) {
+  const r = save.run;
+  const keep = r.changed.filter((i) => r.deck[i] !== save.meta[i]);
+  const startNewRun = () => {
+    newRun();
+    chooseLevel();
+  };
+  r.over = true;
+  store();
+  const head = `<h2>${won ? 'You took the crown!' : 'Defeated'}</h2><p>${text}</p>`;
+  if (keep.length) {
+    const picks = keep.map((i) => ({
+      html: upgrade(save.meta[i], r.deck[i]) + nameOf(r.deck[i]),
+      onPick: () => {
+        save.meta[i] = r.deck[i];
+        startNewRun();
+      },
+    }));
+    card(won ? 'Champion' : `Run over at match ${r.m}`, head + '<p class="kicker muted">Keep one</p>', { picks });
+  } else {
+    card(won ? 'Champion' : `Run over at match ${r.m}`, head, { button: { label: 'New run', onClick: startNewRun } });
+  }
+}
+
+/* ---------- Rules ---------- */
+
+// Every piece at level 1 and 3 (the king and rubble have no levels), with what it does.
+function pieceGuide() {
+  return [...'PNBRQKSWEJGHO']
+    .map((t) => {
+      const P = PIECES[t];
+      const kind = P.chess ? `The ${P.chess}` : 'Rare stone';
+      const names = P.variants ? ` Comes in four turns: ${P.variants.join(', ')}.` : '';
+      const pics = stoneSVG(mkStone(t, 1, 0), 0, '') + (P.fixed ? '' : stoneSVG(mkStone(t, 3, 0), 0, ''));
+      return `<div>${pics}<p style="margin:0"><b>${P.name}</b><span>${kind}${P.fixed ? '' : ', level 1 and 3'}: ${P.text}.${names}</span></p></div>`;
+    })
+    .join('');
+}
+
+// The rules sit on their own layer, over the board or over a card between matches.
+function rules() {
+  $('#rcard').innerHTML = $('#rulesT').innerHTML;
+  $('#rmodal').hidden = false;
+  $('#dex').innerHTML = pieceGuide();
+  renderLadder();
+  $('#bClose').onclick = () => {
+    $('#rmodal').hidden = true;
+  };
+  $('#bQuit').onclick = () => {
+    if (!confirm('Give up this run? You still get to keep one upgraded stone.')) return;
+    $('#rmodal').hidden = true;
+    timers.forEach(clearTimeout);
+    timers = [];
+    ui.busy = true;
+    endRun(false, 'You gave up.');
   };
 }
 
 /* ---------- Input ---------- */
-let touchTap=false;
-$('#board').addEventListener('click',e=>{
-  const c=e.target.closest('.cell');if(!c||!yourTurn())return;
-  const i=+c.dataset.i;if(game.own[i]>=0)return;
-  if(sel<0)return;
-  if(touchTap&&hover!==i){ // touch has no hover: the first tap previews, a second tap on the same square places
-    hover=i;renderBoard();
+
+let touchTap = false; // touch has no hover: the first tap on a square previews, a second tap places
+const board = $('#board');
+const cellAt = (e) => {
+  const c = e.target.closest('.cell');
+  return c ? +c.dataset.i : -1;
+};
+
+function hoverOn(i) {
+  if (i === ui.hover || !game) return;
+  ui.hover = i;
+  if (ui.sel >= 0 && !ui.busy) renderBoard();
+  showInfo();
+}
+
+board.addEventListener('click', (e) => {
+  const i = cellAt(e);
+  if (i < 0 || !yourTurn() || game.own[i] >= 0 || ui.sel < 0) return;
+  if (touchTap && ui.hover !== i) {
+    ui.hover = i;
+    renderBoard();
     return;
   }
-  move(sel,i);
+  move(ui.sel, i);
 });
-$('#board').addEventListener('pointerdown',e=>{touchTap=e.pointerType!=='mouse';});
-function hoverOn(i){if(i===hover||!game)return;hover=i;if(sel>=0&&!busy)renderBoard();showInfo();}
-$('#board').addEventListener('pointermove',e=>{if(e.pointerType==='mouse'){const c=e.target.closest('.cell');hoverOn(c?+c.dataset.i:-1);}}); // phones send a fake hover with every tap
-$('#board').addEventListener('pointerleave',e=>{if(e.pointerType==='mouse')hoverOn(-1);});
-addEventListener('keydown',e=>{
-  if(!$('#modal').hidden||!$('#rmodal').hidden)return;
-  if((e.key==='s'||e.key==='S')&&!e.metaKey&&!e.ctrlKey)setSlow(!cfg.slow);
-  if(e.key==='Escape'&&sel>=0)select(-1);
-  const k=+e.key;if(game&&k>=1&&yourTurn()&&k<=game.hands[0].length)select(k-1); // number keys pick from your hand
+board.addEventListener('pointerdown', (e) => {
+  touchTap = e.pointerType !== 'mouse';
 });
-function setSlow(v){cfg.slow=v;document.body.classList.toggle('slow',v);$('#bSlow').setAttribute('aria-pressed',v);store();}
-$('#bSlow').onclick=()=>setSlow(!cfg.slow);
-$('#bRules').onclick=rules;
-setSlow(!!cfg.slow);
+// Phones send a fake hover with every tap, so only a mouse hovers.
+board.addEventListener('pointermove', (e) => {
+  if (e.pointerType === 'mouse') hoverOn(cellAt(e));
+});
+board.addEventListener('pointerleave', (e) => {
+  if (e.pointerType === 'mouse') hoverOn(-1);
+});
 
-const startRun=!save.run||save.run.over;
-if(startRun)newRun();
-foe=foeOf(save.run.m);game=newGame(N,[[],[]],0);render();
-startRun?chooseLevel():intro();
+// S toggles slow motion, Escape drops the selection, number keys pick from your hand.
+addEventListener('keydown', (e) => {
+  if (!$('#modal').hidden || !$('#rmodal').hidden) return;
+  if ((e.key === 's' || e.key === 'S') && !e.metaKey && !e.ctrlKey) setSlow(!cfg.slow);
+  if (e.key === 'Escape' && ui.sel >= 0) select(-1);
+  const k = +e.key;
+  if (game && k >= 1 && yourTurn() && k <= game.hands[0].length) select(k - 1);
+});
+
+function setSlow(v) {
+  cfg.slow = v;
+  document.body.classList.toggle('slow', v);
+  $('#bSlow').setAttribute('aria-pressed', v);
+  store();
+}
+$('#bSlow').onclick = () => setSlow(!cfg.slow);
+$('#bRules').onclick = rules;
+
+/* ---------- Start ---------- */
+
+setSlow(!!cfg.slow);
+const startRun = !save.run || save.run.over;
+if (startRun) newRun();
+foe = foeOf(save.run.m);
+game = newGame(N, [[], []], 0);
+render();
+startRun ? chooseLevel() : intro();
 </script>
 </body>
 </html>
