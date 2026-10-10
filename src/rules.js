@@ -11,7 +11,7 @@
      turn         the player to move
      first        who placed first (wins a match level on points and spikes)
      moveCount    moves made so far
-     popeWinner   set when a Pope changes colour: that player wins at once
+     popeWinner   set when His Hovering Holiness changes colour: that player wins at once
 
    A stone is:
      type     a piece letter, a key of PIECES
@@ -20,7 +20,7 @@
      variant  0 to 3: which quarter turn of a piece that comes in four turns
      spikes   [top, right, bottom, left]
      poison   {byPlayer, dueAtMove} while poisoned
-     grounded true for a Pope whose jet pack is gone
+     grounded true for His Hovering Holiness once his jet pack is gone
    ===================================================================== */
 
 /* ---------- Constants ---------- */
@@ -59,33 +59,33 @@ function other(player) {
 
 // prettier-ignore
 const PIECES = {
-  P: { name: 'Tiny Tim',           chess: 'pawn',   baseSpikes: [1, 0, 0, 0], variants: ['Tiny Tim', 'Tiny Tony', 'Tiny Tom', 'Tiny Ted'],
+  P: { name: 'Tiny Tim',       chess: 'pawn',   baseSpikes: [1, 0, 0, 0], variants: ['Tiny Tim', 'Tiny Tony', 'Tiny Tom', 'Tiny Ted'],
        description: 'a single spike' },
-  N: { name: 'Sir Gallops',        chess: 'knight', baseSpikes: [2, 0, 0, 2], variants: ['Sir Gallops', 'Sir Trots', 'Sir Canters', 'Sir Prances'],
+  N: { name: 'Neigh Nigel',    chess: 'knight', baseSpikes: [2, 0, 0, 2], variants: ['Neigh Nigel', 'Neigh Newman', 'Neigh Nathan', 'Neigh Nolan'],
        description: 'two sides of one corner' },
-  B: { name: 'Mitre Mandy',        chess: 'bishop', baseSpikes: [2, 0, 2, 0], description: 'spikes up and down' },
-  R: { name: 'Castle Carl',        chess: 'rook',   baseSpikes: [0, 2, 0, 2], description: 'spikes left and right' },
-  Q: { name: 'Her Majesty Mayhem', chess: 'queen',  baseSpikes: [2, 2, 2, 2], description: 'spikes on every side' },
-  K: { name: 'Old King Coal',      chess: 'king',   baseSpikes: [0, 0, 0, 0], goldenShields: true, hasNoLevels: true,
+  B: { name: 'Bishop Bob',     chess: 'bishop', baseSpikes: [2, 0, 2, 0], description: 'spikes up and down' },
+  R: { name: 'Castle Carl',    chess: 'rook',   baseSpikes: [0, 2, 0, 2], description: 'spikes left and right' },
+  Q: { name: 'Duchess Dagger', chess: 'queen',  baseSpikes: [2, 2, 2, 2], description: 'spikes on every side' },
+  K: { name: 'Old King Coal',  chess: 'king',   baseSpikes: [0, 0, 0, 0], goldenShields: true, hasNoLevels: true,
        description: 'golden shields on every side: every spike that touches him breaks, and he can never be taken' },
 
-  //                                                 level 0       level 1       level 2       level 3       level 4       level 5
-  S: { name: 'Serpent',       poisonous: true,   levelSpikes: [[1, 0, 0, 0], [2, 0, 0, 0], [2, 1, 0, 0], [3, 1, 0, 0], [3, 1, 0, 1], [4, 1, 0, 1]],
-       description: 'poisons every stone its spikes hit' },
-  W: { name: 'Old Woman',     curesPoison: true, levelSpikes: [[0, 1, 0, 0], [0, 1, 0, 1], [1, 1, 0, 1], [1, 1, 1, 1], [2, 1, 1, 1], [2, 2, 1, 1]],
-       description: 'cures her poisoned neighbours, and becomes the Grand Empress the first time she does' },
-  E: { name: 'Grand Empress', poisonous: true,   levelSpikes: [[2, 1, 1, 2], [3, 2, 2, 3], [4, 3, 3, 4], [5, 4, 4, 5], [5, 5, 5, 5], [5, 5, 5, 5]],
+  //                                                         level 0       level 1       level 2       level 3       level 4       level 5
+  S: { name: 'Venom Veronica',        poisonous: true,   levelSpikes: [[1, 0, 0, 0], [2, 0, 0, 0], [2, 1, 0, 0], [3, 1, 0, 0], [3, 1, 0, 1], [4, 1, 0, 1]],
+       description: 'poisons every stone her spikes hit' },
+  W: { name: 'Experienced Edna',      curesPoison: true, levelSpikes: [[0, 1, 0, 0], [0, 1, 0, 1], [1, 1, 0, 1], [1, 1, 1, 1], [2, 1, 1, 1], [2, 2, 1, 1]],
+       description: 'cures her poisoned neighbours, and becomes Empress Edna the first time she does' },
+  E: { name: 'Empress Edna',          poisonous: true,   levelSpikes: [[2, 1, 1, 2], [3, 2, 2, 3], [4, 3, 3, 4], [5, 4, 4, 5], [5, 5, 5, 5], [5, 5, 5, 5]],
        description: 'knight, queen and serpent in one: her spikes poison' },
-  J: { name: 'Prince Joey',   mayCollapse: true, levelSpikes: [[2, 1, 1, 0], [3, 1, 2, 0], [3, 2, 2, 0], [4, 2, 3, 0], [4, 3, 3, 0], [5, 3, 4, 0]],
-       description: 'every time he changes colour, a 1 in 3 chance he collapses into rubble' },
-  G: { name: 'Gorilla',       thickFur: true,    levelSpikes: [[2, 1, 0, 1], [3, 1, 0, 1], [4, 1, 0, 1], [4, 2, 0, 1], [5, 2, 0, 2], [5, 2, 1, 2]],
+  J: { name: 'Brittle Bernard',       mayCollapse: true, levelSpikes: [[2, 1, 1, 0], [3, 1, 2, 0], [3, 2, 2, 0], [4, 2, 3, 0], [4, 3, 3, 0], [5, 3, 4, 0]],
+       description: 'every time he changes colour, a 1 in 3 chance he collapses into debris' },
+  G: { name: 'Hairy Harambe',         thickFur: true,    levelSpikes: [[2, 1, 0, 1], [3, 1, 0, 1], [4, 1, 0, 1], [4, 2, 0, 1], [5, 2, 0, 2], [5, 2, 1, 2]],
        description: 'thick fur: he loses at most one spike in a fight' },
-  H: { name: 'Beekeeper',     swarm: true,       levelSpikes: [[0, 0, 0, 0], [1, 0, 0, 0], [1, 0, 1, 0], [1, 1, 1, 0], [2, 1, 1, 0], [2, 1, 1, 1]],
-       description: 'when placed, his swarm breaks one spike on every enemy side around him and grounds a Pope' },
-  O: { name: 'The Pope',      isPope: true,      levelSpikes: [[0, 1, 0, 1], [0, 2, 0, 2], [1, 2, 0, 2], [1, 3, 1, 2], [2, 3, 1, 3], [2, 4, 2, 3]],
-       description: 'flies on a jet pack until a swarm grounds him, and whoever loses the Pope loses the match' },
+  H: { name: 'Buzzy Beatrice',        swarm: true,       levelSpikes: [[0, 0, 0, 0], [1, 0, 0, 0], [1, 0, 1, 0], [1, 1, 1, 0], [2, 1, 1, 0], [2, 1, 1, 1]],
+       description: 'when placed, her swarm breaks one spike on every enemy side around her and grounds His Hovering Holiness' },
+  O: { name: 'His Hovering Holiness', isPope: true,      levelSpikes: [[0, 1, 0, 1], [0, 2, 0, 2], [1, 2, 0, 2], [1, 3, 1, 2], [2, 3, 1, 3], [2, 4, 2, 3]],
+       description: 'flies on a jet pack until a swarm grounds him, and whoever loses him loses the match' },
 
-  X: { name: 'Rubble', baseSpikes: [0, 0, 0, 0], hasNoLevels: true, description: "what is left of Prince Joey, nobody's stone" },
+  X: { name: 'Debris', baseSpikes: [0, 0, 0, 0], hasNoLevels: true, description: "what is left of Brittle Bernard, nobody's stone" },
 };
 
 /* ---------- Stones ---------- */
@@ -118,7 +118,7 @@ function spikeCount(stone) {
   return stone.spikes.reduce((sum, count) => sum + count, 0);
 }
 
-// The king can never be taken, and a flying Pope not yet.
+// The king can never be taken, and His Hovering Holiness not while he flies.
 function takeable(stone) {
   const piece = PIECES[stone.type];
   if (piece.goldenShields) return false;
@@ -127,7 +127,7 @@ function takeable(stone) {
 }
 
 // Hands are written as stone codes: piece letter, level, and for a turned stone its direction.
-// For example N2 (Sir Gallops, level 2), P1> (a pawn turned to point right) or N1v.
+// For example N2 (Neigh Nigel, level 2), P1> (a pawn turned to point right) or N1v.
 const DIRECTIONS = '^>v<';
 
 function parseCode(code) {
@@ -176,7 +176,7 @@ function newGame(size, hands, first) {
   };
 }
 
-// A match ends when the board is full or a Pope was taken.
+// A match ends when the board is full or His Hovering Holiness was taken.
 function isOver(game) {
   return game.popeWinner !== undefined || !game.owners.includes(EMPTY);
 }
@@ -206,7 +206,7 @@ function spikesLeft(game, player) {
   return spikes;
 }
 
-// Who wins a finished match: the Pope, then points, then spikes left, then whoever placed first
+// Who wins a finished match: His Hovering Holiness, then points, then spikes left, then whoever placed first
 // (the other player had the last move).
 function winnerOf(game) {
   if (game.popeWinner !== undefined) return game.popeWinner;
@@ -221,7 +221,7 @@ function winnerOf(game) {
 /* ---------- One fight ----------
    Facing spikes break off one for one, and a spike that hits is used up: the winner always spends at least one.
    So 2 against 1 ends 1 against 0, 1 against 0 ends 0 against 0, and 2 against 2 ends 0 against 0.
-   A golden shield breaks every spike that touches it, and a gorilla loses at most one spike in a fight. */
+   A golden shield breaks every spike that touches it, and Hairy Harambe loses at most one spike in a fight. */
 
 function spent(mine, theirs) {
   if (mine > theirs) return Math.max(theirs, 1);
@@ -238,7 +238,7 @@ function breakSpikes(game, cell, side, count, step) {
 }
 
 // A poisonous stone that hits with at least one spike poisons the other stone, win or lose. Two moves later
-// that stone goes over to the poisoner, unless an Old Woman of its own colour cures it first.
+// that stone goes over to the poisoner, unless Experienced Edna of its own colour cures it first.
 function poisonHit(game, attackerCell, targetCell, spikesThatHit) {
   if (spikesThatHit === 0) return;
   if (!PIECES[game.stones[attackerCell].type].poisonous) return;
@@ -276,13 +276,13 @@ function fight(game, cell, side, neighbour, step) {
 
 /* ---------- One move ----------
    play() returns the game after the player to move puts a stone from their hand on an empty square.
-   luck() decides Prince Joey's collapses; without it (the computer's search, the preview) he never collapses.
+   luck() decides Brittle Bernard's collapses; without it (the computer's search, the preview) he never collapses.
    Besides the board, the result records everything that happened, step by step: step 0 is the new stone's
    own fights, then one step per fight of the chain. The animation replays these records.
      fights:     { from, to, spikesFrom, spikesTo, step }
-     flips:      { cell, owner, step, collapsed }  (collapsed: Prince Joey's stone, when he becomes rubble)
+     flips:      { cell, owner, step, collapsed }  (collapsed: Brittle Bernard's stone, when he turns to debris)
      breaks:     { cell, side, count, step }
-     promotions: { cell, step }  an Old Woman who became the Grand Empress */
+     promotions: { cell, step }  Experienced Edna who became Empress Edna */
 
 function play(game, move, luck) {
   const player = game.turn;
@@ -309,7 +309,7 @@ function play(game, move, luck) {
   if (PIECES[stone.type].swarm) sting(after, move.cell);
   clash(after, move.cell);
   let step = chain(after, move.cell, 1);
-  step = cure(after, step); // an Old Woman cures before the poison takes effect
+  step = cure(after, step); // Experienced Edna cures before the poison takes effect
   step = poisonStrikes(after, step);
   step = cure(after, step);
 
@@ -317,8 +317,8 @@ function play(game, move, luck) {
   return after;
 }
 
-// The Beekeeper's swarm stings the eight squares around him: one spike off every spiked enemy side,
-// and a Pope is grounded.
+// Buzzy Beatrice's swarm stings the eight squares around her: one spike off every spiked enemy side,
+// and His Hovering Holiness is grounded.
 function sting(game, cell) {
   const size = game.size;
   const enemy = other(game.owners[cell]);
@@ -413,8 +413,8 @@ function poisonStrikes(game, step) {
   return step;
 }
 
-// An Old Woman cures every poisoned stone of her colour that touches her, and the first cure makes her the
-// Grand Empress. Her new spikes fight at once, in a chain from her square. Returns the next free step number.
+// Experienced Edna cures every poisoned stone of her colour that touches her, and the first cure makes her
+// Empress Edna. Her new spikes fight at once, in a chain from her square. Returns the next free step number.
 function cure(game, step) {
   for (let cell = 0; cell < game.owners.length; cell++) {
     const stone = game.stones[cell];
@@ -435,7 +435,7 @@ function cure(game, step) {
 }
 
 // The stone on `cell` changes colour, unless it cannot be taken. Returns whether it did.
-// A Pope that changes colour loses the match for his side, and Prince Joey may collapse into rubble.
+// His Hovering Holiness changing colour loses the match for his side, and Brittle Bernard may collapse into debris.
 function take(game, cell, step) {
   const stone = game.stones[cell];
   const owner = other(game.owners[cell]);

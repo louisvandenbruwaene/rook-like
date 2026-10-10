@@ -187,20 +187,22 @@ function finishMatch() {
   const run = save.run;
   const pope = game.popeWinner;
   if (winnerOf(game) !== YOU) {
-    const text = pope === OPPONENT ? `${opponent.name} took your Pope.` : `${opponent.name} wins ${tally()}.`;
+    const text =
+      pope === OPPONENT ? `${opponent.name} took His Hovering Holiness.` : `${opponent.name} wins ${tally()}.`;
     endRun(false, text);
     return;
   }
   if (run.match === RUN_LENGTH) {
     save.crowns++;
-    const text = pope === YOU ? `You took the Pope of ${opponent.name}.` : `You beat ${opponent.name} ${tally()}.`;
+    const text =
+      pope === YOU ? `You took His Hovering Holiness from ${opponent.name}.` : `You beat ${opponent.name} ${tally()}.`;
     endRun(true, text);
     return;
   }
   const deckPlayed = deckOf(opponent).slice();
   upgradeAllDecks(run.decks, currentDifficulty());
   store();
-  offerRewards(pope === YOU ? 'Took the Pope' : `Won ${tally()}`, deckPlayed);
+  offerRewards(pope === YOU ? 'Took His Holiness' : `Won ${tally()}`, deckPlayed);
 }
 
 function nextMatch() {

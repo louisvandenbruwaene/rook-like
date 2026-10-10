@@ -51,7 +51,7 @@ function breaksBySquare(breaks) {
 }
 
 // The stone on a square as it looks right now. While a move plays out: its spikes that break in a later step
-// are still whole, an Old Woman stays an Old Woman until her promotion, and Prince Joey stays Joey until he collapses.
+// are still whole, Experienced Edna stays Edna until her promotion, and Brittle Bernard stays Bernard until he collapses.
 function shownStone(cell) {
   let stone = game.stones[cell];
   if (replay.before) {
@@ -192,7 +192,7 @@ function squareView(cell, preview, previewBreaks, canPlace) {
     if (flying) classes.push('flying');
 
     if (replay.turning.has(cell)) {
-      // A collapsing Prince Joey turns over from Joey himself; any other stone from itself in its old colour.
+      // A collapsing Brittle Bernard turns over from Bernard himself; any other stone from itself in its old colour.
       let front = stone;
       if (owner === RUBBLE && shownStone(cell).type === 'X') {
         front = game.flips.find((flip) => flip.cell === cell && flip.owner === RUBBLE).collapsed;

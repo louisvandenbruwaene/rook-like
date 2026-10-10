@@ -67,7 +67,7 @@ classDiagram
         turn : YOU or OPPONENT
         first : who placed first
         moveCount
-        popeWinner : set when a Pope is taken
+        popeWinner : set when His Hovering Holiness is taken
     }
     class Stone {
         type : piece letter, P N B R Q K ...
@@ -76,7 +76,7 @@ classDiagram
         variant : 0 to 3, the quarter turn
         spikes : [top, right, bottom, left]
         poison : byPlayer, dueAtMove
-        grounded : a Pope without his jet pack
+        grounded : His Hovering Holiness without his jet pack
     }
     class Piece {
         name, chess, description
@@ -102,7 +102,7 @@ classDiagram
     MoveResult --|> Game : is a
 ```
 
-Stones in hands, saves and opponents are written as short **codes**: piece letter, level, and for a turned piece its direction. `N2` is Sir Gallops at level 2, `P1>` a pawn turned to point right. `fromCode(code, facing)` turns a code into a Stone.
+Stones in hands, saves and opponents are written as short **codes**: piece letter, level, and for a turned piece its direction. `N2` is Neigh Nigel at level 2, `P1>` a pawn turned to point right. `fromCode(code, facing)` turns a code into a Stone.
 
 The squares are numbered row by row:
 
@@ -120,12 +120,12 @@ The squares are numbered row by row:
 ```mermaid
 flowchart TD
     start(["play(game, move)"]) --> place["put the stone on the square"]
-    place --> bee{"a Beekeeper?"}
-    bee -- yes --> sting["<b>sting</b><br/>one spike off every enemy side<br/>in the 8 squares around, Popes grounded"]
+    place --> bee{"Buzzy Beatrice?"}
+    bee -- yes --> sting["<b>sting</b><br/>one spike off every enemy side<br/>in the 8 squares around, His Holiness grounded"]
     bee -- no --> clash
     sting --> clash["<b>clash</b> · step 0<br/>the new stone fights every enemy neighbour<br/>wins take them, one loss gets it taken"]
     clash --> chain["<b>chain</b> · steps 1, 2, 3 ...<br/>fight the open line closest to the new stone,<br/>until no open line is left"]
-    chain --> cure1["<b>cure</b><br/>Old Women cure poisoned neighbours<br/>and become the Grand Empress"]
+    chain --> cure1["<b>cure</b><br/>Experienced Edna cures poisoned neighbours<br/>and becomes Empress Edna"]
     cure1 --> poison["<b>poisonStrikes</b><br/>poison that is due: the stone goes<br/>over to the poisoner, and a chain follows"]
     poison --> cure2["<b>cure</b> again"]
     cure2 --> done(["the new game + its records"])
@@ -140,14 +140,14 @@ flowchart LR
     f(["fight"]) --> p["<b>poisonHit</b><br/>a poisonous stone that hits<br/>poisons the other, win or lose"]
     p --> s{"golden shield<br/>on either side?"}
     s -- yes --> sh["every spike touching the shield breaks<br/>nobody wins"]
-    s -- no --> b["<b>breakSpikes</b> on both sides<br/>(a Gorilla loses at most one)"]
+    s -- no --> b["<b>breakSpikes</b> on both sides<br/>(Hairy Harambe loses at most one)"]
     b --> w{"more spikes?"}
     w -- "this side" --> t1["<b>take</b> the other stone"]
     w -- "that side" --> t2["<b>take</b> this stone"]
     w -- equal --> none["no winner"]
 ```
 
-`take` turns a stone over to the other colour, unless it is the king or a flying Pope. A Pope that is taken ends the match. Prince Joey has a 1 in 3 chance to collapse into rubble instead.
+`take` turns a stone over to the other colour, unless it is the king or His Hovering Holiness while he flies. Taking His Holiness ends the match. Brittle Bernard has a 1 in 3 chance to collapse into debris instead.
 
 ### The chain
 
@@ -180,7 +180,7 @@ flowchart TD
 
 | What | Worth |
 |---|---|
-| taking the Pope | 1 000 000 |
+| taking His Hovering Holiness | 1 000 000 |
 | each point ahead | 2 000 |
 | each spike ahead | 2 (at most 640 in total, so one point always counts more) |
 | having placed first | 1 |
@@ -220,7 +220,7 @@ sequenceDiagram
     Page->>Engine: nextTurn → bestMove(game, …)
     Engine-->>Page: the computer's move
     Page->>Page: makeMove again, the same way
-    Note over Page: board full or Pope taken → finishMatch
+    Note over Page: board full or His Holiness taken → finishMatch
 ```
 
 While a move plays out the board shows `replay.owners`, the colours as they are at that step, and `shownStone` keeps spikes whole until the step in which they break. When the last step is over the page draws the real game again.
@@ -232,7 +232,7 @@ stateDiagram-v2
     [*] --> chooseDifficulty
     chooseDifficulty --> intro : Easy · Normal · Hard · Very hard
     intro --> startMatch : pick 8 from your collection, Fight
-    startMatch --> finishMatch : board full or Pope taken
+    startMatch --> finishMatch : board full or His Holiness taken
     finishMatch --> offerRewards : you won, every opponent deck upgrades one stone
     offerRewards --> nextMatch : upgrade one of 5 stones (+ a new stone)
     nextMatch --> intro
@@ -245,7 +245,7 @@ stateDiagram-v2
 - **Rewards** (`offerRewards`): after a win you upgrade one of five random stones from your deck by one level. The upgraded stone takes its place in the deck and the old one stays in the collection. If the opponent played a stone (piece and turn) that you do not own, you also get one of those, at level 1.
 - **The end of a run** (`endRun`): keep one gain, an upgrade or a new stone, in your collection for good.
 - **Who places first** (`firstFor`): you in odd matches, the opponent in even ones, the boss always.
-- **Winning a match** (`winnerOf`): taking the Pope, else most points (stones), else most spikes left, else whoever placed first.
+- **Winning a match** (`winnerOf`): taking His Hovering Holiness, else most points (stones), else most spikes left, else whoever placed first.
 - **Saves** (`loadSave`, `store`) keep your starting hand, records and the run in localStorage. Older saves are converted when they load.
 
 ## Checking a change

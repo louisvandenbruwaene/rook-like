@@ -50,7 +50,7 @@ function popUp(cell, text, className, lifetimeMs, raise = 0) {
   overlay(label, x, y + raise, lifetimeMs);
 }
 
-// The Beekeeper's swarm: twelve bees fly out to the squares around him and back.
+// Buzzy Beatrice's swarm: twelve bees fly out to the squares around her and back.
 function releaseBees(cell) {
   const { x, y, size } = centreOf(cell);
   for (let index = 0; index < 12; index++) {

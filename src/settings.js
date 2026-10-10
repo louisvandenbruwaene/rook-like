@@ -33,7 +33,7 @@ const DIFFICULTIES = {
 
 // prettier-ignore
 const OPPONENTS = [
-  { name: 'Pawnbroker Pete', portrait: 'pete',   deck: 'P1^ P1> P1v P1< N1 B1 G1 K1', line: 'Everything has a price. My gorilla collects.' },
+  { name: 'Pawnbroker Pete', portrait: 'pete',   deck: 'P1^ P1> P1v P1< N1 B1 G1 K1', line: 'Everything has a price. My Harambe collects.' },
   { name: 'Sir Neighsalot',  portrait: 'neigh',  deck: 'N1 N1> N1v P1^ P1> H1 R1 K1', line: 'Hold your horses. All of them.' },
   { name: 'Madame Swerve',   portrait: 'swerve', deck: 'B1 B1 S1 P1^ P1> P1v N1 K1',  line: 'Darling, I never take the straight road.' },
   { name: 'Blocky Barb',     portrait: 'barb',   deck: 'R1 R1 P1^ P1> P1v P1< N1 K1', line: 'Square deal. Square face. Square loss.' },
@@ -43,7 +43,7 @@ const OPPONENTS = [
 // prettier-ignore
 const BOSS = { name: 'The Obsidian Monarch', portrait: 'boss', isBoss: true, deck: 'O1 Q1 Q1 R1 B1 N1 N1> K1', line: 'Nineteen boards behind you. One crown ahead.' };
 
-// Lady Lux's Old Woman cures the poison of Madame Swerve's Serpent, so Lady Lux always comes first.
+// Lady Lux's Experienced Edna cures the poison of Madame Swerve's Venom Veronica, so Lady Lux always comes first.
 const LADY_LUX = 4;
 const MADAME_SWERVE = 2;
 
@@ -125,7 +125,7 @@ function shuffle(list) {
   return list;
 }
 
-// "Sir Gallops Lv 2", or just the name for a stone without levels.
+// "Neigh Nigel Lv 2", or just the name for a stone without levels.
 function titleOf(code) {
   const stone = fromCode(code, YOU);
   if (PIECES[stone.type].hasNoLevels) return nameOf(stone);

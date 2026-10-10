@@ -7,7 +7,7 @@
      points ahead x 2000
      + spikes ahead x 2   (at most 640, so one point always outweighs every spike)
      + 1 for having placed first
-   which is the same order of tiebreaks as winnerOf. Taking the Pope is worth more than any score.
+   which is the same order of tiebreaks as winnerOf. Taking His Hovering Holiness is worth more than any score.
    A move is { handIndex, cell }.
    ===================================================================== */
 
