@@ -2,19 +2,20 @@
 
 Rook-like is a roguelike of spiked chess stones. You and the computer take turns placing stones on a 4 × 4 board. Facing spikes fight, the winner takes the other stone, and one move can set off a chain of fights. A run is twenty matches against opponents who grow stronger with every win, and the last one is the boss.
 
-The page is [`index.html`](index.html) (layout and rules text) with [`style.css`](style.css) and nine small scripts in [`src/`](src/), loaded in this order. They share one global scope, so a later file can use everything from an earlier one. The diagrams below use the function names from the code, so you can search for any box.
+The page is [`index.html`](index.html) (layout and rules text) with [`style.css`](style.css) and ten small scripts in [`src/`](src/), loaded in this order. They share one global scope, so a later file can use everything from an earlier one. The diagrams below use the function names from the code, so you can search for any box.
 
 | File | Lines | What it holds |
 |---|---|---|
-| [`src/rules.js`](src/rules.js) | 494 | the pieces, stones and stone codes, the board, one fight, one move. Pure logic, never touches the page |
-| [`src/computer.js`](src/computer.js) | 128 | the computer player |
-| [`src/art.js`](src/art.js) | 244 | every stone and portrait as an SVG string (120 lines are drawing data) |
-| [`src/settings.js`](src/settings.js) | 128 | board size, run length, difficulties, the opponents and their decks |
-| [`src/save.js`](src/save.js) | 139 | progress and settings in localStorage |
-| [`src/screen.js`](src/screen.js) | 316 | the state of a match, a move playing out, and the `render…()` functions |
-| [`src/move.js`](src/move.js) | 211 | how a move plays out on screen, step by step |
-| [`src/run.js`](src/run.js) | 324 | the cards between matches: the run match by match, your deck, rewards, the end |
-| [`src/controls.js`](src/controls.js) | 112 | the rules panel, mouse, touch and keys, and the start |
+| [`src/rules.js`](src/rules.js) | 496 | the pieces, stones and stone codes, the board, one fight, one move. Pure logic, never touches the page |
+| [`src/computer.js`](src/computer.js) | 134 | the computer player |
+| [`src/art.js`](src/art.js) | 464 | every stone and portrait as an SVG string (120 lines are drawing data) |
+| [`src/settings.js`](src/settings.js) | 235 | board size, run length, difficulties, the opponents and their decks |
+| [`src/save.js`](src/save.js) | 196 | progress and settings in localStorage |
+| [`src/screen.js`](src/screen.js) | 318 | the state of a match, a move playing out, and the `render…()` functions |
+| [`src/move.js`](src/move.js) | 262 | how a move plays out on screen, step by step |
+| [`src/run.js`](src/run.js) | 444 | the cards between matches: the run match by match, your deck, rewards, the end |
+| [`src/tutorial.js`](src/tutorial.js) | 281 | the coach line under the board: the four practice boards, and a word and a demo board for each rare stone you meet |
+| [`src/controls.js`](src/controls.js) | 125 | the rules panel, mouse, touch and keys, and the start |
 
 Every file starts with a header that says what it builds on and lists its sections (`Contents: …`), and every section starts with a `/* ---------- name ---------- */` line, so a search for `----------` lists them all.
 
@@ -35,6 +36,9 @@ Every file starts with a header that says what it builds on and lists its sectio
 | what is saved | `newSave` in `save.js`; add a `fromVersion…` step when the shape changes |
 | keys, mouse and touch | the input section of `controls.js` |
 | the rules text | `#rules-template` in `index.html` |
+| the tutorial's practice boards | `LESSONS` in `tutorial.js` |
+| a rare stone's demo board on the card before a match | `DEMOS` in `tutorial.js` (worked out by `play`, so it always follows the rules) |
+| the move named on the loss card | `worstMove` in `run.js`, played again by `replayMove` in `move.js` |
 
 ## Shared state
 
@@ -45,7 +49,9 @@ The files share one global scope. These are the only variables that change while
 | `save`, `settings` | `save.js` | your progress and slow motion, written back by `store()` |
 | `game`, `opponent` | `screen.js` | the match being played and who you face, set by `startMatch` and `makeMove` |
 | `ui` | `screen.js` | your selected stone, the hovered square, the last move, whether input waits |
+| `history` | `screen.js` | every move of the match, for the loss card |
 | `replay` | `screen.js` | how far a move has played out on screen, set by `startReplay` and `endReplay` |
+| `tutorial` | `tutorial.js` | the lesson on the board, and the match to go back to, while the tutorial runs |
 | `timers` | `move.js` | every pending timeout, so giving up can cancel a move |
 | `search` | `computer.js` | the computer's clock while it thinks |
 
@@ -63,6 +69,7 @@ flowchart LR
         screen["<b>screen.js</b><br/>render…()"]
         move["<b>move.js</b><br/>makeMove, animate"]
         run["<b>run.js</b><br/>cards between matches"]
+        tutorial["<b>tutorial.js</b><br/>lessons, first meetings"]
         controls["<b>controls.js</b><br/>input, start"]
     end
     sheet["stone-sheet.js<br/>(printable sheet)"]
@@ -76,6 +83,9 @@ flowchart LR
     run --> settings
     run --> move
     controls --> run
+    controls --> tutorial
+    tutorial --> run
+    move -.-> tutorial
     sheet --> rules
     sheet --> art
 ```

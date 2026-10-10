@@ -1,6 +1,7 @@
 /* =====================================================================
    A MOVE ON SCREEN  (builds on screen.js and computer.js)
    How a move plays out: timers, effects over the board, the step-by-step animation, and whose turn is next.
+   After a move it hands over to tutorial.js (loaded later): lessonMoved in a lesson, introduce for a new rare stone.
 
    Contents: timers · effects over the board · a move
    ===================================================================== */
@@ -105,26 +106,59 @@ function makeMove(move) {
   const mover = game.turn;
   const stone = game.hands[mover][move.handIndex];
   const result = play(game, move, Math.random);
+  if (!tutorial) history.push({ before: game, move, result, mover, stone });
+  const endTime = playOut(move.cell, result, mover, stone);
 
-  startReplay(move.cell, result);
+  const anyTurnedOver = result.flips.length > 0;
+  after(endTime + (anyTurnedOver ? PAUSE_AFTER_TURNOVER_MS : PAUSE_AFTER_MOVE_MS), () => {
+    endReplay();
+    render();
+    if (tutorial) {
+      lessonMoved();
+      return;
+    }
+    introduce(stonesMetIn(stone, result), () => {
+      ui.waiting = false;
+      render();
+      nextTurn(anyTurnedOver);
+    });
+  });
+}
+
+// The move on screen: the stone drops in with its name over it, then every step of the move plays out, then
+// the points it won or lost pop up. `result` becomes the game. Returns the time at which the last step ends.
+function playOut(cell, result, mover, stone) {
+  startReplay(cell, result);
   ui.selected = -1;
   ui.hovered = -1;
-  ui.lastMove = move.cell;
+  ui.lastMove = cell;
   render();
   renderInfo();
   bump('thump');
 
   const nameTagClass = mover === YOU ? 'name-tag you' : 'name-tag opponent';
-  popUp(move.cell, nameOf(stone), nameTagClass, scaled(NAME_TAG_MS), -centreOf(move.cell).size * NAME_TAG_RAISE);
-  const endTime = animate(result, move.cell);
-  popGain(replay.before, result, move.cell, mover, endTime);
+  popUp(cell, nameOf(stone), nameTagClass, scaled(NAME_TAG_MS), -centreOf(cell).size * NAME_TAG_RAISE);
+  const endTime = animate(result, cell);
+  popGain(replay.before, result, cell, mover, endTime);
+  return endTime;
+}
 
-  const anyTurnedOver = result.flips.length > 0;
-  after(endTime + (anyTurnedOver ? PAUSE_AFTER_TURNOVER_MS : PAUSE_AFTER_MOVE_MS), () => {
+// A move of the match played again in slow motion, from the board as it was before it, then the board goes back to
+// how the match ended.
+function replayMove({ before, move, result, mover, stone }, then) {
+  const end = game;
+  const wasSlow = settings.slowMotion;
+  settings.slowMotion = true;
+  document.body.classList.add('slow');
+  game = before;
+  const endTime = playOut(move.cell, result, mover, stone);
+  after(endTime + PAUSE_AFTER_TURNOVER_MS, () => {
+    settings.slowMotion = wasSlow;
+    document.body.classList.toggle('slow', wasSlow);
     endReplay();
-    ui.waiting = false;
+    game = end;
     render();
-    nextTurn(anyTurnedOver);
+    then();
   });
 }
 

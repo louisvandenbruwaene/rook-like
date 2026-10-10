@@ -65,6 +65,7 @@
     <div class="centre">
       <div class="board-frame"><div class="board" id="board"></div></div>
       <div id="stone-info"></div>
+      <div class="coach" id="coach" hidden></div>
     </div>
     <div class="hidden-hand"><div class="hidden-stack" id="opponent-hand"></div><span class="hand-count" id="opponent-hand-count"></span></div>
   </main>
@@ -74,35 +75,33 @@
   <h2>How to play</h2>
   <h3>A match</h3>
   <ul>
-    <li>Take turns placing a stone from your hand on an empty square of the 4 × 4 board. You never see the opponent's hand.</li>
-    <li>Before each match you pick 8 stones from your collection to play with, at most one king and one queen. Your king and your 7 spikiest stones are picked for you; tap a stone to swap it. The same stone may come at several levels, say a level 4 and a level 5 rook. You start with Tiny Tim, Tiny Tony and Tiny Ted (pawns), Neigh Nigel (knight), Bishop Bailey (bishop), Castle Carl (rook), Duchess Dagger (queen) and King Kobe (king). Your stones face up the board, the opponent's are turned round and face down. Each level adds a spike to every side that has some, up to 5. Opponents' stones can be level 0: one spike fewer on every spiked side, so a level 0 tiny has none.</li>
-    <li><b>King Kobe</b> has golden shields on every side: every spike that touches him breaks, and he can never be taken.</li>
-    <li><b>Rare stones</b> have their own powers and their own growth (see below). Each belongs to one opponent, who always plays it and may offer it when you win.</li>
+    <li>Take turns placing a stone from your hand on an empty square of the 4 × 4 board. Your stones are blue and face up the board, the opponent's are red and face down.</li>
+    <li><b>Fights:</b> each side of your new stone that touches a red stone fights it. Facing spikes break off one for one, and the side with spikes left over wins and takes the other stone. A spike that hits is used up, so 2 against 1 ends 1 against 0. Lose any of these fights and your new stone is taken.</li>
+    <li><b>Chains:</b> a stone that changes colour fights on with its own spikes, the pair closest to the new stone first, until no blue and red stones touch with a spike between them.</li>
+    <li><b>Winning:</b> when the board is full, each stone you own is one point. Level on points, most spikes left wins (the ▲ number). Level on spikes too, whoever placed first wins. Whoever loses His Hovering Holiness loses at once.</li>
   </ul>
-  <h3>Fights</h3>
+  <h3>Stones</h3>
   <ul>
-    <li><b>Clash:</b> each side of your new stone that touches an enemy stone fights it. Facing spikes break off one for one, and the side with spikes left over wins and takes the other stone. A spike that hits is used up, so the winner always loses at least one spike: 2 against 1 ends 1 against 0, and 1 against 0 ends 0 against 0. That works both ways: lose any clash and your new stone is taken.</li>
-    <li><b>Chain:</b> after the new stone has fought, as long as two stones of different colours touch with a spike between them, they fight the same way, the pair closest to the new stone first. So when a move ends, no two stones of different colours touch with a spike between them.</li>
-  </ul>
-  <h3>Winning</h3>
-  <ul>
-    <li>When the board is full, count your stones, one point each. Most points wins. Level on points: most spikes left on your stones wins (the small number by each score). Level on spikes too: whoever placed first wins, since the other side had the last move. Whoever loses His Hovering Holiness loses the match at once.</li>
+    <li>Each level adds a spike to every side that has some, up to 5. Opponent stones can be level 0: one spike fewer on every spiked side, so a level 0 Tiny has none.</li>
+    <li><b>King Kobe</b> has golden shields: every spike that touches him breaks, and he can never be taken.</li>
+    <li><b>Rare stones</b> have their own powers and their own growth (see below). Each belongs to one opponent, who always brings it.</li>
   </ul>
   <h3>A run</h3>
   <ul>
-    <li>A run is <b>20 matches</b>. Lose one and the run is over. Match 20 is the boss. At the start of a game you pick a difficulty, and every run of that game plays it (New game, below, starts over with the starter stones): Easy (opponents look 2 moves ahead, stones from level 0), Normal (as far ahead as they can, level 0), Hard (2 moves, level 1) or Very hard (as far as they can, level 1).</li>
-    <li>Opponents come in a random order, but Lady Lux, whose Experienced Edna cures poison, always comes before Madame Swerve and her Venom Veronica. Every opponent keeps their own deck for the whole run. After each match you win, every deck upgrades one stone by one level, so they all grow even while you face someone else. On Easy the tinies go up first, on Normal the tinies, knights, bishops and rooks, one level at a time. The boss starts 6 upgrades ahead.</li>
-    <li>After a win, upgrade one of three random stones from your deck by one level. The old one stays in your collection, except a queen, who is replaced. If the opponent played a stone you do not own (piece and turn), you also get one of those, at level 1. When a run ends, keep one stone you held that run and do not own yet: it joins your collection for good, and a new queen replaces your old one.</li>
-    <li>Every opponent always brings the same stones. Remember what they play.</li>
+    <li>A run is <b>20 matches</b>, and match 20 is the boss. Lose one and the run is over. The difficulty is picked once per game (New game, below, starts over with the starter stones): Easy (opponents look 2 moves ahead, stones from level 0), Normal (as far ahead as they can, level 0), Hard (2 moves, level 1) or Very hard (as far as they can, level 1).</li>
+    <li>Before each match you see the opponent's stones and pick 8 of yours, at most one king and one queen. Your king and your 7 spikiest stones are picked for you: tap a stone to swap it.</li>
+    <li>After each match you win, every opponent's deck upgrades one stone. On Easy the Tinies go first, on Normal the Tinies, knights, bishops and rooks, one level at a time. The boss starts 6 upgrades ahead. Lady Lux, whose Experienced Edna cures poison, always comes before Madame Swerve and her Venom Veronica.</li>
+    <li>After a win, upgrade one of three stones from your deck by one level (the old one stays, except a queen, who is replaced), and get a stone the opponent played that you do not own, at level 1. When a run ends, keep one stone you gained in it for good.</li>
   </ul>
   <h3>Controls</h3>
   <ul>
-    <li>Pick a stone, then hover over a square (or tap it once on a phone): yellow stones you would take, red stones you would lose, faded spikes would break. Slow (or S) plays every move four times slower.</li>
+    <li>Pick a stone (or press its number), then point at a square, or tap it once on a phone: yellow stones you would take, red stones you would lose, faded spikes would break. Slow (or S) plays every move four times slower.</li>
   </ul>
   <div class="piece-guide" id="piece-guide"></div>
   <p class="record" id="record"></p>
   <div class="rules-footer">
     <div class="rules-footer-links">
+      <button class="text-button" id="tutorial-button">Replay tutorial</button>
       <button class="text-button" id="give-up-button">Give up this run</button>
       <button class="text-button" id="new-game-button">New game</button>
     </div>
@@ -121,6 +120,7 @@
 <script src="src/screen.js"></script>
 <script src="src/move.js"></script>
 <script src="src/run.js"></script>
+<script src="src/tutorial.js"></script>
 <script src="src/controls.js"></script>
 </body>
 </html>

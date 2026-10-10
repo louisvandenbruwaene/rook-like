@@ -18,6 +18,8 @@ function find(selector) {
 
 let game = null;
 let opponent = null;
+// Every move of the match: { before, move, result, mover, stone }, for the loss card to show the move that hurt most.
+let history = [];
 
 // What you are doing.
 const ui = {
@@ -156,7 +158,7 @@ function renderScores() {
     const points = pointsOf(shown, who);
     find(`#points-${id}`).textContent = points;
     find(`#spikes-${id}`).textContent = `▲${spikesLeft(shown, who)}`;
-    find(`#tug-${id}`).style.width = `${(100 * points) / (SIZE * SIZE)}%`;
+    find(`#tug-${id}`).style.width = `${(100 * points) / game.owners.length}%`;
     find(`#player-${id}`).classList.toggle('to-move', !isOver(game) && game.turn === who);
   }
 }
@@ -287,12 +289,12 @@ function renderBoard() {
   }
   const previewBreaks = preview ? breaksBySquare(preview.breaks) : new Map();
   let html = '';
-  for (let cell = 0; cell < SIZE * SIZE; cell++) {
+  for (let cell = 0; cell < game.owners.length; cell++) {
     const { classes, contents } = squareView(cell, preview, previewBreaks, canPlace);
     html += `<div class="${classes}" data-cell="${cell}">${contents}</div>`;
   }
   const board = find('#board');
-  board.style.setProperty('--board-size', SIZE);
+  board.style.setProperty('--board-size', game.size);
   board.innerHTML = html;
   replay.placed.clear();
   clearEffects();

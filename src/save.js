@@ -9,14 +9,15 @@
 /* ---------- Reading and writing ----------
    Settings and progress live in localStorage, under their old keys so earlier saves carry over.
    save: { version, collection (stone codes you own for good),
-           difficulty (chosen once for the whole game, every run plays it), bestMatch, runsPlayed, crowns, run }
+           difficulty (chosen once for the whole game, every run plays it), bestMatch, runsPlayed, crowns, run,
+           tutorialDone, explained (the rare stones whose power you have been told, see tutorial.js) }
    run:  { match, collection (stone codes owned this run), startSize (how many of them you started with),
            deck (indexes into the run's collection), opponentOrder, difficulty,
            decks (each opponent's stone codes, see settings.js), over } */
 
 const SAVE_KEY = 'chainstones-run';
 const SETTINGS_KEY = 'chainstones-cfg';
-const SAVE_VERSION = 5;
+const SAVE_VERSION = 6;
 
 function readStorage(key) {
   try {
@@ -35,6 +36,8 @@ function newSave() {
     runsPlayed: 0,
     crowns: 0,
     run: null,
+    tutorialDone: false,
+    explained: [],
   };
 }
 
@@ -62,10 +65,11 @@ function currentDifficulty() {
 // Older saves are converted step by step. Saves from before version 2 (before the rare stones) start over.
 function loadSave() {
   let stored = readStorage(SAVE_KEY);
-  if (!stored || ![2, 3, 4, 5].includes(stored.version)) return newSave();
+  if (!stored || ![2, 3, 4, 5, 6].includes(stored.version)) return newSave();
   if (stored.version === 2) stored = fromVersion2(stored);
   if (stored.version === 3) stored = fromVersion3(stored);
   if (stored.version === 4) stored = fromVersion4(stored);
+  if (stored.version === 5) stored = fromVersion5(stored);
   return stored;
 }
 
@@ -138,6 +142,11 @@ function fromVersion4(old) {
       decks: decks && Object.fromEntries(Object.entries(decks).map(([name, codes]) => [name, codes.map(fullCode)])),
     },
   };
+}
+
+// Version 6 added the tutorial and the first meetings with rare stones: an older save sees both once.
+function fromVersion5(old) {
+  return { ...old, version: 6, tutorialDone: false, explained: [] };
 }
 
 // Saves from before the one of each stone rule may own a stone twice, and saves from before the one queen rule
