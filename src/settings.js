@@ -7,6 +7,7 @@
 const SIZE = 4;
 const RUN_LENGTH = 20; // the last match is against the boss
 const DECK_SIZE = 8; // the stones you take into a match, chosen from your collection
+const ONE_PER_DECK = 'KQ'; // a deck holds at most one king and one queen
 const STARTER_COLLECTION = 'P1^ P1> P1< N1 B1 R1 Q1 K1'; // Tiny Tim, Tony and Ted; Tiny Tom comes from the opponents
 const THINK_MS = 1000;
 const BOSS_THINK_MS = 1600;

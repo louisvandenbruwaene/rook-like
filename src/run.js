@@ -62,17 +62,26 @@ function newRun() {
 }
 
 // The indexes of a deck of DECK_SIZE stones from the collection: the preferred codes where it has them,
-// then the first stones not yet taken.
+// then the first stones not yet taken, keeping to one king and one queen.
 function deckFrom(collection, preferredCodes) {
   const deck = [];
+  const fits = (i) => !deck.includes(i) && !sameLimitedPiece(collection, deck, i);
   for (const code of preferredCodes) {
-    const index = collection.findIndex((owned, i) => owned === code && !deck.includes(i));
+    const index = collection.findIndex((owned, i) => owned === code && fits(i));
     if (index >= 0 && deck.length < DECK_SIZE) deck.push(index);
   }
   for (let i = 0; i < collection.length && deck.length < DECK_SIZE; i++) {
-    if (!deck.includes(i)) deck.push(i);
+    if (fits(i)) deck.push(i);
   }
   return deck;
+}
+
+// The deck index of a king or queen of the same piece as collection[index], or undefined.
+// Only one of each may be in a deck.
+function sameLimitedPiece(collection, deck, index) {
+  const type = collection[index][0];
+  if (!ONE_PER_DECK.includes(type)) return undefined;
+  return deck.find((i) => collection[i][0] === type);
 }
 
 function deckCodes(run) {
@@ -129,9 +138,12 @@ function renderCollection() {
   find('#card .primary').disabled = run.deck.length !== DECK_SIZE;
 }
 
+// Tapping a stone takes it out of your deck or puts it in. A second king or queen swaps with the one in the deck.
 function toggleInDeck(index) {
-  const deck = save.run.deck;
+  const { deck, collection } = save.run;
+  const rival = sameLimitedPiece(collection, deck, index);
   if (deck.includes(index)) deck.splice(deck.indexOf(index), 1);
+  else if (rival !== undefined) deck[deck.indexOf(rival)] = index;
   else if (deck.length < DECK_SIZE) deck.push(index);
   store();
   renderCollection();
