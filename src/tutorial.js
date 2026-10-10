@@ -46,7 +46,7 @@ const LESSONS = [
     board: [[1, 'pawn_level_1_up', OPPONENT]],
     hand: 'bishop_level_1',
     goal: (game) => game.owners[1] === YOU,
-    task: 'Spikes that face each other break off one for one, and the side with spikes left over wins. Take the red Tiny with Bishop Bailey.',
+    task: 'Spikes that face each other break off one for one, and the side with spikes left over wins. Take the red Tiny with Bishop Bob.',
     hint: "The red Tiny's spike points down. Meet it with more spikes.",
     done: '2 against 1: you win, but a spike that hits is used up. Your bishop has 1 spike left on top.',
   },
