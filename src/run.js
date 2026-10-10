@@ -12,11 +12,11 @@ function closeCard() {
 }
 
 // A card: a small label on top, its content, then choices to pick from and/or one main button.
-// choices: [{ html, onPick }], button: { label, onClick }
-function showCard(label, contentHtml, { choices = [], button } = {}) {
+// choices: [{ html, onPick }], button: { label, onClick }, compact: smaller choices, for long lists
+function showCard(label, contentHtml, { choices = [], button, compact = false } = {}) {
   let html = `<div class="card-label">${label}</div>${contentHtml}`;
   if (choices.length > 0) {
-    html += `<div class="choices">${choices.map((choice) => `<button class="choice">${choice.html}</button>`).join('')}</div>`;
+    html += `<div class="choices${compact ? ' compact' : ''}">${choices.map((choice) => `<button class="choice">${choice.html}</button>`).join('')}</div>`;
   }
   if (button) html += `<div><button class="primary">${button.label}</button></div>`;
   find('#card').innerHTML = html;
@@ -219,7 +219,8 @@ function nextMatch() {
    that is not in your collection, you get one of those too, at level 1. */
 
 function canGrow(code) {
-  return !PIECES[code[0]].hasNoLevels && parseCode(code).level < MAX_LEVEL;
+  const { type, level } = parseCode(code);
+  return canLevelUp(type, level);
 }
 
 function upgraded(code) {
@@ -274,12 +275,16 @@ function upgradeInDeck(index) {
 }
 
 /* ---------- The end of a run ----------
-   Offers every stone you gained this run (upgrades and new stones). The one you pick joins your collection
-   for good. Your next run starts with the deck you played last, as far as you still own it. */
+   Offers every stone you owned this run, your whole deck and collection. The one you pick joins your collection
+   for good, as a second copy if you already own it. A second copy of the king or the same queen would never fit in a deck,
+   so those are left out. Your next run starts with the deck you played last, as far as you still own it. */
 
 function endRun(won, text) {
   const run = save.run;
-  const gains = [...new Set(run.collection.slice(run.startSize))].filter((code) => !save.collection.includes(code));
+  const uselessCopy = (code) => ONE_PER_DECK.includes(code[0]) && save.collection.includes(code);
+  const gains = [...new Set(run.collection)]
+    .filter((code) => !uselessCopy(code))
+    .sort((a, b) => handOrder(fromCode(a, YOU), fromCode(b, YOU)));
   run.over = true;
   save.deck = deckCodes(run);
   store();
@@ -301,5 +306,5 @@ function endRun(won, text) {
       beginAgain();
     },
   }));
-  showCard(label, heading + '<p class="card-label quiet">Keep one</p>', { choices });
+  showCard(label, heading + '<p class="card-label quiet">Keep one</p>', { choices, compact: true });
 }
