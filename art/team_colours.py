@@ -1,7 +1,7 @@
 """Team colours for the stone portraits.
 
-Every portrait in art/stones/<piece>.png gets one detail in its team's colour: a blue copy in art/stones/you/ and a
-red copy in art/stones/opponent/. Only the pixels of that detail change: each one takes the shade of the team's colour
+Every portrait in art/stones/<piece>.png gets one detail in its team's colour: a blue copy <piece>-blue.png and a
+red copy <piece>-red.png next to it. Only the pixels of that detail change: each one takes the shade of the team's colour
 closest to it in brightness, so the shading stays as drawn. The script checks that no other pixel changed.
 The portraits in art/stones/ themselves are the untouched PixelLab originals: the script only reads them.
 
@@ -18,8 +18,8 @@ FOLDER = Path(__file__).parent / 'stones'
 
 # The stone colours of art.js, dark to light: SPIKE_COLOURS.dark, the body gradient, SPIKE_COLOURS.light.
 TEAMS = {
-    'you': ['#123a6e', '#1f5bb0', '#3b8be8', '#7cc0ff', '#bfe0ff'],
-    'opponent': ['#6e1a12', '#b02d1f', '#ec5440', '#ff9a84', '#ffd0c4'],
+    'blue': ['#123a6e', '#1f5bb0', '#3b8be8', '#7cc0ff', '#bfe0ff'],
+    'red': ['#6e1a12', '#b02d1f', '#ec5440', '#ff9a84', '#ffd0c4'],
 }
 
 
@@ -109,15 +109,13 @@ def team_copy(piece, pixels, shades):
 
 
 def main():
-    for team, shades in TEAMS.items():
-        (FOLDER / team).mkdir(exist_ok=True)
     for piece in [*DETAILS, 'hairy_harambe']:
-        pixels = np.array(Image.open(FOLDER / f'{piece}.png').convert('RGBA'))
+        pixels = np.array(Image.open(FOLDER / f'{piece}.png').convert('RGBA'))  # the original, only read
         for team, shades in TEAMS.items():
             out, mask = team_copy(piece, pixels, shades)
             changed = np.any(out != pixels, axis=2)
             assert not np.any(changed & ~mask), f'{piece}: a pixel outside its detail changed'
-            Image.fromarray(out).save(FOLDER / team / f'{piece}.png')
+            Image.fromarray(out).save(FOLDER / f'{piece}-{team}.png')
         print(f'{piece:24} {int(mask.sum()):4} pixels in team colour')
 
 

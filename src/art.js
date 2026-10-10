@@ -46,8 +46,8 @@ const shine = (d, width = 1.6) => line(d, '#fff', width, 0.7);
 
 /* ---------- Characters ----------
    Every character is a pixel-art portrait, a 64 x 64 PNG in art/stones named after its piece (made with PixelLab).
-   Each has one detail in its team's colour, in a blue copy in art/stones/you and a red copy in art/stones/opponent,
-   made by art/team_colours.py; debris belongs to nobody and keeps the plain portrait. drawStone shows it in a dark
+   Each has one detail in its team's colour, in a blue copy <piece>-blue.png and a red copy <piece>-red.png next to
+   it, made by art/team_colours.py; debris belongs to nobody and keeps the plain portrait. drawStone shows it in a dark
    window on the stone's face, pixels kept sharp. STONE_ART_FOLDER is where the PNGs are, relative to the page;
    stone-sheet.js points it at the files themselves. */
 
@@ -66,7 +66,7 @@ function drawPixels(pixels, colour, dx = 0, dy = 0) {
   return pixels.map(([x, y]) => `<rect x="${x + dx}" y="${y + dy}" width="1" height="1" fill="${colour}"/>`).join('');
 }
 
-const TEAM_FOLDERS = ['you/', 'opponent/', '']; // for YOU, OPPONENT and DEBRIS
+const TEAM_SUFFIXES = ['-blue', '-red', '']; // for YOU, OPPONENT and DEBRIS
 
 // The portrait in its owner's colours, scaled from its own pixels onto the window, with any cracks on top.
 function drawCharacter(type, owner) {
@@ -75,7 +75,7 @@ function drawCharacter(type, owner) {
     ? drawPixels(CRACKS[type], '#fff', 1, 0).replace(/fill="#fff"/g, 'fill="#fff" opacity=".45"') + drawPixels(CRACKS[type], '#3a2630')
     : '';
   return `<g transform="translate(${WINDOW.x} ${WINDOW.y}) scale(${scale})" shape-rendering="crispEdges">
-<image href="${STONE_ART_FOLDER}${TEAM_FOLDERS[owner]}${type}.png" width="${STONE_ART_SIZE}" height="${STONE_ART_SIZE}" style="image-rendering:pixelated"/>${cracks}</g>`;
+<image href="${STONE_ART_FOLDER}${type}${TEAM_SUFFIXES[owner]}.png" width="${STONE_ART_SIZE}" height="${STONE_ART_SIZE}" style="image-rendering:pixelated"/>${cracks}</g>`;
 }
 
 /* ---------- Stones ---------- */
