@@ -9,25 +9,8 @@ const E=new Function(core+'\n'+draw+'\nreturn {PIECES,MAXL,mkStone,newGame,play,
 const ORDER='PNBRQK',DIRS={P:4,B:4};
 // every stone an opponent can bring: each piece, level and direction
 const all=[];for(const t of ORDER)for(let l=1;l<=5;l++)for(let d=0;d<(DIRS[t]||1);d++)all.push([t,l,d]);
-function duel(attacker,defender,side){
-  // attacker (blue) is placed next to defender (red); returns blue's net points from that one move
-  const g=E.newGame(4,[[attacker],[]],0),def=5,cells=[1,6,9,4]; // up, right, down, left of square 5
-  g.own[def]=1;g.at[def]=defender;
-  const a=E.play(g,0,cells[side]);
-  return E.score(a,0)-E.score(g,0)-E.PIECES[attacker.t].val; // points won minus the new stone if it was taken
-}
-const rating={};
-for(const t of ORDER)for(let l=1;l<=5;l++){
-  let sum=0,n=0;
-  for(let d=0;d<(DIRS[t]||1);d++)for(const [u,m,e] of all)for(let side=0;side<4;side++){
-    // placed next to the other stone, and the other stone placed next to this one
-    sum+=duel(E.mkStone(t,l,0,d),E.mkStone(u,m,1,e),side);n++;
-    sum-=duel(E.mkStone(u,m,0,e),E.mkStone(t,l,1,d),side);n++;
-  }
-  rating[t+l]=sum/n;
-}
-const vals=Object.values(rating),lo=Math.min(...vals),hi=Math.max(...vals);
-const out=k=>Math.max(1,Math.round(1+99*(rating[k]-lo)/(hi-lo)));
+// Rating: every spike is worth 5 points, so 5 spikes on all four sides (20 spikes) make 100.
+const out=k=>E.mkStone(k[0],+k[1],0).s.reduce((a,b)=>a+b,0)*5;
 const svg=(t,l,d)=>E.stoneSVG(E.mkStone(t,l,0,d),0,'');
 const arrows={P:'↑ → ↓ ←',B:'↗ ↘ ↙ ↖'};
 let rows='';
@@ -59,7 +42,7 @@ section{break-inside:avoid;border:1px solid #d6dbe6;border-radius:10px;padding:1
 .variants{display:flex;align-items:center;gap:10px;margin-top:6px;color:#4a5468}.mini{width:40px;height:40px;margin:4px}
 </style></head><body><svg width="0" height="0" style="position:absolute">${defs}</svg>
 <h1>Chain Stones: every stone</h1>
-<p class="intro">All six pieces at levels 1 to 5, facing up, with their spikes listed as top · right · bottom · left. The rating out of 100 measures single fights. Each stone is put next to every stone an opponent can have (every piece, level and direction, from every side), once as the stone that is placed and once as the stone that is already there. Each case scores the points won minus the points lost in that one move, so taking a king counts 3. The average is scaled so that the strongest stone scores 100 and the weakest 1. Chains, the rest of the board and the choice of where to play are left out. Stones with 5 spikes on every side (Castle Carl at levels 4 and 5, Her Majesty Mayhem at 3 to 5, Old King Coal at 5) fight the same way and share the top score.</p>
+<p class="intro">All six pieces at levels 1 to 5, facing up, with their spikes listed as top · right · bottom · left. The rating out of 100 counts spikes: every spike is worth 5 points, so a stone with the maximum of 5 spikes on all four sides (20 spikes) scores 100.</p>
 <table><tr><th>stone</th><th>Lv 1</th><th>Lv 2</th><th>Lv 3</th><th>Lv 4</th><th>Lv 5</th></tr>${table}</table>
 ${rows}</body></html>`);
-console.log(JSON.stringify(Object.fromEntries(Object.keys(rating).map(k=>[k,out(k)]))));
+console.log(ORDER.split('').map(t=>t+': '+[1,2,3,4,5].map(l=>out(t+l)).join(' ')).join('\n'));
