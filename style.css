@@ -45,7 +45,6 @@ h1,
 h2,
 h3,
 button,
-.back-link,
 .run-line,
 .name,
 .points,
@@ -122,18 +121,6 @@ button.primary,
   flex-wrap: wrap;
   min-width: 0;
 }
-.back-link {
-  color: var(--muted);
-  text-decoration: none;
-  font-size: 14px;
-  width: 100%;
-}
-.back-link:hover {
-  color: var(--accent);
-}
-.as-app .back-link {
-  display: none;
-} /* opened as its own Mac app: there is no "All games" page to go back to */
 h1 {
   font-weight: 700;
   font-size: 28px;
