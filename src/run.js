@@ -210,7 +210,7 @@ function nextMatch() {
 }
 
 /* ---------- Rewards ----------
-   After a win you upgrade one of three random stones from your deck by one level. The upgraded stone takes its
+   After a win you upgrade one of UPGRADE_CHOICES random stones from your deck by one level. The upgraded stone takes its
    place in your deck, and the old one stays in your collection. And if the opponent played a stone (piece and turn)
    that is not in your collection, you get one of those too, at level 1. */
 
@@ -245,7 +245,7 @@ function offerRewards(label, opponentDeck) {
     ? `<p class="card-label quiet">New</p><div class="hand-row">${picture(gift)}</div><p>${titleOf(gift)}</p>`
     : '';
 
-  const options = shuffle(run.deck.filter((index) => canGrow(run.collection[index]))).slice(0, 3);
+  const options = shuffle(run.deck.filter((index) => canGrow(run.collection[index]))).slice(0, UPGRADE_CHOICES);
   if (options.length === 0) {
     showCard(label, giftHtml, { button: { label: 'Next', onClick: nextMatch } });
     return;
