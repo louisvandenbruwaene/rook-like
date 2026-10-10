@@ -235,7 +235,8 @@ function handOrder(a, b) {
 }
 
 /* ---------- Rewards ----------
-   After a win you upgrade one of UPGRADE_CHOICES random stones from your deck by one level. The upgraded stone takes its
+   After a win you upgrade one of UPGRADE_CHOICES random stones from your deck by one level. Only your highest level of a
+   stone is offered, and only while it can still grow, so an upgrade never gives a level you already own. The upgraded stone takes its
    place in your deck, and the old one stays in your collection, except a queen, who is replaced. And if the opponent
    played a stone (piece and turn) that is not in your collection, you get one of those too, at level 1. */
 
@@ -248,7 +249,7 @@ function offerRewards(label, opponentDeck) {
     ? `<p class="card-label quiet">New</p><div class="hand-row">${picture(gift)}</div><p>${titleOf(gift)}</p>`
     : '';
 
-  const options = shuffle(run.deck.filter((index) => canGrow(run.collection[index]))).slice(0, UPGRADE_CHOICES);
+  const options = shuffle(run.deck.filter((index) => canUpgrade(run.collection, index))).slice(0, UPGRADE_CHOICES);
   if (options.length === 0) {
     showCard(label, giftHtml, { button: { label: 'Next', onClick: nextMatch } });
     return;
@@ -264,6 +265,14 @@ function offerRewards(label, opponentDeck) {
     };
   });
   showCard(label, giftHtml + '<h2>Upgrade one</h2>', { choices });
+}
+
+// collection[index] is offered as an upgrade when it can grow and you own no higher level of the same stone.
+function canUpgrade(collection, index) {
+  const code = collection[index];
+  const level = parseCode(code).level;
+  const stone = withoutLevel(code);
+  return canGrow(code) && !collection.some((other) => withoutLevel(other) === stone && parseCode(other).level > level);
 }
 
 // One stone from the opponent's deck that you do not own at any level, at level 1, or null.
