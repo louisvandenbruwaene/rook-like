@@ -94,8 +94,8 @@ function chooseDifficulty() {
 // The next opponent, and your collection to pick a deck from.
 function intro() {
   const run = save.run;
-  // A run saved before the one of each stone rule may hold two: keep the first, the gap is yours to fill.
-  run.deck = run.deck.filter((index, n) => sameStoneInDeck(run.collection, run.deck.slice(0, n), index) === undefined);
+  // A run saved before the one king, one queen rule may hold two: keep the first, the gap is yours to fill.
+  run.deck = run.deck.filter((index, n) => sameLimitedPiece(run.collection, run.deck.slice(0, n), index) === undefined);
   opponent = opponentFor(run.match);
   save.bestMatch = Math.max(save.bestMatch, run.match);
   store();
@@ -169,10 +169,10 @@ function nextMatch() {
    you take into the next match. */
 
 // The indexes of a deck of DECK_SIZE stones from the collection: the preferred codes where it has them,
-// then the first stones not yet taken, keeping to one of each stone.
+// then the first stones not yet taken, keeping to one king and one queen.
 function deckFrom(collection, preferredCodes) {
   const deck = [];
-  const fits = (i) => !deck.includes(i) && sameStoneInDeck(collection, deck, i) === undefined;
+  const fits = (i) => !deck.includes(i) && sameLimitedPiece(collection, deck, i) === undefined;
   for (const code of preferredCodes) {
     const index = collection.findIndex((owned, i) => owned === code && fits(i));
     if (index >= 0 && deck.length < DECK_SIZE) deck.push(index);
@@ -183,12 +183,13 @@ function deckFrom(collection, preferredCodes) {
   return deck;
 }
 
-// The deck index of the same stone as collection[index] at any level, or undefined. A deck holds one of each
-// stone (piece and turn), and one king and one queen whatever their turn.
-function sameStoneInDeck(collection, deck, index) {
-  const stoneOf = (code) => (ONE_PER_DECK.includes(pieceOf(code)) ? pieceOf(code) : withoutLevel(code));
-  const stone = stoneOf(collection[index]);
-  return deck.find((i) => stoneOf(collection[i]) === stone);
+// The deck index of a king or queen of the same piece as collection[index], or undefined. A deck holds one king
+// and one queen whatever their turn. Other stones may come in at several levels (a level 4 and a level 5 rook):
+// the collection never holds the same code twice, so a deck never holds two identical stones.
+function sameLimitedPiece(collection, deck, index) {
+  const piece = pieceOf(collection[index]);
+  if (!ONE_PER_DECK.includes(piece)) return undefined;
+  return deck.find((i) => pieceOf(collection[i]) === piece);
 }
 
 function deckCodes(run) {
@@ -216,10 +217,10 @@ function renderCollection() {
   find('#card .primary').disabled = run.deck.length !== DECK_SIZE;
 }
 
-// Tapping a stone takes it out of your deck or puts it in. The same stone at another level swaps with the one in the deck.
+// Tapping a stone takes it out of your deck or puts it in. A second king or queen swaps with the one in the deck.
 function toggleInDeck(index) {
   const { deck, collection } = save.run;
-  const rival = sameStoneInDeck(collection, deck, index);
+  const rival = sameLimitedPiece(collection, deck, index);
   if (deck.includes(index)) deck.splice(deck.indexOf(index), 1);
   else if (rival !== undefined) deck[deck.indexOf(rival)] = index;
   else if (deck.length < DECK_SIZE) deck.push(index);
