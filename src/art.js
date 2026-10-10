@@ -147,7 +147,7 @@ function drawStoneBody(owner) {
 <rect x="18" y="18" width="64" height="64" rx="9" fill="url(#sheen)"/>`;
 }
 
-// A golden shield on each side, for Old King Coal.
+// A golden shield on each side, for King Kobe.
 function drawGoldenShields() {
   let shields = '';
   for (const side of SIDES) {

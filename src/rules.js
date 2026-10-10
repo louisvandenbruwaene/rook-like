@@ -63,10 +63,10 @@ const PIECES = {
        description: 'a single spike' },
   N: { name: 'Neigh Nigel',    chess: 'knight', baseSpikes: [2, 0, 0, 2], variants: ['Neigh Nigel', 'Neigh Newman', 'Neigh Nathan', 'Neigh Nolan'],
        description: 'two sides of one corner' },
-  B: { name: 'Bishop Bob',     chess: 'bishop', baseSpikes: [2, 0, 2, 0], description: 'spikes up and down' },
+  B: { name: 'Bishop Bailey',  chess: 'bishop', baseSpikes: [2, 0, 2, 0], description: 'spikes up and down' },
   R: { name: 'Castle Carl',    chess: 'rook',   baseSpikes: [0, 2, 0, 2], description: 'spikes left and right' },
   Q: { name: 'Duchess Dagger', chess: 'queen',  baseSpikes: [2, 2, 2, 2], description: 'spikes on every side' },
-  K: { name: 'Old King Coal',  chess: 'king',   baseSpikes: [0, 0, 0, 0], goldenShields: true, hasNoLevels: true,
+  K: { name: 'King Kobe',      chess: 'king',   baseSpikes: [0, 0, 0, 0], goldenShields: true, hasNoLevels: true,
        description: 'golden shields on every side: every spike that touches him breaks, and he can never be taken' },
 
   //                                                         level 0       level 1       level 2       level 3       level 4       level 5

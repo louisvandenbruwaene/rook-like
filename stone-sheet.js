@@ -42,7 +42,7 @@ section{break-inside:avoid;border:1px solid #d6dbe6;border-radius:10px;padding:1
 h1.part{break-before:page;margin-top:0}
 </style></head><body><svg width="0" height="0" style="position:absolute">${defs}</svg>
 <h1>Rook-like: every stone</h1>
-<p class="intro">The six chess pieces at levels 1 to 5, facing up, with their spikes listed as top · right · bottom · left. The rating out of 100 counts spikes: every spike is worth 5 points, so a stone with the maximum of 5 spikes on all four sides (20 spikes) scores 100. Old King Coal has no spikes but golden shields: every spike that touches him breaks and he is never taken. The rating counts spikes only, not the powers of the rare stones.</p>
+<p class="intro">The six chess pieces at levels 1 to 5, facing up, with their spikes listed as top · right · bottom · left. The rating out of 100 counts spikes: every spike is worth 5 points, so a stone with the maximum of 5 spikes on all four sides (20 spikes) scores 100. King Kobe has no spikes but golden shields: every spike that touches him breaks and he is never taken. The rating counts spikes only, not the powers of the rare stones.</p>
 <table><tr><th>stone</th><th>Lv 1</th><th>Lv 2</th><th>Lv 3</th><th>Lv 4</th><th>Lv 5</th></tr>${table}</table>
 ${rows}</body></html>`);
 console.log(ORDER.split('').filter(t=>!E.PIECES[t].hasNoLevels).map(t=>t+': '+[1,2,3,4,5].map(l=>out(t+l)).join(' ')).join('\n'));
