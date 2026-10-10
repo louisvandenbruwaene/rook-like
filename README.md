@@ -8,7 +8,7 @@ The page is [`index.html`](index.html) (layout and rules text) with [`style.css`
 |---|---|---|
 | [`src/rules.js`](src/rules.js) | 496 | the pieces, stones and stone codes, the board, one fight, one move. Pure logic, never touches the page |
 | [`src/computer.js`](src/computer.js) | 134 | the computer player |
-| [`src/art.js`](src/art.js) | 530 | every stone and portrait as an SVG string (237 lines of stone characters are drawing data) |
+| [`src/art.js`](src/art.js) | 440 | every stone and portrait as an SVG string (the stones are ivory cameos, 130 lines of drawing data) |
 | [`src/settings.js`](src/settings.js) | 235 | board size, run length, difficulties, the opponents and their decks |
 | [`src/save.js`](src/save.js) | 196 | progress and settings in localStorage |
 | [`src/screen.js`](src/screen.js) | 318 | the state of a match, a move playing out, and the `render…()` functions |
