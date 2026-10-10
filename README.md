@@ -262,19 +262,20 @@ While a move plays out the board shows `replay.owners`, the colours as they are 
 
 ```mermaid
 stateDiagram-v2
-    [*] --> chooseDifficulty
+    [*] --> chooseDifficulty : a new game
     chooseDifficulty --> intro : Easy · Normal · Hard · Very hard
-    intro --> startMatch : pick 8 from your collection, Fight
+    intro --> startMatch : the 8 spikiest stones are picked, change them, Fight
     startMatch --> finishMatch : board full or His Holiness taken
     finishMatch --> offerRewards : you won, every opponent deck upgrades one stone
     offerRewards --> nextMatch : upgrade one of 3 stones (+ a new stone)
     nextMatch --> intro
     finishMatch --> endRun : you lost, or won match 20
-    endRun --> chooseDifficulty : keep one gain, new run
+    endRun --> intro : keep one gain, new run, same difficulty
 ```
 
 - **Opponent decks** (`newDecks`, `upgradeOne`, `upgradeAllDecks` in `settings.js`): every opponent keeps one deck for the whole run, starting at the difficulty's level. After each match you win, every deck upgrades one stone, so they all grow, even the ones you are not facing. The boss starts with 6 extra upgrades. 
-- **Your collection** (`run.collection`, `deckFrom`, `renderCollection` in `run.js`): every stone you own this run, at every level you have had it, never twice the same. Before each match you pick 8 of them as your deck, at most one king and one queen (`sameLimitedPiece`); other stones may come at several levels, never twice the same code.
+- **The difficulty** (`save.difficulty`, `beginRun` in `run.js`) is chosen once for the whole game. Losing a run starts a new run of the same game, at the same difficulty.
+- **Your collection** (`run.collection`, `spikiestDeck`, `deckFrom`, `renderCollection` in `run.js`): every stone you own this run, at every level you have had it, never twice the same. Before each match the 8 with the most spikes are picked as your deck (`spikiestDeck`) and you may change them, at most one king and one queen (`sameLimitedPiece`); other stones may come at several levels, never twice the same code.
 - **Rewards** (`offerRewards`): after a win you upgrade one of three random stones from your deck by one level. The upgraded stone takes its place in the deck and the old one stays in the collection, except a queen, who is replaced. If the opponent played a stone (piece and turn) that you do not own, you also get one of those, at level 1.
 - **The end of a run** (`endRun`): keep one stone you do not own yet in your collection for good. A queen replaces the one you had.
 - **Who places first** (`firstFor`): you in odd matches, the opponent in even ones, the boss always.

@@ -108,5 +108,5 @@ if (needsNewRun) newRun();
 opponent = opponentFor(save.run.match);
 game = newGame(SIZE, [[], []], YOU);
 render();
-if (needsNewRun) chooseDifficulty();
-else intro();
+if (save.run.decks) intro();
+else chooseDifficulty();
