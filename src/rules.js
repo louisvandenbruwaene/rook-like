@@ -13,7 +13,6 @@
      turn         the player to move
      first        who placed first (wins a match level on points and spikes)
      moveCount    moves made so far
-     holinessWinner   set when His Hovering Holiness changes colour: that player wins at once
 
    A stone is:
      type     the piece, a key of PIECES: pawn, knight, ... king, or a rare stone like venom_veronica
@@ -22,7 +21,6 @@
      direction 0 to 3 (up, right, down, left): where a piece that comes in four turns points
      spikes   [top, right, bottom, left]
      poison   {byPlayer, dueAtMove} while poisoned
-     grounded true for His Hovering Holiness once his jet pack is gone
    ===================================================================== */
 
 /* ---------- Constants ---------- */
@@ -56,7 +54,7 @@ function other(player) {
 /* ---------- The pieces ----------
    The chess pieces have base spikes (their level 1) and gain or lose one spike on every spiked side per level,
    so a level 0 pawn has no spikes at all. The rare stones list their spikes for each level instead.
-   Powers: goldenShields, poisonous, curesPoison, mayCollapse, thickFur, swarm, isHisHoliness.
+   Powers: goldenShields, poisonous, curesPoison, mayCollapse, thickFur, swarm.
    hasNoLevels: the stone is always the same (the king, debris). */
 
 // prettier-ignore
@@ -83,9 +81,7 @@ const PIECES = {
   hairy_harambe:         { name: 'Hairy Harambe',         thickFur: true,    levelSpikes: [[2, 1, 0, 1], [3, 1, 0, 1], [4, 1, 0, 1], [4, 2, 0, 1], [5, 2, 0, 2], [5, 2, 1, 2]],
                            description: 'thick fur: he loses at most one spike in a fight' },
   buzzy_beatrice:        { name: 'Buzzy Beatrice',        swarm: true,       levelSpikes: [[0, 0, 0, 0], [1, 0, 0, 0], [1, 0, 1, 0], [1, 1, 1, 0], [2, 1, 1, 0], [2, 1, 1, 1]],
-                           description: 'when placed, her swarm breaks one spike on every enemy side around her and grounds His Hovering Holiness' },
-  his_hovering_holiness: { name: 'His Hovering Holiness', isHisHoliness: true,      levelSpikes: [[0, 1, 0, 1], [0, 2, 0, 2], [1, 2, 0, 2], [1, 3, 1, 2], [2, 3, 1, 3], [2, 4, 2, 3]],
-                           description: 'flies on a jet pack until a swarm grounds him, and whoever loses him loses the match' },
+                           description: 'when placed, her swarm breaks one spike on every spiked side of every enemy stone in the 8 squares around her' },
 
   debris: { name: 'Debris', baseSpikes: [0, 0, 0, 0], hasNoLevels: true, description: "what is left of Brittle Bernard, nobody's stone" },
 };
@@ -126,12 +122,9 @@ function spikeCount(stone) {
   return stone.spikes.reduce((sum, count) => sum + count, 0);
 }
 
-// The king can never be taken, and His Hovering Holiness not while he flies.
+// The king can never be taken.
 function canBeTaken(stone) {
-  const piece = PIECES[stone.type];
-  if (piece.goldenShields) return false;
-  if (piece.isHisHoliness && !stone.grounded) return false;
-  return true;
+  return !PIECES[stone.type].goldenShields;
 }
 
 /* ---------- Stone codes ----------
@@ -217,9 +210,9 @@ function newGame(size, hands, first) {
   };
 }
 
-// A match ends when the board is full or His Hovering Holiness was taken.
+// A match ends when the board is full.
 function isOver(game) {
-  return game.holinessWinner !== undefined || !game.owners.includes(EMPTY);
+  return !game.owners.includes(EMPTY);
 }
 
 function emptySquares(game) {
@@ -247,10 +240,9 @@ function spikesLeft(game, player) {
   return spikes;
 }
 
-// Who wins a finished match: His Hovering Holiness, then points, then spikes left, then whoever placed first
+// Who wins a finished match: most points, then most spikes left, then whoever placed first
 // (the other player had the last move).
 function winnerOf(game) {
-  if (game.holinessWinner !== undefined) return game.holinessWinner;
   const pointsAhead = pointsOf(game, YOU) - pointsOf(game, OPPONENT);
   const spikesAhead = spikesLeft(game, YOU) - spikesLeft(game, OPPONENT);
   const lead = pointsAhead || spikesAhead;
@@ -335,7 +327,6 @@ function play(game, move, luck) {
     turn: other(player),
     first: game.first,
     moveCount: game.moveCount + 1,
-    holinessWinner: game.holinessWinner,
     fights: [],
     flips: [],
     breaks: [],
@@ -358,8 +349,8 @@ function play(game, move, luck) {
   return result;
 }
 
-// Buzzy Beatrice's swarm stings the eight squares around her: one spike off every spiked enemy side,
-// and His Hovering Holiness is grounded.
+// Buzzy Beatrice's swarm stings the eight squares around her: one spike off every spiked side of every enemy stone.
+// After that she is a stone like any other.
 function sting(game, cell) {
   const size = game.size;
   const enemy = other(game.owners[cell]);
@@ -373,8 +364,6 @@ function sting(game, cell) {
       for (const side of SIDES) {
         if (game.stones[square].spikes[side] > 0) breakSpikes(game, square, side, 1, 0);
       }
-      if (PIECES[game.stones[square].type].isHisHoliness)
-        game.stones[square] = { ...game.stones[square], grounded: true };
     }
   }
 }
@@ -477,12 +466,11 @@ function cure(game, step) {
 }
 
 // The stone on `cell` changes colour, unless it cannot be taken. Returns whether it did.
-// His Hovering Holiness changing colour loses the match for his side, and Brittle Bernard may collapse into debris.
+// Brittle Bernard may collapse into debris instead.
 function take(game, cell, step) {
   const stone = game.stones[cell];
   const owner = other(game.owners[cell]);
   if (!canBeTaken(stone)) return false;
-  if (PIECES[stone.type].isHisHoliness && game.holinessWinner === undefined) game.holinessWinner = owner;
   if (PIECES[stone.type].mayCollapse && game.luck && game.luck() < 1 / 3) {
     game.owners[cell] = DEBRIS;
     game.stones[cell] = makeStone('debris', 1, YOU);

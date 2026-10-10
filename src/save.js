@@ -17,7 +17,7 @@
 
 const SAVE_KEY = 'chainstones-run';
 const SETTINGS_KEY = 'chainstones-cfg';
-const SAVE_VERSION = 6;
+const SAVE_VERSION = 7;
 
 function readStorage(key) {
   try {
@@ -65,11 +65,12 @@ function currentDifficulty() {
 // Older saves are converted step by step. Saves from before version 2 (before the rare stones) start over.
 function loadSave() {
   let stored = readStorage(SAVE_KEY);
-  if (!stored || ![2, 3, 4, 5, 6].includes(stored.version)) return newSave();
+  if (!stored || ![2, 3, 4, 5, 6, 7].includes(stored.version)) return newSave();
   if (stored.version === 2) stored = fromVersion2(stored);
   if (stored.version === 3) stored = fromVersion3(stored);
   if (stored.version === 4) stored = fromVersion4(stored);
   if (stored.version === 5) stored = fromVersion5(stored);
+  if (stored.version === 6) stored = fromVersion6(stored);
   return stored;
 }
 
@@ -147,6 +148,29 @@ function fromVersion4(old) {
 // Version 6 added the tutorial and the first meetings with rare stones: an older save sees both once.
 function fromVersion5(old) {
   return { ...old, version: 6, tutorialDone: false, explained: [] };
+}
+
+// Version 7 took His Hovering Holiness out of the game: in the boss's deck he becomes a rook at his level,
+// and anywhere else he is dropped.
+const WITHOUT_HOLINESS = (code) => pieceOf(code) !== 'his_hovering_holiness';
+function fromVersion6(old) {
+  const run = old.run;
+  const decks = run && run.decks;
+  const asRook = (code) => (WITHOUT_HOLINESS(code) ? code : withLevel('rook_level_1', parseCode(code).level));
+  const runCollection = run && run.collection && run.collection.filter(WITHOUT_HOLINESS);
+  const keptIndex = (index) => (runCollection ? runCollection.indexOf(run.collection[index]) : -1);
+  return {
+    ...old,
+    version: 7,
+    collection: old.collection.filter(WITHOUT_HOLINESS),
+    explained: (old.explained || []).filter((type) => type !== 'his_hovering_holiness'),
+    run: run && {
+      ...run,
+      collection: runCollection,
+      deck: run.deck && run.deck.map(keptIndex).filter((index) => index >= 0),
+      decks: decks && Object.fromEntries(Object.entries(decks).map(([name, codes]) => [name, codes.map(asRook)])),
+    },
+  };
 }
 
 // Saves from before the one of each stone rule may own a stone twice, and saves from before the one queen rule

@@ -229,10 +229,6 @@ function isPoisoned(stone, owner) {
   return Boolean(stone && stone.poison && owner !== DEBRIS);
 }
 
-function isFlying(stone) {
-  return Boolean(stone && PIECES[stone.type].isHisHoliness && !stone.grounded);
-}
-
 // Every class is styled in style.css: the preview rings, the steps of a move, and the rare stones' looks.
 function squareClasses(cell, owner, stone, preview, previewBreaks, canPlace) {
   const wouldTake = preview && game.owners[cell] === OPPONENT && preview.owners[cell] === YOU;
@@ -248,11 +244,10 @@ function squareClasses(cell, owner, stone, preview, previewBreaks, canPlace) {
   if (replay.turning.has(cell)) classes.push('turning-over');
   if (replay.effects.has(cell)) classes.push(replay.effects.get(cell));
   if (isPoisoned(stone, owner)) classes.push('poisoned');
-  if (isFlying(stone)) classes.push('flying');
   return classes;
 }
 
-// The stone (turning over, while it changes colour), His Hovering Holiness's jet flames, the poison countdown,
+// The stone (turning over, while it changes colour), the poison countdown,
 // or the ghost of the stone you are about to place.
 function squareContents(cell, owner, stone, breakingSpikes, preview, previewBreaks) {
   if (preview && cell === ui.hovered) {
@@ -271,7 +266,6 @@ function squareContents(cell, owner, stone, breakingSpikes, preview, previewBrea
     const frontFace = drawStone(front, replay.turning.get(cell), { breakingSpikes });
     contents = `<div class="flip-card"><div class="front">${frontFace}</div><div class="back-face">${contents}</div></div>`;
   }
-  if (isFlying(stone)) contents = `<div class="jet-flames"><i></i><i></i></div>` + contents;
   if (isPoisoned(stone, owner)) {
     const movesLeft = Math.max(1, stone.poison.dueAtMove - game.moveCount);
     contents += `<div class="poison-countdown" title="poisoned">${movesLeft}</div>`;

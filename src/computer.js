@@ -7,7 +7,7 @@
      points ahead x 2000
      + spikes ahead x 2   (at most 640, so one point always outweighs every spike)
      + 1 for having placed first
-   which is the same order of tiebreaks as winnerOf. Taking His Hovering Holiness is worth more than any score.
+   which is the same order of tiebreaks as winnerOf.
    A move is { handIndex, cell }.
 
    Contents: moves and how good they are · the search
@@ -15,7 +15,6 @@
 
 const POINT_VALUE = 2000;
 const SPIKE_VALUE = 2;
-const HOLINESS_VALUE = 1_000_000;
 const NEXT_CAPTURE_VALUE = 1200; // most of a point for each stone the player to move can take next
 const WORST = -1_000_000_000; // lower than any position can be worth
 const MOVES_BETWEEN_CLOCK_CHECKS = 256; // reading the clock is slow, so the search only looks now and then
@@ -47,7 +46,6 @@ function legalMoves(game) {
 function score(game) {
   const me = game.turn;
   const them = other(me);
-  if (game.holinessWinner !== undefined) return game.holinessWinner === me ? HOLINESS_VALUE : -HOLINESS_VALUE;
   const pointsAhead = pointsOf(game, me) - pointsOf(game, them);
   const spikesAhead = spikesLeft(game, me) - spikesLeft(game, them);
   const placedFirst = game.first === me ? 1 : -1;

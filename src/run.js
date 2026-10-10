@@ -168,28 +168,19 @@ function finishMatch() {
   ui.waiting = true;
   render();
   const run = save.run;
-  const holinessWinner = game.holinessWinner;
   if (winnerOf(game) !== YOU) {
-    const text =
-      holinessWinner === OPPONENT
-        ? `${opponent.name} took His Hovering Holiness.`
-        : `${opponent.name} wins ${tally()}.`;
-    endRun(false, text, worstMove());
+    endRun(false, `${opponent.name} wins ${tally()}.`, worstMove());
     return;
   }
   if (run.match === RUN_LENGTH) {
     save.crowns++;
-    const text =
-      holinessWinner === YOU
-        ? `You took His Hovering Holiness from ${opponent.name}.`
-        : `You beat ${opponent.name} ${tally()}.`;
-    endRun(true, text);
+    endRun(true, `You beat ${opponent.name} ${tally()}.`);
     return;
   }
   const deckPlayed = deckOf(opponent).slice();
   upgradeAllDecks(run.decks, currentDifficulty());
   store();
-  offerRewards(holinessWinner === YOU ? 'Took His Holiness' : `Won ${tally()}`, deckPlayed);
+  offerRewards(`Won ${tally()}`, deckPlayed);
 }
 
 // The opponent's move that took the most of your stones (the later one of equals), or null if none took any.
@@ -202,9 +193,8 @@ function worstMove() {
   return worst;
 }
 
-// How many of your stones a move turned red, or Infinity when it took His Hovering Holiness.
+// How many of your stones a move turned red.
 function stonesTaken({ before, result }) {
-  if (result.holinessWinner === OPPONENT && before.holinessWinner === undefined) return Infinity;
   let taken = 0;
   for (let cell = 0; cell < before.owners.length; cell++) {
     if (before.owners[cell] === YOU && result.owners[cell] === OPPONENT) taken++;
@@ -309,7 +299,6 @@ function handOrder(a, b) {
     'brittle_bernard',
     'hairy_harambe',
     'buzzy_beatrice',
-    'his_hovering_holiness',
     'king',
   ];
   return pieceOrder.indexOf(a.type) - pieceOrder.indexOf(b.type) || a.direction - b.direction || a.level - b.level;
@@ -427,11 +416,8 @@ function endRun(won, text, worst = null) {
 }
 
 function worstMoveHtml(worst) {
-  const what =
-    worst.taken === Infinity
-      ? 'took His Hovering Holiness'
-      : `took ${worst.taken} of your stone${worst.taken === 1 ? '' : 's'}`;
-  return `<p class="worst-move">The move that hurt most: their <b>${nameOf(worst.stone)}</b> ${what}.
+  const stones = `${worst.taken} of your stone${worst.taken === 1 ? '' : 's'}`;
+  return `<p class="worst-move">The move that hurt most: their <b>${nameOf(worst.stone)}</b> took ${stones}.
 <button class="text-button" id="watch-again">Watch it again</button></p>`;
 }
 

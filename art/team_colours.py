@@ -47,7 +47,6 @@ DETAILS = {
     'empress_edna':          [((0, 44, 63, 63), hue_between(262, 312))],                    # her robe
     'brittle_bernard':       [((0, 37, 63, 63), hue_between(195, 250, 0.3))],               # his doublet
     'buzzy_beatrice':        [((21, 8, 41, 10), lambda h, s, v: v < 0.1)],                  # her hat band
-    'his_hovering_holiness': [((0, 37, 63, 63), is_red)],                                   # his cape
 }
 
 # Hairy Harambe has no coloured detail of his own, so a small gem is set into his gold pendant:
