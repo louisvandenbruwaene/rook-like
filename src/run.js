@@ -105,6 +105,8 @@ function chooseDifficulty() {
 // The next opponent, and your collection to pick a deck from.
 function intro() {
   const run = save.run;
+  // A run saved before the one king, one queen rule may hold two: keep the first, the gap is yours to fill.
+  run.deck = run.deck.filter((index, n) => sameLimitedPiece(run.collection, run.deck.slice(0, n), index) === undefined);
   opponent = opponentFor(run.match);
   save.bestMatch = Math.max(save.bestMatch, run.match);
   store();
