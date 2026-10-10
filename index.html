@@ -264,7 +264,7 @@ const PIECES={
   J:{name:'Prince Joey',rare:true,shaky:true,levels:[[3,1,2,0],[3,2,2,0],[4,2,3,0],[4,3,3,0],[5,3,4,0]],text:'every time he changes colour, a 1 in 3 chance he collapses into rubble'},
   G:{name:'Gorilla',rare:true,fur:true,levels:[[3,1,0,1],[4,1,0,1],[4,2,0,1],[5,2,0,2],[5,2,1,2]],text:'thick fur: he loses at most one spike in a fight'},
   H:{name:'Beekeeper',rare:true,swarm:true,levels:[[1,0,0,0],[1,0,1,0],[1,1,1,0],[2,1,1,0],[2,1,1,1]],text:'when placed, his swarm breaks one spike on every enemy side around him and grounds a Pope'},
-  O:{name:'The Pope',rare:true,pope:true,levels:[[0,2,0,2],[1,2,0,2],[1,3,1,2],[2,3,1,3],[2,4,2,3]],text:'flies on a jet pack until a swarm grounds him; whoever loses the Pope loses the match'},
+  O:{name:'The Pope',rare:true,pope:true,levels:[[0,2,0,2],[1,2,0,2],[1,3,1,2],[2,3,1,3],[2,4,2,3]],text:'flies on a jet pack until a swarm grounds him, and whoever loses the Pope loses the match'},
   X:{name:'Rubble',base:[0,0,0,0],fixed:true,text:'what is left of Prince Joey, nobody\'s stone'},
 };
 const rotate=(s,quarters)=>s.map((_,side)=>s[((side-quarters)%4+4)%4]); // turn a spike pattern clockwise
