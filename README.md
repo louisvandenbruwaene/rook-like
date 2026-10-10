@@ -112,7 +112,6 @@ classDiagram
         turn : YOU or OPPONENT
         first : who placed first
         moveCount
-        holinessWinner : set when His Hovering Holiness is taken
     }
     class Stone {
         type : the piece, pawn knight ... king venom_veronica ...
@@ -121,14 +120,13 @@ classDiagram
         direction : 0 to 3, up right down left, for pieces that turn
         spikes : [top, right, bottom, left]
         poison : byPlayer, dueAtMove
-        grounded : His Hovering Holiness without his jet pack
     }
     class Piece {
         name, chess, description
         baseSpikes or levelSpikes
         namesByDirection : four names, for pieces that turn
         powers : goldenShields, poisonous, curesPoison,
-        mayCollapse, thickFur, swarm, isHisHoliness
+        mayCollapse, thickFur, swarm
     }
     class Move {
         handIndex
@@ -166,7 +164,7 @@ The squares are numbered row by row:
 flowchart TD
     start(["play(game, move)"]) --> place["put the stone on the square"]
     place --> bee{"Buzzy Beatrice?"}
-    bee -- yes --> sting["<b>sting</b><br/>one spike off every enemy side<br/>in the 8 squares around, His Holiness grounded"]
+    bee -- yes --> sting["<b>sting</b><br/>one spike off every enemy side<br/>in the 8 squares around"]
     bee -- no --> clash
     sting --> clash["<b>clash</b> · step 0<br/>the new stone fights every enemy neighbour<br/>wins take them, one loss gets it taken"]
     clash --> chain["<b>chain</b> · steps 1, 2, 3 ...<br/>fight the open line closest to the new stone,<br/>until no open line is left"]
@@ -192,7 +190,7 @@ flowchart LR
     w -- equal --> none["no winner"]
 ```
 
-`take` turns a stone over to the other colour, unless it is the king or His Hovering Holiness while he flies. Taking His Holiness ends the match. Brittle Bernard has a 1 in 3 chance to collapse into debris instead.
+`take` turns a stone over to the other colour, unless it is the king. Brittle Bernard has a 1 in 3 chance to collapse into debris instead.
 
 ### The chain
 
@@ -225,7 +223,6 @@ flowchart TD
 
 | What | Worth |
 |---|---|
-| taking His Hovering Holiness | 1 000 000 |
 | each point ahead | 2 000 |
 | each spike ahead | 2 (at most 640 in total, so one point always counts more) |
 | having placed first | 1 |
@@ -265,7 +262,7 @@ sequenceDiagram
     Page->>Engine: nextTurn → bestMove(game, …)
     Engine-->>Page: the computer's move
     Page->>Page: makeMove again, the same way
-    Note over Page: board full or His Holiness taken → finishMatch
+    Note over Page: board full → finishMatch
 ```
 
 While a move plays out the board shows `replay.owners`, the colours as they are at that step, and `shownStone` keeps spikes whole until the step in which they break. When the last step is over the page draws the real game again.
@@ -277,7 +274,7 @@ stateDiagram-v2
     [*] --> chooseDifficulty : a new game
     chooseDifficulty --> intro : Easy · Normal · Hard · Very hard
     intro --> startMatch : the king and the 7 spikiest stones are picked, change them, Fight
-    startMatch --> finishMatch : board full or His Holiness taken
+    startMatch --> finishMatch : board full
     finishMatch --> offerRewards : you won, every opponent deck upgrades one stone
     offerRewards --> nextMatch : upgrade one of 3 stones (+ a new stone)
     nextMatch --> intro
@@ -292,7 +289,7 @@ stateDiagram-v2
 - **Rewards** (`offerRewards`): after a win you upgrade one of three random stones from your deck by one level. The upgraded stone takes its place in the deck and the old one stays in the collection, except a queen, who is replaced. If the opponent played a stone (piece and turn) that you do not own, you also get one of those, at level 1.
 - **The end of a run** (`endRun`): keep one stone you do not own yet in your collection for good. A queen replaces the one you had.
 - **Who places first** (`firstFor`): you in odd matches, the opponent in even ones, the boss always.
-- **Winning a match** (`winnerOf`): taking His Hovering Holiness, else most points (stones), else most spikes left, else whoever placed first.
+- **Winning a match** (`winnerOf`): most points (stones), else most spikes left, else whoever placed first.
 - **Saves** (`loadSave`, `store`) keep your starting hand, records and the run in localStorage. Older saves are converted when they load.
 
 ## Checking a change
@@ -306,7 +303,7 @@ The code is checked by behaviour, not by tests in the repo:
 ## Naming
 
 - Stones and pieces are written out in full: `king_level_1`, `pawn_level_1_right`, never `K1` or `P1>`.
-- His Hovering Holiness is `isHisHoliness` and `holinessWinner`; debris is the piece `debris` and the owner `DEBRIS`.
+- Debris is the piece `debris` and the owner `DEBRIS`.
 - A stone's `direction` (0 to 3: up, right, down, left) is where a piece that turns points; `facing` is whose side it is drawn for.
 - Every timing and size in `move.js` and `computer.js` is a named constant at the top of its section.
 - CSS variables say what they are: `--stone-size`, `--board-size`, `--time-scale`.

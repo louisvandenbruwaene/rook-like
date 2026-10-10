@@ -144,9 +144,9 @@ const BOSS = {
   portrait: 'boss',
   isBoss: true,
   deck: [
-    'his_hovering_holiness_level_1',
     'queen_level_1',
     'queen_level_1',
+    'rook_level_1',
     'rook_level_1',
     'bishop_level_1',
     'knight_level_1',

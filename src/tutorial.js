@@ -235,10 +235,6 @@ const DEMOS = {
     size: 3, board: [[0, 'knight_level_1', OPPONENT], [2, 'rook_level_1', OPPONENT], [6, 'bishop_level_1', OPPONENT]], place: [4, 'buzzy_beatrice_level_1'],
     caption: 'The swarm reaches the corners too: one spike off every spiked red side.',
   },
-  his_hovering_holiness: {
-    size: 2, board: [[0, 'his_hovering_holiness_level_1', OPPONENT]], place: [2, 'buzzy_beatrice_level_1'],
-    caption: "Buzzy Beatrice's swarm grounds him, and the stone that takes him wins the match on the spot.",
-  },
 };
 
 function demoGames(demo) {
@@ -267,10 +263,8 @@ function drawMiniBoard(state, placedCell, ghost) {
     const classes = ['square'];
     if (cell === placedCell) classes.push('placed');
     if (isPoisoned(stone, owner)) classes.push('poisoned');
-    if (isFlying(stone)) classes.push('flying');
     let contents = '';
     if (stone) contents = drawStone(stone, owner);
-    if (isFlying(stone)) contents = `<div class="jet-flames"><i></i><i></i></div>` + contents;
     if (isPoisoned(stone, owner)) {
       contents += `<div class="poison-countdown">${stone.poison.dueAtMove - state.moveCount}</div>`;
     }
