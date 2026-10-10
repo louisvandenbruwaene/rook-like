@@ -149,24 +149,28 @@ function finishMatch() {
   ui.waiting = true;
   render();
   const run = save.run;
-  const pope = game.popeWinner;
+  const holinessWinner = game.holinessWinner;
   if (winnerOf(game) !== YOU) {
     const text =
-      pope === OPPONENT ? `${opponent.name} took His Hovering Holiness.` : `${opponent.name} wins ${tally()}.`;
+      holinessWinner === OPPONENT
+        ? `${opponent.name} took His Hovering Holiness.`
+        : `${opponent.name} wins ${tally()}.`;
     endRun(false, text);
     return;
   }
   if (run.match === RUN_LENGTH) {
     save.crowns++;
     const text =
-      pope === YOU ? `You took His Hovering Holiness from ${opponent.name}.` : `You beat ${opponent.name} ${tally()}.`;
+      holinessWinner === YOU
+        ? `You took His Hovering Holiness from ${opponent.name}.`
+        : `You beat ${opponent.name} ${tally()}.`;
     endRun(true, text);
     return;
   }
   const deckPlayed = deckOf(opponent).slice();
   upgradeAllDecks(run.decks, currentDifficulty());
   store();
-  offerRewards(pope === YOU ? 'Took His Holiness' : `Won ${tally()}`, deckPlayed);
+  offerRewards(holinessWinner === YOU ? 'Took His Holiness' : `Won ${tally()}`, deckPlayed);
 }
 
 function nextMatch() {
@@ -268,7 +272,7 @@ function handOrder(a, b) {
     'his_hovering_holiness',
     'king',
   ];
-  return pieceOrder.indexOf(a.type) - pieceOrder.indexOf(b.type) || a.variant - b.variant || a.level - b.level;
+  return pieceOrder.indexOf(a.type) - pieceOrder.indexOf(b.type) || a.direction - b.direction || a.level - b.level;
 }
 
 /* ---------- Rewards ----------

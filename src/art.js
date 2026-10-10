@@ -9,12 +9,14 @@
 
 /* ---------- Colours ---------- */
 
-// Spike colours for YOU, OPPONENT and RUBBLE. The stone bodies use the gradients in the page's <defs>.
+// Spike colours for YOU, OPPONENT and DEBRIS.
 const SPIKE_COLOURS = [
   { light: '#bfe0ff', mid: '#5aa6f5', dark: '#123a6e' },
   { light: '#ffd0c4', mid: '#f06a55', dark: '#6e1a12' },
   { light: '#8a8a96', mid: '#55555f', dark: '#0b0b0e' },
 ];
+// The stone bodies' gradients, in the <defs> of index.html, for YOU, OPPONENT and DEBRIS.
+const BODY_GRADIENTS = ['body-you', 'body-opponent', 'body-debris'];
 const OUTLINE = '#2a1e1a';
 const SKIN = '#f2c9a0';
 
@@ -145,7 +147,7 @@ function drawSpike({ x, base, tip, halfWidth, breaking, colours }) {
 function drawStoneBody(owner) {
   const dark = SPIKE_COLOURS[owner].dark;
   return `<rect x="15" y="19" width="70" height="70" rx="12" fill="${dark}"/>
-<rect x="15" y="15" width="70" height="70" rx="12" fill="url(#body${owner})" stroke="${dark}" stroke-width="2.5"/>
+<rect x="15" y="15" width="70" height="70" rx="12" fill="url(#${BODY_GRADIENTS[owner]})" stroke="${dark}" stroke-width="2.5"/>
 <rect x="18" y="18" width="64" height="64" rx="9" fill="url(#sheen)"/>`;
 }
 

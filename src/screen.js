@@ -87,7 +87,7 @@ function shownStone(cell) {
       }
     }
     for (const flip of game.flips) {
-      if (flip.cell === cell && flip.owner === RUBBLE && flip.step > replay.step) stone = flip.collapsed;
+      if (flip.cell === cell && flip.owner === DEBRIS && flip.step > replay.step) stone = flip.collapsed;
     }
   }
   const spikes = stone.spikes.slice();
@@ -224,11 +224,11 @@ function squareView(cell, preview, previewBreaks, canPlace) {
 }
 
 function isPoisoned(stone, owner) {
-  return Boolean(stone && stone.poison && owner !== RUBBLE);
+  return Boolean(stone && stone.poison && owner !== DEBRIS);
 }
 
 function isFlying(stone) {
-  return Boolean(stone && PIECES[stone.type].isPope && !stone.grounded);
+  return Boolean(stone && PIECES[stone.type].isHisHoliness && !stone.grounded);
 }
 
 // Every class is styled in style.css: the preview rings, the steps of a move, and the rare stones' looks.
@@ -250,7 +250,7 @@ function squareClasses(cell, owner, stone, preview, previewBreaks, canPlace) {
   return classes;
 }
 
-// The stone (turning over, while it changes colour), the Pope's jet flames, the poison countdown,
+// The stone (turning over, while it changes colour), His Hovering Holiness's jet flames, the poison countdown,
 // or the ghost of the stone you are about to place.
 function squareContents(cell, owner, stone, breakingSpikes, preview, previewBreaks) {
   if (preview && cell === ui.hovered) {
@@ -263,8 +263,8 @@ function squareContents(cell, owner, stone, breakingSpikes, preview, previewBrea
   if (replay.turning.has(cell)) {
     // A collapsing Brittle Bernard turns over from Bernard himself; any other stone from itself in its old colour.
     let front = stone;
-    if (owner === RUBBLE && stone.type === 'debris') {
-      front = game.flips.find((flip) => flip.cell === cell && flip.owner === RUBBLE).collapsed;
+    if (owner === DEBRIS && stone.type === 'debris') {
+      front = game.flips.find((flip) => flip.cell === cell && flip.owner === DEBRIS).collapsed;
     }
     const frontFace = drawStone(front, replay.turning.get(cell), { breakingSpikes });
     contents = `<div class="flip-card"><div class="front">${frontFace}</div><div class="back-face">${contents}</div></div>`;
@@ -292,7 +292,7 @@ function renderBoard() {
     html += `<div class="${classes}" data-cell="${cell}">${contents}</div>`;
   }
   const board = find('#board');
-  board.style.setProperty('--n', SIZE);
+  board.style.setProperty('--board-size', SIZE);
   board.innerHTML = html;
   replay.placed.clear();
   clearEffects();

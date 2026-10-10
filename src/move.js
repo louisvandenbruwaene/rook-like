@@ -7,12 +7,14 @@
 
 /* ---------- Timers ---------- */
 
-// Every delay goes through scaled(), so slow motion stretches the whole move four times.
+// Every delay goes through scaled(), so slow motion stretches the whole move SLOW_MOTION_FACTOR times
+// (style.css stretches the animations by the same factor, as --time-scale).
 // Timers are kept so that giving up a run can cancel the move that is playing.
+const SLOW_MOTION_FACTOR = 4;
 let timers = [];
 
 function scaled(ms) {
-  return settings.slowMotion ? ms * 4 : ms;
+  return settings.slowMotion ? ms * SLOW_MOTION_FACTOR : ms;
 }
 
 function after(ms, callback) {
@@ -52,17 +54,21 @@ function popUp(cell, text, className, lifetimeMs, raise = 0) {
   overlay(label, x, y + raise, lifetimeMs);
 }
 
-// Buzzy Beatrice's swarm: twelve bees fly out to the squares around her and back.
+// Buzzy Beatrice's swarm: BEE_COUNT bees fly out in a circle, just past the squares around her, and back.
+const BEE_COUNT = 12;
+const BEE_REACH = 1.1; // how far the bees fly, in squares
+const BEE_STAGGER_MS = 25; // each bee leaves this much after the one before
+const BEE_FLIGHT_MS = 1100;
 function releaseBees(cell) {
   const { x, y, size } = centreOf(cell);
-  for (let index = 0; index < 12; index++) {
-    const angle = (index * 30 * Math.PI) / 180;
+  for (let index = 0; index < BEE_COUNT; index++) {
+    const angle = (index / BEE_COUNT) * 2 * Math.PI;
     const bee = document.createElement('div');
     bee.className = 'bee';
-    bee.style.setProperty('--dx', `${Math.cos(angle) * size * 1.1}px`);
-    bee.style.setProperty('--dy', `${Math.sin(angle) * size * 1.1}px`);
-    bee.style.animationDelay = `${index * 25}ms`;
-    overlay(bee, x, y, scaled(1100));
+    bee.style.setProperty('--bee-x', `${Math.cos(angle) * size * BEE_REACH}px`);
+    bee.style.setProperty('--bee-y', `${Math.sin(angle) * size * BEE_REACH}px`);
+    bee.style.animationDelay = `${index * BEE_STAGGER_MS}ms`;
+    overlay(bee, x, y, scaled(BEE_FLIGHT_MS));
   }
 }
 
@@ -78,8 +84,18 @@ function bump(className) {
    A move plays out step by step: step 0 is the new stone's own fights, then every fight of the chain in turn. */
 
 const PAUSE_BEFORE_FIRST_STEP_MS = 260;
+const BEES_BEFORE_FIRST_STEP_MS = 200; // Buzzy Beatrice's bees fly out this long before the first step
 const STEP_MS = 240;
 const STEP_WITH_TURNOVER_MS = 440;
+const NAME_TAG_MS = 1300; // the name of the stone just placed, shown above it
+const NAME_TAG_RAISE = 0.62; // how far above the centre of its square, in squares
+const PAUSE_AFTER_MOVE_MS = 300; // after the last step, before the next turn
+const PAUSE_AFTER_TURNOVER_MS = 560; // the same, when a stone turned over: it needs a moment to land
+const POINTS_POP_DELAY_MS = 140; // the +2 or −1 after a move shows this long after the last step
+const POINTS_POP_MS = 1200;
+const PAUSE_BEFORE_RESULT_MS = 500; // the board stays in view this long before the result card
+const COMPUTER_PAUSE_MS = 350; // the computer waits this long before it starts thinking
+const COMPUTER_PAUSE_AFTER_TURNOVER_MS = 700;
 const LONGEST_UNHURRIED_CHAIN = 12; // a longer chain plays faster, so a move never drags
 const BIG_CAPTURE = 3; // a move that wins this many points or more shakes the board
 
@@ -99,12 +115,12 @@ function makeMove(move) {
   bump('thump');
 
   const nameTagClass = mover === YOU ? 'name-tag you' : 'name-tag opponent';
-  popUp(move.cell, nameOf(stone), nameTagClass, scaled(1300), -centreOf(move.cell).size * 0.62);
+  popUp(move.cell, nameOf(stone), nameTagClass, scaled(NAME_TAG_MS), -centreOf(move.cell).size * NAME_TAG_RAISE);
   const endTime = animate(result, move.cell);
   popGain(replay.before, result, move.cell, mover, endTime);
 
   const anyTurnedOver = result.flips.length > 0;
-  after(endTime + (anyTurnedOver ? 560 : 300), () => {
+  after(endTime + (anyTurnedOver ? PAUSE_AFTER_TURNOVER_MS : PAUSE_AFTER_MOVE_MS), () => {
     endReplay();
     ui.waiting = false;
     render();
@@ -127,7 +143,7 @@ function animate(result, placedCell) {
 
   const placedStone = result.stones[placedCell];
   if (PIECES[placedStone.type].swarm || PIECES[shownStone(placedCell).type].swarm) {
-    after(PAUSE_BEFORE_FIRST_STEP_MS - 200, () => releaseBees(placedCell));
+    after(PAUSE_BEFORE_FIRST_STEP_MS - BEES_BEFORE_FIRST_STEP_MS, () => releaseBees(placedCell));
   }
 
   let time = PAUSE_BEFORE_FIRST_STEP_MS;
@@ -162,7 +178,7 @@ function showStep(result, step, fights, flips, breaks, promotions) {
   for (const flip of flips) {
     replay.turning.set(flip.cell, replay.owners[flip.cell]);
     replay.owners[flip.cell] = flip.owner;
-    if (flip.owner === RUBBLE) replay.effects.set(flip.cell, 'crumbling');
+    if (flip.owner === DEBRIS) replay.effects.set(flip.cell, 'crumbling');
   }
   for (const promotion of promotions) replay.effects.set(promotion.cell, 'crowned');
 
@@ -182,8 +198,8 @@ function popGain(before, result, cell, mover, endTime) {
   if (net === 0) return;
   const text = net > 0 ? `+${net}` : `−${-net}`;
   const className = net > 0 ? 'points-pop' : 'points-pop loss';
-  after(endTime + 140, () => {
-    popUp(cell, text, className, scaled(1200));
+  after(endTime + POINTS_POP_DELAY_MS, () => {
+    popUp(cell, text, className, scaled(POINTS_POP_MS));
     if (net >= BIG_CAPTURE) bump('shake');
   });
 }
@@ -191,7 +207,7 @@ function popGain(before, result, cell, mover, endTime) {
 // After a move: the end of the match, the computer's turn, or yours.
 function nextTurn(somethingJustTurned) {
   if (isOver(game)) {
-    after(500, finishMatch);
+    after(PAUSE_BEFORE_RESULT_MS, finishMatch);
     return;
   }
   if (game.turn === OPPONENT) {
@@ -199,7 +215,7 @@ function nextTurn(somethingJustTurned) {
     renderHand();
     renderInfo();
     const thinkingTime = opponent.isBoss ? BOSS_THINK_MS : THINK_MS;
-    after(somethingJustTurned ? 700 : 350, () => {
+    after(somethingJustTurned ? COMPUTER_PAUSE_AFTER_TURNOVER_MS : COMPUTER_PAUSE_MS, () => {
       makeMove(bestMove(game, thinkingTime, Math.random, currentDifficulty().lookAhead));
     });
     return;
