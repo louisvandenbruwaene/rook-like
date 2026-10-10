@@ -31,22 +31,23 @@ def hue_between(low, high, min_saturation=0.25):
     return lambda h, s, v: low <= h <= high and s > min_saturation and v > 0.12
 
 
-# For each piece: the box the detail lies in (x0, y0, x1, y1, inclusive) and which pixels in it belong to it,
-# by hue (0-360), saturation and value (0-1). A detail drawn in black (Beatrice's hat band) takes the middle shade.
+# For each piece, the parts of its detail: the box a part lies in (x0, y0, x1, y1, inclusive) and which pixels in it
+# belong to it, by hue (0-360), saturation and value (0-1). A detail drawn in black (Beatrice's hat band) takes the
+# middle shade.
 # prettier-ignore
 DETAILS = {
-    'pawn':                  ((18, 36, 56, 58), is_red),                                  # his shoulder sleeves
-    'knight':                ((0, 0, 63, 63), is_red),                                    # mane and plume
-    'bishop':                ((0, 40, 63, 63), hue_between(262, 312)),                    # his robes
-    'rook':                  ((0, 42, 63, 63), lambda h, s, v: s < 0.22 and v > 0.18),    # his grey tunic
-    'queen':                 ((14, 55, 24, 63), hue_between(285, 345)),                   # her sleeve cuff
-    'king':                  ((23, 15, 41, 23), is_red),                                  # the crown's gems
-    'venom_veronica':        ((8, 32, 27, 47), hue_between(290, 360, 0.12)),              # her tongue
-    'experienced_edna':      ((24, 44, 40, 63), lambda h, s, v: (h >= 320 or h <= 8) and s > 0.25),  # her blouse
-    'empress_edna':          ((0, 44, 63, 63), hue_between(262, 312)),                    # her robe
-    'brittle_bernard':       ((0, 37, 63, 63), hue_between(195, 250, 0.3)),               # his doublet
-    'buzzy_beatrice':        ((21, 8, 41, 10), lambda h, s, v: v < 0.1),                  # her hat band
-    'his_hovering_holiness': ((0, 37, 63, 63), is_red),                                   # his cape
+    'pawn':                  [((18, 36, 56, 58), is_red)],                                  # his shoulder sleeves
+    'knight':                [((0, 0, 63, 63), is_red)],                                    # mane and plume
+    'bishop':                [((0, 40, 63, 63), hue_between(262, 312))],                    # his robes
+    'rook':                  [((0, 42, 63, 63), lambda h, s, v: s < 0.22 and v > 0.18)],    # his grey tunic
+    'queen':                 [((14, 55, 24, 63), hue_between(285, 345))],                   # her sleeve cuff
+    'king':                  [((23, 15, 41, 23), is_red), ((0, 46, 63, 63), is_red)],       # the crown's gems and his mantle
+    'venom_veronica':        [((8, 32, 27, 47), hue_between(290, 360, 0.12))],              # her tongue
+    'experienced_edna':      [((24, 44, 40, 63), lambda h, s, v: (h >= 320 or h <= 8) and s > 0.25)],  # her blouse
+    'empress_edna':          [((0, 44, 63, 63), hue_between(262, 312))],                    # her robe
+    'brittle_bernard':       [((0, 37, 63, 63), hue_between(195, 250, 0.3))],               # his doublet
+    'buzzy_beatrice':        [((21, 8, 41, 10), lambda h, s, v: v < 0.1)],                  # her hat band
+    'his_hovering_holiness': [((0, 37, 63, 63), is_red)],                                   # his cape
 }
 
 # Hairy Harambe has no coloured detail of his own, so a small gem is set into his gold pendant:
@@ -103,8 +104,9 @@ def team_copy(piece, pixels, shades):
             out[y, x] = [*rgb(shades[shade]), 255]
             mask[y, x] = True
         return out, mask
-    box, belongs = DETAILS[piece]
-    mask = detail_mask(pixels, box, belongs)
+    mask = np.zeros(pixels.shape[:2], bool)
+    for box, belongs in DETAILS[piece]:
+        mask |= detail_mask(pixels, box, belongs)
     return paint(pixels, mask, shades), mask
 
 

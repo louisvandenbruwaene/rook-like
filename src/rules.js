@@ -65,7 +65,7 @@ const PIECES = {
             description: 'a single spike' },
   knight: { name: 'Neigh Nigel',    chess: 'knight', baseSpikes: [2, 0, 0, 2], namesByDirection: ['Neigh Nigel', 'Neigh Newman', 'Neigh Nathan', 'Neigh Nolan'],
             description: 'two sides of one corner' },
-  bishop: { name: 'Bishop Bailey',  chess: 'bishop', baseSpikes: [2, 0, 2, 0], description: 'spikes up and down' },
+  bishop: { name: 'Bishop Bob',     chess: 'bishop', baseSpikes: [2, 0, 2, 0], description: 'spikes up and down' },
   rook:   { name: 'Castle Carl',    chess: 'rook',   baseSpikes: [0, 2, 0, 2], description: 'spikes left and right' },
   queen:  { name: 'Duchess Dagger', chess: 'queen',  baseSpikes: [2, 2, 2, 2], description: 'spikes on every side' },
   king:   { name: 'King Kobe',      chess: 'king',   baseSpikes: [0, 0, 0, 0], goldenShields: true, hasNoLevels: true,
