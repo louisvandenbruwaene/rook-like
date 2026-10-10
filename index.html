@@ -295,9 +295,9 @@ h1{font-weight:700;font-size:28px;margin:0;letter-spacing:-.01em}
      stones[i]    the stone on square i, or null
      hands        [your stones, the opponent's stones] not yet placed
      turn         the player to move
-     firstPlayer  who placed first (wins a match level on points and spikes)
+     first        who placed first (wins a match level on points and spikes)
      moveCount    moves made so far
-     winnerByPope set when a Pope changes colour: that player wins at once
+     popeWinner   set when a Pope changes colour: that player wins at once
 
    A stone is:
      type     a piece letter, a key of PIECES
@@ -318,26 +318,22 @@ const RUBBLE = 2;
 
 const MAX_LEVEL = 5; // the highest level, and the most spikes on one side
 
-// The four sides of a square, clockwise from the top, and the step to the next square on each side.
+// The four sides of a square, clockwise from the top, and the [dx, dy] step to the next square on each side.
 const TOP = 0;
 const RIGHT = 1;
 const BOTTOM = 2;
 const LEFT = 3;
 const SIDES = [TOP, RIGHT, BOTTOM, LEFT];
-const SIDE_STEPS = {
-  [TOP]: { dx: 0, dy: -1 },
-  [RIGHT]: { dx: 1, dy: 0 },
-  [BOTTOM]: { dx: 0, dy: 1 },
-  [LEFT]: { dx: -1, dy: 0 },
-};
+// prettier-ignore
+const STEPS = [[0, -1], [1, 0], [0, 1], [-1, 0]];
 
-function oppositeSide(side) {
+function opposite(side) {
   return (side + 2) % 4;
 }
 function isPlayer(owner) {
   return owner === YOU || owner === OPPONENT;
 }
-function otherPlayer(player) {
+function other(player) {
   return 1 - player;
 }
 
@@ -381,11 +377,11 @@ const PIECES = {
 /* ---------- Stones ---------- */
 
 // The spike pattern turned clockwise by a number of quarter turns.
-function rotateSpikes(spikes, quarterTurns) {
+function rotate(spikes, quarterTurns) {
   return spikes.map((_, side) => spikes[(((side - quarterTurns) % 4) + 4) % 4]);
 }
 
-function spikesForLevel(type, level) {
+function spikesAt(type, level) {
   const piece = PIECES[type];
   if (piece.levelSpikes) return piece.levelSpikes[level - 1].slice();
   return piece.baseSpikes.map((base) => (base === 0 ? 0 : Math.min(MAX_LEVEL, base + level - 1)));
@@ -396,37 +392,37 @@ function spikesForLevel(type, level) {
 function makeStone(type, level, facing, variant = 0) {
   if (!PIECES[type].variants) variant = 0;
   const quarterTurns = variant + 2 * facing;
-  return { type, level, facing, variant, spikes: rotateSpikes(spikesForLevel(type, level), quarterTurns) };
+  return { type, level, facing, variant, spikes: rotate(spikesAt(type, level), quarterTurns) };
 }
 
-function stoneName(stone) {
+function nameOf(stone) {
   const piece = PIECES[stone.type];
   return piece.variants ? piece.variants[stone.variant] : piece.name;
 }
 
-function totalSpikes(stone) {
+function spikeCount(stone) {
   return stone.spikes.reduce((sum, count) => sum + count, 0);
 }
 
 // The king can never be taken, and a flying Pope not yet.
-function canBeTaken(stone) {
+function takeable(stone) {
   const piece = PIECES[stone.type];
   if (piece.goldenShields) return false;
   if (piece.isPope && !stone.grounded) return false;
   return true;
 }
 
-// Decks are written as stone codes: piece letter, level, and for a turned stone its direction.
+// Hands are written as stone codes: piece letter, level, and for a turned stone its direction.
 // For example N2 (Sir Gallops, level 2), P1> (a pawn turned to point right) or N1v.
 const DIRECTIONS = '^>v<';
 
-function parseStoneCode(code) {
+function parseCode(code) {
   const [, type, level, direction] = /^([A-Z])(\d)([\^>v<]?)$/.exec(code);
   return { type, level: Number(level), variant: direction ? DIRECTIONS.indexOf(direction) : 0 };
 }
 
-function stoneFromCode(code, facing) {
-  const { type, level, variant } = parseStoneCode(code);
+function fromCode(code, facing) {
+  const { type, level, variant } = parseCode(code);
   return makeStone(type, level, facing, variant);
 }
 
@@ -441,8 +437,9 @@ function columnOf(size, cell) {
 
 // The square next to `cell` on `side`, or -1 when that is off the board.
 function neighbourOf(size, cell, side) {
-  const x = columnOf(size, cell) + SIDE_STEPS[side].dx;
-  const y = rowOf(size, cell) + SIDE_STEPS[side].dy;
+  const [dx, dy] = STEPS[side];
+  const x = columnOf(size, cell) + dx;
+  const y = rowOf(size, cell) + dy;
   const onBoard = x >= 0 && y >= 0 && x < size && y < size;
   return onBoard ? y * size + x : -1;
 }
@@ -453,21 +450,21 @@ function distanceBetween(size, a, b) {
 
 /* ---------- A game ---------- */
 
-function newGame(size, hands, firstPlayer) {
+function newGame(size, hands, first) {
   return {
     size,
     owners: new Int8Array(size * size).fill(EMPTY),
     stones: new Array(size * size).fill(null),
     hands,
-    turn: firstPlayer,
-    firstPlayer,
+    turn: first,
+    first,
     moveCount: 0,
   };
 }
 
 // A match ends when the board is full or a Pope was taken.
 function isOver(game) {
-  return game.winnerByPope !== undefined || !game.owners.includes(EMPTY);
+  return game.popeWinner !== undefined || !game.owners.includes(EMPTY);
 }
 
 function emptySquares(game) {
@@ -490,7 +487,7 @@ function pointsOf(game, player) {
 function spikesLeft(game, player) {
   let spikes = 0;
   for (let cell = 0; cell < game.owners.length; cell++) {
-    if (game.owners[cell] === player) spikes += totalSpikes(game.stones[cell]);
+    if (game.owners[cell] === player) spikes += spikeCount(game.stones[cell]);
   }
   return spikes;
 }
@@ -498,14 +495,13 @@ function spikesLeft(game, player) {
 // Who wins a finished match: the Pope, then points, then spikes left, then whoever placed first
 // (the other player had the last move).
 function winnerOf(game) {
-  if (game.winnerByPope !== undefined) return game.winnerByPope;
+  if (game.popeWinner !== undefined) return game.popeWinner;
   const pointsAhead = pointsOf(game, YOU) - pointsOf(game, OPPONENT);
-  if (pointsAhead > 0) return YOU;
-  if (pointsAhead < 0) return OPPONENT;
   const spikesAhead = spikesLeft(game, YOU) - spikesLeft(game, OPPONENT);
-  if (spikesAhead > 0) return YOU;
-  if (spikesAhead < 0) return OPPONENT;
-  return game.firstPlayer;
+  const lead = pointsAhead || spikesAhead;
+  if (lead > 0) return YOU;
+  if (lead < 0) return OPPONENT;
+  return game.first;
 }
 
 /* ---------- One fight ----------
@@ -513,7 +509,7 @@ function winnerOf(game) {
    So 2 against 1 ends 1 against 0, 1 against 0 ends 0 against 0, and 2 against 2 ends 0 against 0.
    A golden shield breaks every spike that touches it, and a gorilla loses at most one spike in a fight. */
 
-function spikesSpent(mine, theirs) {
+function spent(mine, theirs) {
   if (mine > theirs) return Math.max(theirs, 1);
   return Math.min(mine, theirs);
 }
@@ -524,15 +520,15 @@ function breakSpikes(game, cell, side, count, step) {
   const spikes = game.stones[cell].spikes.slice();
   spikes[side] -= count;
   game.stones[cell] = { ...game.stones[cell], spikes };
-  game.brokenSpikes.push({ cell, side, count, step });
+  game.breaks.push({ cell, side, count, step });
 }
 
 // A poisonous stone that hits with at least one spike poisons the other stone, win or lose. Two moves later
 // that stone goes over to the poisoner, unless an Old Woman of its own colour cures it first.
-function poisonOnHit(game, attackerCell, targetCell, spikesThatHit) {
+function poisonHit(game, attackerCell, targetCell, spikesThatHit) {
   if (spikesThatHit === 0) return;
   if (!PIECES[game.stones[attackerCell].type].poisonous) return;
-  if (!canBeTaken(game.stones[targetCell])) return;
+  if (!takeable(game.stones[targetCell])) return;
   const poison = { byPlayer: game.owners[attackerCell], dueAtMove: game.moveCount + 2 };
   game.stones[targetCell] = { ...game.stones[targetCell], poison };
 }
@@ -540,54 +536,54 @@ function poisonOnHit(game, attackerCell, targetCell, spikesThatHit) {
 // The stones on `cell` and `neighbour` meet across one line. Returns the spikes each had on that line before
 // the fight, and the square of the winner (or -1 for no winner): the winner takes the other stone if it can.
 function fight(game, cell, side, neighbour, step) {
-  const otherSide = oppositeSide(side);
+  const otherSide = opposite(side);
   const stone = game.stones[cell];
   const enemy = game.stones[neighbour];
   const spikesHere = stone.spikes[side];
   const spikesThere = enemy.spikes[otherSide];
-  poisonOnHit(game, cell, neighbour, spikesHere);
-  poisonOnHit(game, neighbour, cell, spikesThere);
+  poisonHit(game, cell, neighbour, spikesHere);
+  poisonHit(game, neighbour, cell, spikesThere);
 
   const stoneShielded = PIECES[stone.type].goldenShields;
   const enemyShielded = PIECES[enemy.type].goldenShields;
   if (stoneShielded || enemyShielded) {
     if (stoneShielded) breakSpikes(game, neighbour, otherSide, spikesThere, step);
     if (enemyShielded) breakSpikes(game, cell, side, spikesHere, step);
-    return { spikesHere, spikesThere, winnerCell: -1 };
+    return { spikesHere, spikesThere, winner: -1 };
   }
 
-  breakSpikes(game, cell, side, spikesSpent(spikesHere, spikesThere), step);
-  breakSpikes(game, neighbour, otherSide, spikesSpent(spikesThere, spikesHere), step);
-  let winnerCell = -1;
-  if (spikesHere > spikesThere) winnerCell = cell;
-  if (spikesThere > spikesHere) winnerCell = neighbour;
-  return { spikesHere, spikesThere, winnerCell };
+  breakSpikes(game, cell, side, spent(spikesHere, spikesThere), step);
+  breakSpikes(game, neighbour, otherSide, spent(spikesThere, spikesHere), step);
+  let winner = -1;
+  if (spikesHere > spikesThere) winner = cell;
+  if (spikesThere > spikesHere) winner = neighbour;
+  return { spikesHere, spikesThere, winner };
 }
 
 /* ---------- One move ----------
-   playMove() returns the game after the player to move puts a stone from their hand on an empty square.
+   play() returns the game after the player to move puts a stone from their hand on an empty square.
    luck() decides Prince Joey's collapses; without it (the computer's search, the preview) he never collapses.
    Besides the board, the result records everything that happened, step by step: step 0 is the new stone's
    own fights, then one step per fight of the chain. The animation replays these records.
-     fights:       { from, to, spikesFrom, spikesTo, step }
-     flips:        { cell, newOwner, step, collapsedStone }  (collapsedStone: Prince Joey, when he becomes rubble)
-     brokenSpikes: { cell, side, count, step }
-     promotions:   { cell, step }  an Old Woman who became the Grand Empress */
+     fights:     { from, to, spikesFrom, spikesTo, step }
+     flips:      { cell, owner, step, collapsed }  (collapsed: Prince Joey's stone, when he becomes rubble)
+     breaks:     { cell, side, count, step }
+     promotions: { cell, step }  an Old Woman who became the Grand Empress */
 
-function playMove(game, move, luck) {
+function play(game, move, luck) {
   const player = game.turn;
   const after = {
     size: game.size,
     owners: game.owners.slice(),
     stones: game.stones.slice(),
     hands: game.hands.slice(),
-    turn: otherPlayer(player),
-    firstPlayer: game.firstPlayer,
+    turn: other(player),
+    first: game.first,
     moveCount: game.moveCount + 1,
-    winnerByPope: game.winnerByPope,
+    popeWinner: game.popeWinner,
     fights: [],
     flips: [],
-    brokenSpikes: [],
+    breaks: [],
     promotions: [],
     luck,
   };
@@ -596,12 +592,12 @@ function playMove(game, move, luck) {
   after.owners[move.cell] = player;
   after.stones[move.cell] = stone;
 
-  if (PIECES[stone.type].swarm) swarmStings(after, move.cell);
-  newStoneFights(after, move.cell);
-  let step = chainFights(after, move.cell, 1);
-  step = oldWomenCure(after, step); // an Old Woman cures before the poison takes effect
-  step = poisonTakesEffect(after, step);
-  step = oldWomenCure(after, step);
+  if (PIECES[stone.type].swarm) sting(after, move.cell);
+  clash(after, move.cell);
+  let step = chain(after, move.cell, 1);
+  step = cure(after, step); // an Old Woman cures before the poison takes effect
+  step = poisonStrikes(after, step);
+  step = cure(after, step);
 
   delete after.luck;
   return after;
@@ -609,20 +605,16 @@ function playMove(game, move, luck) {
 
 // The Beekeeper's swarm stings the eight squares around him: one spike off every spiked enemy side,
 // and a Pope is grounded.
-function swarmStings(game, cell) {
+function sting(game, cell) {
   const size = game.size;
-  const enemy = otherPlayer(game.owners[cell]);
-  const x = columnOf(size, cell);
-  const y = rowOf(size, cell);
-  for (let dy = -1; dy <= 1; dy++) {
-    for (let dx = -1; dx <= 1; dx++) {
-      const isCentre = dx === 0 && dy === 0;
-      const X = x + dx;
-      const Y = y + dy;
-      const onBoard = X >= 0 && Y >= 0 && X < size && Y < size;
-      if (isCentre || !onBoard) continue;
-      const square = Y * size + X;
-      if (game.owners[square] !== enemy) continue;
+  const enemy = other(game.owners[cell]);
+  const centreRow = rowOf(size, cell);
+  const centreColumn = columnOf(size, cell);
+  for (let row = centreRow - 1; row <= centreRow + 1; row++) {
+    for (let column = centreColumn - 1; column <= centreColumn + 1; column++) {
+      const onBoard = row >= 0 && column >= 0 && row < size && column < size;
+      const square = row * size + column;
+      if (!onBoard || square === cell || game.owners[square] !== enemy) continue;
       for (const side of SIDES) {
         if (game.stones[square].spikes[side] > 0) breakSpikes(game, square, side, 1, 0);
       }
@@ -633,46 +625,46 @@ function swarmStings(game, cell) {
 
 // Step 0: the new stone fights every enemy neighbour at once. Each fight it wins takes that stone,
 // and losing any of these fights gets the new stone taken.
-function newStoneFights(game, cell) {
-  const enemy = otherPlayer(game.owners[cell]);
+function clash(game, cell) {
+  const enemy = other(game.owners[cell]);
   const taken = [];
-  let lostAFight = false;
+  let lost = false;
   for (const side of SIDES) {
     const neighbour = neighbourOf(game.size, cell, side);
     if (neighbour < 0 || game.owners[neighbour] !== enemy) continue;
-    const { spikesHere, spikesThere, winnerCell } = fight(game, cell, side, neighbour, 0);
+    const { spikesHere, spikesThere, winner } = fight(game, cell, side, neighbour, 0);
     if (spikesHere === 0 && spikesThere === 0) continue;
     game.fights.push({ from: cell, to: neighbour, spikesFrom: spikesHere, spikesTo: spikesThere, step: 0 });
-    if (winnerCell === cell) taken.push(neighbour);
-    if (winnerCell === neighbour) lostAFight = true;
+    if (winner === cell) taken.push(neighbour);
+    if (winner === neighbour) lost = true;
   }
-  for (const neighbour of taken) changeColour(game, neighbour, 0);
-  if (lostAFight) changeColour(game, cell, 0);
+  for (const neighbour of taken) take(game, neighbour, 0);
+  if (lost) take(game, cell, 0);
 }
 
 // The chain: as long as two stones of different colours touch with a spike between them, the line closest
 // to the origin fights. Every fight uses up at least one spike, so the chain always ends, and when it does
 // no two stones of different colours touch with a spike between them. Returns the next free step number.
-function chainFights(game, origin, step) {
+function chain(game, origin, step) {
   for (;;) {
     const line = closestOpenLine(game, origin);
     if (line === null) return step;
     const { cell, side, neighbour } = line;
-    const { spikesHere, spikesThere, winnerCell } = fight(game, cell, side, neighbour, step);
+    const { spikesHere, spikesThere, winner } = fight(game, cell, side, neighbour, step);
     game.fights.push({ from: cell, to: neighbour, spikesFrom: spikesHere, spikesTo: spikesThere, step });
-    if (winnerCell === cell) changeColour(game, neighbour, step);
-    if (winnerCell === neighbour) changeColour(game, cell, step);
+    if (winner === cell) take(game, neighbour, step);
+    if (winner === neighbour) take(game, cell, step);
     step++;
   }
 }
 
 // An open line: two stones of different colours side by side, with a spike between them.
-function isOpenLine(game, cell, side, neighbour) {
+function isOpen(game, cell, side, neighbour) {
   if (neighbour < 0) return false;
   const owner = game.owners[cell];
   const neighbourOwner = game.owners[neighbour];
   if (!isPlayer(owner) || !isPlayer(neighbourOwner) || owner === neighbourOwner) return false;
-  return game.stones[cell].spikes[side] > 0 || game.stones[neighbour].spikes[oppositeSide(side)] > 0;
+  return game.stones[cell].spikes[side] > 0 || game.stones[neighbour].spikes[opposite(side)] > 0;
 }
 
 // Lines are checked to the right of and below every stone, so each line is seen once. Of equally close lines
@@ -683,7 +675,7 @@ function closestOpenLine(game, origin) {
     if (game.owners[cell] === EMPTY) continue;
     for (const side of [RIGHT, BOTTOM]) {
       const neighbour = neighbourOf(game.size, cell, side);
-      if (!isOpenLine(game, cell, side, neighbour)) continue;
+      if (!isOpen(game, cell, side, neighbour)) continue;
       const distance = Math.min(
         distanceBetween(game.size, cell, origin),
         distanceBetween(game.size, neighbour, origin),
@@ -695,21 +687,21 @@ function closestOpenLine(game, origin) {
 }
 
 // Poison that is due: the stone goes over to the poisoner, and a chain spreads from it.
-function poisonTakesEffect(game, step) {
+function poisonStrikes(game, step) {
   for (let cell = 0; cell < game.owners.length; cell++) {
     const poison = game.stones[cell] && game.stones[cell].poison;
     if (!poison || poison.dueAtMove > game.moveCount) continue;
     game.stones[cell] = { ...game.stones[cell], poison: undefined };
     const owner = game.owners[cell];
     if (!isPlayer(owner) || owner === poison.byPlayer) continue;
-    if (changeColour(game, cell, step)) step = chainFights(game, cell, step + 1);
+    if (take(game, cell, step)) step = chain(game, cell, step + 1);
   }
   return step;
 }
 
 // An Old Woman cures every poisoned stone of her colour that touches her, and the first cure makes her the
 // Grand Empress. Her new spikes fight at once, in a chain from her square. Returns the next free step number.
-function oldWomenCure(game, step) {
+function cure(game, step) {
   for (let cell = 0; cell < game.owners.length; cell++) {
     const stone = game.stones[cell];
     if (!stone || !stone.poison || !isPlayer(game.owners[cell])) continue;
@@ -721,7 +713,7 @@ function oldWomenCure(game, step) {
       const oldWoman = game.stones[neighbour];
       game.stones[neighbour] = { ...makeStone('E', oldWoman.level, oldWoman.facing), poison: oldWoman.poison };
       game.promotions.push({ cell: neighbour, step });
-      step = chainFights(game, neighbour, step);
+      step = chain(game, neighbour, step);
       break;
     }
   }
@@ -730,20 +722,20 @@ function oldWomenCure(game, step) {
 
 // The stone on `cell` changes colour, unless it cannot be taken. Returns whether it did.
 // A Pope that changes colour loses the match for his side, and Prince Joey may collapse into rubble.
-function changeColour(game, cell, step) {
+function take(game, cell, step) {
   const stone = game.stones[cell];
-  const newOwner = otherPlayer(game.owners[cell]);
-  if (!canBeTaken(stone)) return false;
-  if (PIECES[stone.type].isPope && game.winnerByPope === undefined) game.winnerByPope = newOwner;
+  const owner = other(game.owners[cell]);
+  if (!takeable(stone)) return false;
+  if (PIECES[stone.type].isPope && game.popeWinner === undefined) game.popeWinner = owner;
   if (PIECES[stone.type].mayCollapse && game.luck && game.luck() < 1 / 3) {
     game.owners[cell] = RUBBLE;
     game.stones[cell] = makeStone('X', 1, YOU);
-    game.flips.push({ cell, newOwner: RUBBLE, step, collapsedStone: stone });
+    game.flips.push({ cell, owner: RUBBLE, step, collapsed: stone });
     return true;
   }
-  game.owners[cell] = newOwner;
+  game.owners[cell] = owner;
   game.stones[cell] = { ...stone, poison: undefined };
-  game.flips.push({ cell, newOwner, step });
+  game.flips.push({ cell, owner, step });
   return true;
 }
 
@@ -766,17 +758,17 @@ const POPE_VALUE = 1e6;
 const NEXT_CAPTURE_VALUE = 1200; // most of a point for each stone the player to move can take next
 const WORST = -1e9;
 
-let searchDeadline = 0;
-let searchAborted = false;
-let positionsSearched = 0;
+let deadline = 0;
+let aborted = false;
+let searched = 0;
 
 function now() {
   return typeof performance !== 'undefined' ? performance.now() : Date.now();
 }
 
 // The points a move wins for the player making it.
-function pointsGained(game, move) {
-  return pointsOf(playMove(game, move), game.turn) - pointsOf(game, game.turn);
+function gain(game, move) {
+  return pointsOf(play(game, move), game.turn) - pointsOf(game, game.turn);
 }
 
 // Every move of the player to move. Stones of the same piece, level and variant play alike,
@@ -795,41 +787,42 @@ function legalMoves(game) {
   return moves;
 }
 
-function positionValue(game) {
+// How good the position is for the player to move.
+function score(game) {
   const me = game.turn;
-  const you = otherPlayer(me);
-  if (game.winnerByPope !== undefined) return game.winnerByPope === me ? POPE_VALUE : -POPE_VALUE;
-  const pointsAhead = pointsOf(game, me) - pointsOf(game, you);
-  const spikesAhead = spikesLeft(game, me) - spikesLeft(game, you);
-  const placedFirst = game.firstPlayer === me ? 1 : -1;
+  const them = other(me);
+  if (game.popeWinner !== undefined) return game.popeWinner === me ? POPE_VALUE : -POPE_VALUE;
+  const pointsAhead = pointsOf(game, me) - pointsOf(game, them);
+  const spikesAhead = spikesLeft(game, me) - spikesLeft(game, them);
+  const placedFirst = game.first === me ? 1 : -1;
   return pointsAhead * POINT_VALUE + spikesAhead * SPIKE_VALUE + placedFirst;
 }
 
 // Moves sorted best capture first, which lets alpha-beta skip far more of the search.
-function movesBestFirst(game) {
-  const rated = legalMoves(game).map((move) => ({ move, gain: pointsGained(game, move) }));
+function sortedMoves(game) {
+  const rated = legalMoves(game).map((move) => ({ move, gain: gain(game, move) }));
   rated.sort((a, b) => b.gain - a.gain);
   return rated.map((entry) => entry.move);
 }
 
 // At the end of the search: the position, plus most of the best capture the player to move can make next.
 function estimate(game) {
-  if (isOver(game)) return positionValue(game);
+  if (isOver(game)) return score(game);
   let bestCapture = 0;
-  for (const move of legalMoves(game)) bestCapture = Math.max(bestCapture, pointsGained(game, move));
-  return positionValue(game) + NEXT_CAPTURE_VALUE * bestCapture;
+  for (const move of legalMoves(game)) bestCapture = Math.max(bestCapture, gain(game, move));
+  return score(game) + NEXT_CAPTURE_VALUE * bestCapture;
 }
 
 function negamax(game, depth, alpha, beta) {
-  positionsSearched++;
-  if (positionsSearched % 256 === 0 && now() > searchDeadline) searchAborted = true;
-  if (searchAborted) return 0;
-  if (isOver(game)) return positionValue(game);
+  searched++;
+  if (searched % 256 === 0 && now() > deadline) aborted = true;
+  if (aborted) return 0;
+  if (isOver(game)) return score(game);
   if (depth === 0) return estimate(game);
   let best = WORST;
-  for (const move of movesBestFirst(game)) {
-    const value = -negamax(playMove(game, move), depth - 1, -beta, -alpha);
-    if (searchAborted) return 0;
+  for (const move of sortedMoves(game)) {
+    const value = -negamax(play(game, move), depth - 1, -beta, -alpha);
+    if (aborted) return 0;
     best = Math.max(best, value);
     alpha = Math.max(alpha, value);
     if (alpha >= beta) break;
@@ -839,54 +832,37 @@ function negamax(game, depth, alpha, beta) {
 
 // The move to play. Starts from the greedy move, then searches one move further ahead each round.
 // Among equally good moves it picks at random, so it does not always play the same game.
-function chooseMove(game, thinkingTimeMs, random = Math.random, maxDepth = 99) {
+function bestMove(game, thinkingTimeMs, random = Math.random, maxDepth = 99) {
   const pickOne = (list) => list[Math.floor(random() * list.length)];
-  const moves = movesBestFirst(game);
-  const gains = moves.map((move) => pointsGained(game, move));
+  const moves = sortedMoves(game);
+  const gains = moves.map((move) => gain(game, move));
   const bestGain = Math.max(...gains);
   let best = pickOne(moves.filter((_, index) => gains[index] === bestGain));
 
-  searchDeadline = now() + thinkingTimeMs;
+  deadline = now() + thinkingTimeMs;
   const depthLimit = Math.min(maxDepth, emptySquares(game).length);
   for (let depth = 1; depth <= depthLimit; depth++) {
-    searchAborted = false;
-    positionsSearched = 0;
+    aborted = false;
+    searched = 0;
     let alpha = WORST;
     const rated = [];
     for (const move of [best, ...moves.filter((move) => move !== best)]) {
       // beta just above alpha keeps the values of equally good moves exact, so we can pick among them
-      const value = -negamax(playMove(game, move), depth - 1, WORST, -(alpha - 1));
-      if (searchAborted) break;
+      const value = -negamax(play(game, move), depth - 1, WORST, -(alpha - 1));
+      if (aborted) break;
       rated.push({ move, value });
       alpha = Math.max(alpha, value);
     }
-    if (searchAborted) break;
+    if (aborted) break;
     best = pickOne(rated.filter((entry) => entry.value >= alpha).map((entry) => entry.move));
   }
   return best;
 }
 
+// prettier-ignore
 if (typeof module !== 'undefined') {
-  module.exports = {
-    PIECES,
-    MAX_LEVEL,
-    YOU,
-    OPPONENT,
-    RUBBLE,
-    makeStone,
-    stoneName,
-    parseStoneCode,
-    stoneFromCode,
-    newGame,
-    isOver,
-    pointsOf,
-    spikesLeft,
-    winnerOf,
-    playMove,
-    pointsGained,
-    legalMoves,
-    chooseMove,
-  };
+  module.exports = { PIECES, MAX_LEVEL, YOU, OPPONENT, RUBBLE, makeStone, nameOf, parseCode, fromCode, newGame, isOver,
+    pointsOf, spikesLeft, winnerOf, play, gain, legalMoves, bestMove };
 }
 </script>
 
@@ -912,7 +888,7 @@ const SKIN = '#f2c9a0';
 /* ---------- Characters ----------
    One per piece, drawn in a 56 x 56 box that sits on the stone's face. */
 
-const CHARACTER_ART = {
+const CHARACTERS = {
   P: `<path d="M17 54 Q18 38 28 36 Q38 38 39 54 Z" fill="#e3d6bd" stroke="${OUTLINE}" stroke-width="2" stroke-linejoin="round"/>
 <path d="M20 44 q-5 4 -3 9 M36 44 q5 4 3 9" stroke="${OUTLINE}" stroke-width="2" fill="none" stroke-linecap="round"/>
 <circle cx="28" cy="24" r="11" fill="${SKIN}" stroke="${OUTLINE}" stroke-width="2"/>
@@ -1051,7 +1027,7 @@ function drawGoldenShields() {
 
 // The spikes on one side, drawn on the top side and turned into place. Spikes sit closer together
 // when there are more than three. breakingCount extra spikes are drawn breaking off.
-function drawSpikesOnSide(side, count, breakingCount, colours) {
+function drawSpikes(side, count, breakingCount, colours) {
   const total = count + breakingCount;
   if (total === 0) return '';
   let spacing = 12;
@@ -1073,10 +1049,10 @@ function drawStone(stone, owner, { className = 'stone', breakingSpikes } = {}) {
   let outside = PIECES[stone.type].goldenShields ? drawGoldenShields() : '';
   for (const side of SIDES) {
     const breakingCount = breakingSpikes ? breakingSpikes[side] : 0;
-    outside += drawSpikesOnSide(side, stone.spikes[side], breakingCount, colours);
+    outside += drawSpikes(side, stone.spikes[side], breakingCount, colours);
   }
   return `<svg class="${className}" viewBox="0 0 100 100" aria-hidden="true">${outside}${drawStoneBody(owner)}
-<g transform="translate(18.5 17) scale(1.13)">${CHARACTER_ART[stone.type]}</g></svg>`;
+<g transform="translate(18.5 17) scale(1.13)">${CHARACTERS[stone.type]}</g></svg>`;
 }
 
 // The back of one of the opponent's hidden stones.
@@ -1138,13 +1114,14 @@ function drawPortrait(opponent) {
    GAME
    The page: settings, opponents, saves, what is on screen, how a move plays out,
    the cards between matches, the rules, and input.
+   Naming: render...() updates the page, draw...() (in ART) returns an SVG string.
    ===================================================================== */
 
-const BOARD_SIZE = 4;
-const MATCHES_PER_RUN = 20; // the last match is against the boss
-const FIRST_STARTING_HAND = 'P1^ P1> P1< N1 B1 R1 Q1 K1'; // Tiny Tim, Tony and Ted; Tiny Tom comes from the first opponents
-const THINKING_TIME_MS = 1000;
-const BOSS_THINKING_TIME_MS = 1600;
+const SIZE = 4;
+const RUN_LENGTH = 20; // the last match is against the boss
+const STARTER_HAND = 'P1^ P1> P1< N1 B1 R1 Q1 K1'; // Tiny Tim, Tony and Ted; Tiny Tom comes from the first opponents
+const THINK_MS = 1000;
+const BOSS_THINK_MS = 1600;
 
 // Difficulty, picked at the start of a run: how many moves ahead the opponent looks (its own move counts as one).
 // Hard looks as far ahead as it can in its thinking time, which in the last moves of a match is to the very end.
@@ -1154,7 +1131,7 @@ const DIFFICULTIES = {
   hard: { name: 'Hard', lookAhead: 99 },
 };
 
-function element(selector) {
+function find(selector) {
   return document.querySelector(selector);
 }
 
@@ -1162,7 +1139,7 @@ function element(selector) {
    Each opponent always plays the same hand of stones, their rare stone included.
    Every match you have won adds LEVELS_PER_WIN levels to their stones: the most valuable piece first
    (in the order of GROWTH_ORDER), then the next, round and round, never above MAX_LEVEL.
-   The king and rubble never change. The boss plays the last match and starts BOSS_EXTRA_LEVELS ahead. */
+   The king and rubble never change. The boss plays the last match and starts BOSS_HEAD_START levels ahead. */
 
 // prettier-ignore
 const OPPONENTS = [
@@ -1181,11 +1158,11 @@ const LADY_LUX = 4;
 const MADAME_SWERVE = 2;
 
 const LEVELS_PER_WIN = 1;
-const BOSS_EXTRA_LEVELS = 6;
+const BOSS_HEAD_START = 6;
 const GROWTH_ORDER = 'OEQGJRBSNHWP';
 
-function strengthenHand(handCodes, extraLevels) {
-  const stones = handCodes.split(' ').map((code) => ({ ...parseStoneCode(code), direction: code.slice(2) }));
+function levelUp(handCodes, extraLevels) {
+  const stones = handCodes.split(' ').map((code) => ({ ...parseCode(code), direction: code.slice(2) }));
   const growing = stones
     .filter((stone) => GROWTH_ORDER.includes(stone.type))
     .sort((a, b) => GROWTH_ORDER.indexOf(a.type) - GROWTH_ORDER.indexOf(b.type));
@@ -1201,19 +1178,19 @@ function strengthenHand(handCodes, extraLevels) {
   return stones.map((stone) => stone.type + stone.level + stone.direction).join(' ');
 }
 
-function opponentHand(opponent, matchesWon) {
-  const extraLevels = matchesWon * LEVELS_PER_WIN + (opponent.isBoss ? BOSS_EXTRA_LEVELS : 0);
-  return strengthenHand(opponent.hand, extraLevels);
+function handOf(opponent, matchesWon) {
+  const extraLevels = matchesWon * LEVELS_PER_WIN + (opponent.isBoss ? BOSS_HEAD_START : 0);
+  return levelUp(opponent.hand, extraLevels);
 }
 
-function opponentForMatch(match) {
-  if (match === MATCHES_PER_RUN) return BOSS;
+function opponentFor(match) {
+  if (match === RUN_LENGTH) return BOSS;
   return OPPONENTS[save.run.opponentOrder[match - 1]];
 }
 
 // You place first in odd matches; the boss always places first.
-function firstPlayerForMatch(match) {
-  if (match === MATCHES_PER_RUN) return OPPONENT;
+function firstFor(match) {
+  if (match === RUN_LENGTH) return OPPONENT;
   return match % 2 === 1 ? YOU : OPPONENT;
 }
 
@@ -1235,10 +1212,10 @@ function readStorage(key) {
   }
 }
 
-function freshSave() {
+function newSave() {
   return {
     version: SAVE_VERSION,
-    startingHand: FIRST_STARTING_HAND.split(' '),
+    startingHand: STARTER_HAND.split(' '),
     bestMatch: 0,
     runsPlayed: 0,
     crowns: 0,
@@ -1251,7 +1228,7 @@ function freshSave() {
 function loadSave() {
   const stored = readStorage(SAVE_KEY);
   if (stored && stored.version === SAVE_VERSION) return stored;
-  if (!stored || stored.version !== 2) return freshSave();
+  if (!stored || stored.version !== 2) return newSave();
   const oldRun = stored.run;
   return {
     version: SAVE_VERSION,
@@ -1278,7 +1255,7 @@ function loadSettings() {
 const save = loadSave();
 const settings = loadSettings();
 
-function storeProgress() {
+function store() {
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify(save));
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
@@ -1303,10 +1280,10 @@ function shuffle(list) {
 }
 
 // "Sir Gallops Lv 2", or just the name for a stone without levels.
-function nameWithLevel(code) {
-  const stone = stoneFromCode(code, YOU);
-  if (PIECES[stone.type].hasNoLevels) return stoneName(stone);
-  return `${stoneName(stone)} Lv ${stone.level}`;
+function titleOf(code) {
+  const stone = fromCode(code, YOU);
+  if (PIECES[stone.type].hasNoLevels) return nameOf(stone);
+  return `${nameOf(stone)} Lv ${stone.level}`;
 }
 
 // Every delay goes through scaled(), so slow motion stretches the whole move four times.
@@ -1332,34 +1309,34 @@ let game = null;
 let opponent = null;
 
 // What you are doing.
-const player = {
-  selectedStone: -1, // index in your hand, or -1
-  hoveredSquare: -1, // the square under the mouse, or -1
-  lastSquare: -1, // the square of the last move, marked on the board
+const ui = {
+  selected: -1, // index in your hand, or -1
+  hovered: -1, // the square under the mouse, or -1
+  lastMove: -1, // the square of the last move, marked on the board
   waiting: true, // while a move plays out or the computer thinks: your input is ignored
 };
 
-// While a move plays out, the board shows the owners in `shownOwners` instead of the final ones,
+// While a move plays out, the board shows replay.owners instead of the final owners,
 // and steps through the move's records one step at a time.
 const replay = {
-  shownOwners: null, // owners as they look right now, or null when no move is playing
-  gameBefore: null, // the game before the move, or null when no move is playing
-  laterBreaks: [], // the move's broken spikes: drawn whole until their step comes
+  owners: null, // owners as they look right now, or null when no move is playing
+  before: null, // the game before the move, or null when no move is playing
+  pending: [], // the move's broken spikes: drawn whole until their step comes
   step: -1, // the step on screen
-  justPlaced: new Set(), // the new stone, which drops in
-  turningOver: new Map(), // squares turning over this step, mapped to the owner they turn from
-  breakingNow: new Map(), // spikes breaking this step, per square: [top, right, bottom, left]
+  placed: new Set(), // the new stone, which drops in
+  turning: new Map(), // squares turning over this step, mapped to the owner they turn from
+  breaking: new Map(), // spikes breaking this step, per square: [top, right, bottom, left]
   effects: new Map(), // one-off effects this step, per square: a CSS class
 };
 
 function isYourTurn() {
-  return !player.waiting && !isOver(game) && game.turn === YOU;
+  return !ui.waiting && !isOver(game) && game.turn === YOU;
 }
 
 // Broken spike records counted per square and side.
-function breaksPerSquare(brokenSpikes) {
+function breaksBySquare(breaks) {
   const perSquare = new Map();
-  for (const { cell, side, count } of brokenSpikes) {
+  for (const { cell, side, count } of breaks) {
     if (!perSquare.has(cell)) perSquare.set(cell, [0, 0, 0, 0]);
     perSquare.get(cell)[side] += count;
   }
@@ -1368,21 +1345,21 @@ function breaksPerSquare(brokenSpikes) {
 
 // The stone on a square as it looks right now. While a move plays out: its spikes that break in a later step
 // are still whole, an Old Woman stays an Old Woman until her promotion, and Prince Joey stays Joey until he collapses.
-function stoneAsShown(cell) {
+function shownStone(cell) {
   let stone = game.stones[cell];
-  if (replay.gameBefore) {
+  if (replay.before) {
     for (const promotion of game.promotions) {
       if (promotion.cell === cell && promotion.step > replay.step) {
         stone = { ...makeStone('W', stone.level, stone.facing), poison: stone.poison };
       }
     }
     for (const flip of game.flips) {
-      if (flip.cell === cell && flip.newOwner === RUBBLE && flip.step > replay.step) stone = flip.collapsedStone;
+      if (flip.cell === cell && flip.owner === RUBBLE && flip.step > replay.step) stone = flip.collapsed;
     }
   }
   const spikes = stone.spikes.slice();
   let changed = false;
-  for (const broken of replay.laterBreaks) {
+  for (const broken of replay.pending) {
     if (broken.cell === cell && broken.step > replay.step) {
       spikes[broken.side] += broken.count;
       changed = true;
@@ -1393,87 +1370,88 @@ function stoneAsShown(cell) {
 
 /* ---------- On screen ---------- */
 
-function drawEverything() {
-  drawScoreboard();
-  drawYourHand();
-  drawBoard();
+function render() {
+  renderScores();
+  renderHand();
+  renderBoard();
 }
 
 // The twenty rungs of the run, the match number and the difficulty.
-function drawRunProgress() {
+function renderLadder() {
   const run = save.run;
   let rungs = '';
-  for (let match = 1; match <= MATCHES_PER_RUN; match++) {
+  for (let match = 1; match <= RUN_LENGTH; match++) {
     const classes = [];
-    if (match === MATCHES_PER_RUN) classes.push('boss');
+    if (match === RUN_LENGTH) classes.push('boss');
     if (match < run.match) classes.push('won');
     if (match === run.match) classes.push('current');
     rungs += `<i class="${classes.join(' ')}"></i>`;
   }
-  element('#ladder').innerHTML = rungs;
+  find('#ladder').innerHTML = rungs;
   const difficulty = run.difficulty ? ` · ${currentDifficulty().name}` : '';
-  element('#run-line').textContent = `${run.match} / ${MATCHES_PER_RUN}${difficulty}`;
-  const record = element('#record');
+  find('#run-line').textContent = `${run.match} / ${RUN_LENGTH}${difficulty}`;
+  const record = find('#record');
   if (record) {
     const best = save.bestMatch ? `match ${save.bestMatch}` : 'none';
     record.textContent = `Runs: ${save.runsPlayed}. Best: ${best}. Crowns: ${save.crowns}.`;
   }
 }
 
+const PLAYER_IDS = ['you', 'opponent']; // the scoreboard's element ids end in these, for YOU and OPPONENT
+
 // Points, spikes left and the tug of war, counted from the colours on screen while a move plays out.
-function drawScoreboard() {
-  const shown = replay.shownOwners ? { owners: replay.shownOwners, stones: game.stones } : game;
-  const squares = BOARD_SIZE * BOARD_SIZE;
-  for (const [who, side] of [
-    [YOU, 'you'],
-    [OPPONENT, 'opponent'],
-  ]) {
+function renderScores() {
+  const shown = replay.owners ? { owners: replay.owners, stones: game.stones } : game;
+  for (const who of [YOU, OPPONENT]) {
+    const id = PLAYER_IDS[who];
     const points = pointsOf(shown, who);
-    element(`#points-${side}`).textContent = points;
-    element(`#spikes-${side}`).textContent = `▲${spikesLeft(shown, who)}`;
-    element(`#tug-${side}`).style.width = `${(100 * points) / squares}%`;
-    element(`#player-${side}`).classList.toggle('to-move', !isOver(game) && game.turn === who);
+    find(`#points-${id}`).textContent = points;
+    find(`#spikes-${id}`).textContent = `▲${spikesLeft(shown, who)}`;
+    find(`#tug-${id}`).style.width = `${(100 * points) / (SIZE * SIZE)}%`;
+    find(`#player-${id}`).classList.toggle('to-move', !isOver(game) && game.turn === who);
   }
-  element('#opponent-portrait').innerHTML = drawPortrait(opponent);
-  element('#opponent-name').textContent = opponent.name;
-  element('#opponent-hand').innerHTML = game.hands[OPPONENT].map(
-    () => `<div class="hidden-stone">${drawHiddenStone()}</div>`,
-  ).join('');
+  find('#opponent-portrait').innerHTML = drawPortrait(opponent);
+  find('#opponent-name').textContent = opponent.name;
+  const hiddenStone = `<div class="hidden-stone">${drawHiddenStone()}</div>`;
+  find('#opponent-hand').innerHTML = hiddenStone.repeat(game.hands[OPPONENT].length);
 }
 
 // Under the board: the name and level of the stone under the mouse, or else of the stone you selected.
-function drawStoneInfo() {
-  let stone = null;
-  if (player.hoveredSquare >= 0 && game.owners[player.hoveredSquare] !== EMPTY)
-    stone = game.stones[player.hoveredSquare];
-  else if (player.selectedStone >= 0) stone = game.hands[YOU][player.selectedStone];
-  if (!stone) {
-    element('#stone-info').innerHTML = '';
-    return;
+function renderInfo() {
+  const stone = stoneToDescribe();
+  let html = '';
+  if (stone) {
+    const level = PIECES[stone.type].hasNoLevels ? '' : ` <span class="level">Lv ${stone.level}</span>`;
+    html = `<b>${nameOf(stone)}</b>${level}`;
   }
-  const level = PIECES[stone.type].hasNoLevels ? '' : ` <span class="level">Lv ${stone.level}</span>`;
-  element('#stone-info').innerHTML = `<b>${stoneName(stone)}</b>${level}`;
+  find('#stone-info').innerHTML = html;
 }
 
-function selectStone(handIndex) {
-  player.selectedStone = handIndex;
-  drawYourHand();
-  drawBoard();
-  drawStoneInfo();
+function stoneToDescribe() {
+  if (ui.hovered >= 0 && game.owners[ui.hovered] !== EMPTY) return game.stones[ui.hovered];
+  if (ui.selected >= 0) return game.hands[YOU][ui.selected];
+  return null;
 }
 
-function drawYourHand() {
-  const hand = element('#your-hand');
+function select(handIndex) {
+  ui.selected = handIndex;
+  renderHand();
+  renderBoard();
+  renderInfo();
+}
+
+function renderHand() {
+  const hand = find('#your-hand');
   hand.classList.toggle('active', !isOver(game) && game.turn === YOU);
   hand.innerHTML = '';
   game.hands[YOU].forEach((stone, handIndex) => {
     const button = document.createElement('button');
     button.className = 'hand-stone';
-    if (isYourTurn() && player.selectedStone === handIndex) button.classList.add('selected');
+    if (isYourTurn() && ui.selected === handIndex) button.classList.add('selected');
     button.disabled = !isYourTurn();
-    button.setAttribute('aria-label', `${stoneName(stone)}, level ${stone.level}`);
+    button.setAttribute('aria-label', `${nameOf(stone)}, level ${stone.level}`);
     button.innerHTML = drawStone(stone, YOU);
-    button.onclick = () => selectStone(player.selectedStone === handIndex ? -1 : handIndex);
+    button.onclick = () => select(ui.selected === handIndex ? -1 : handIndex);
     hand.appendChild(button);
   });
 }
@@ -1481,35 +1459,37 @@ function drawYourHand() {
 // The classes and contents of one square. `preview` is the game after the selected stone is placed on the
 // hovered square (or null), and previewBreaks the spikes that placing it would break.
 function squareView(cell, preview, previewBreaks, canPlace) {
-  const owners = replay.shownOwners || game.owners;
+  const owners = replay.owners || game.owners;
   const owner = owners[cell];
+  const wouldTake = preview && game.owners[cell] === OPPONENT && preview.owners[cell] === YOU;
+  const yours = game.owners[cell] === YOU || cell === ui.hovered;
+  const wouldLose = preview && yours && preview.owners[cell] === OPPONENT;
   const classes = ['square'];
   if (owner === EMPTY && canPlace) classes.push('playable');
-  if (preview && game.owners[cell] === OPPONENT && preview.owners[cell] === YOU) classes.push('would-take');
-  if (preview && (game.owners[cell] === YOU || cell === player.hoveredSquare) && preview.owners[cell] === OPPONENT)
-    classes.push('would-lose');
-  if (replay.justPlaced.has(cell)) classes.push('just-placed');
-  if (replay.turningOver.has(cell)) classes.push('turning-over');
+  if (wouldTake) classes.push('would-take');
+  if (wouldLose) classes.push('would-lose');
+  if (replay.placed.has(cell)) classes.push('just-placed');
+  if (replay.turning.has(cell)) classes.push('turning-over');
   if (previewBreaks.has(cell)) classes.push('preview');
-  if (cell === player.lastSquare && !player.waiting) classes.push('last-move');
+  if (cell === ui.lastMove && !ui.waiting) classes.push('last-move');
   if (replay.effects.has(cell)) classes.push(replay.effects.get(cell));
 
   let contents = '';
   if (owner !== EMPTY) {
-    const stone = previewBreaks.has(cell) ? preview.stones[cell] : stoneAsShown(cell);
-    const breakingSpikes = previewBreaks.get(cell) || replay.breakingNow.get(cell);
+    const stone = previewBreaks.has(cell) ? preview.stones[cell] : shownStone(cell);
+    const breakingSpikes = previewBreaks.get(cell) || replay.breaking.get(cell);
     const poisoned = stone.poison && owner !== RUBBLE;
     const flying = PIECES[stone.type].isPope && !stone.grounded;
     if (poisoned) classes.push('poisoned');
     if (flying) classes.push('flying');
 
-    if (replay.turningOver.has(cell)) {
+    if (replay.turning.has(cell)) {
       // A collapsing Prince Joey turns over from Joey himself; any other stone from itself in its old colour.
       let front = stone;
-      if (owner === RUBBLE && stoneAsShown(cell).type === 'X') {
-        front = game.flips.find((flip) => flip.cell === cell && flip.newOwner === RUBBLE).collapsedStone;
+      if (owner === RUBBLE && shownStone(cell).type === 'X') {
+        front = game.flips.find((flip) => flip.cell === cell && flip.owner === RUBBLE).collapsed;
       }
-      const frontFace = drawStone(front, replay.turningOver.get(cell), { breakingSpikes });
+      const frontFace = drawStone(front, replay.turning.get(cell), { breakingSpikes });
       const backFace = drawStone(stone, owner, { breakingSpikes });
       contents = `<div class="flip-card"><div class="front">${frontFace}</div><div class="back-face">${backFace}</div></div>`;
     } else {
@@ -1522,7 +1502,7 @@ function squareView(cell, preview, previewBreaks, canPlace) {
       contents += `<div class="poison-countdown" title="poisoned">${movesLeft}</div>`;
     }
   }
-  if (preview && cell === player.hoveredSquare) {
+  if (preview && cell === ui.hovered) {
     const ghost = drawStone(preview.stones[cell], YOU, { breakingSpikes: previewBreaks.get(cell) });
     contents = `<div class="preview-stone">${ghost}</div>`;
   }
@@ -1531,46 +1511,46 @@ function squareView(cell, preview, previewBreaks, canPlace) {
 
 // The whole board. With a stone selected and a square hovered it shows the preview:
 // yellow rings on stones you would take, red on stones you would lose, faded spikes that would break.
-function drawBoard() {
-  const canPlace = isYourTurn() && player.selectedStone >= 0;
+function renderBoard() {
+  const canPlace = isYourTurn() && ui.selected >= 0;
   let preview = null;
-  if (canPlace && player.hoveredSquare >= 0 && game.owners[player.hoveredSquare] === EMPTY) {
-    preview = playMove(game, { handIndex: player.selectedStone, cell: player.hoveredSquare });
+  if (canPlace && ui.hovered >= 0 && game.owners[ui.hovered] === EMPTY) {
+    preview = play(game, { handIndex: ui.selected, cell: ui.hovered });
   }
-  const previewBreaks = preview ? breaksPerSquare(preview.brokenSpikes) : new Map();
+  const previewBreaks = preview ? breaksBySquare(preview.breaks) : new Map();
   let html = '';
-  for (let cell = 0; cell < BOARD_SIZE * BOARD_SIZE; cell++) {
+  for (let cell = 0; cell < SIZE * SIZE; cell++) {
     const { classes, contents } = squareView(cell, preview, previewBreaks, canPlace);
     html += `<div class="${classes}" data-cell="${cell}">${contents}</div>`;
   }
-  const board = element('#board');
-  board.style.setProperty('--n', BOARD_SIZE);
+  const board = find('#board');
+  board.style.setProperty('--n', SIZE);
   board.innerHTML = html;
-  replay.justPlaced.clear();
-  clearStepEffects();
+  replay.placed.clear();
+  clearEffects();
 }
 
 // Redraws only these squares, so animations running on the other squares are not cut off.
-function redrawSquares(cells) {
-  const squares = element('#board').children;
+function repaint(cells) {
+  const squares = find('#board').children;
   for (const cell of cells) {
     const { classes, contents } = squareView(cell, null, new Map(), false);
     squares[cell].className = classes;
     squares[cell].innerHTML = contents;
   }
-  clearStepEffects();
+  clearEffects();
 }
 
-function clearStepEffects() {
-  replay.turningOver.clear();
-  replay.breakingNow.clear();
+function clearEffects() {
+  replay.turning.clear();
+  replay.breaking.clear();
   replay.effects.clear();
 }
 
 /* ---------- Effects over the board ---------- */
 
-function squareCentre(cell) {
-  const square = element('#board').children[cell];
+function centreOf(cell) {
+  const square = find('#board').children[cell];
   return {
     x: square.offsetLeft + square.offsetWidth / 2,
     y: square.offsetTop + square.offsetHeight / 2,
@@ -1579,25 +1559,25 @@ function squareCentre(cell) {
 }
 
 // Puts an effect element over the board at (x, y), and removes it again after `lifetimeMs`.
-function showOverBoard(effect, x, y, lifetimeMs) {
+function overlay(effect, x, y, lifetimeMs) {
   effect.style.left = `${x}px`;
   effect.style.top = `${y}px`;
-  element('.board-frame').appendChild(effect);
+  find('.board-frame').appendChild(effect);
   timers.push(setTimeout(() => effect.remove(), lifetimeMs));
 }
 
 // A short text over a square: the name of a stone just placed, or the points a move won or lost.
 function popUp(cell, text, className, lifetimeMs, raise = 0) {
-  const { x, y } = squareCentre(cell);
+  const { x, y } = centreOf(cell);
   const label = document.createElement('div');
   label.className = className;
   label.textContent = text;
-  showOverBoard(label, x, y + raise, lifetimeMs);
+  overlay(label, x, y + raise, lifetimeMs);
 }
 
 // The Beekeeper's swarm: twelve bees fly out to the squares around him and back.
 function releaseBees(cell) {
-  const { x, y, size } = squareCentre(cell);
+  const { x, y, size } = centreOf(cell);
   for (let index = 0; index < 12; index++) {
     const angle = (index * 30 * Math.PI) / 180;
     const bee = document.createElement('div');
@@ -1605,7 +1585,7 @@ function releaseBees(cell) {
     bee.style.setProperty('--dx', `${Math.cos(angle) * size * 1.1}px`);
     bee.style.setProperty('--dy', `${Math.sin(angle) * size * 1.1}px`);
     bee.style.animationDelay = `${index * 25}ms`;
-    showOverBoard(bee, x, y, scaled(1100));
+    overlay(bee, x, y, scaled(1100));
   }
 }
 
@@ -1618,38 +1598,38 @@ const STEP_WITH_TURNOVER_MS = 440;
 const LONGEST_UNHURRIED_CHAIN = 12; // a longer chain plays faster, so a move never drags
 
 function makeMove(move) {
-  if (player.waiting && game.turn === YOU) return;
-  player.waiting = true;
+  if (ui.waiting && game.turn === YOU) return;
+  ui.waiting = true;
   const mover = game.turn;
   const stone = game.hands[mover][move.handIndex];
-  const result = playMove(game, move, Math.random);
+  const result = play(game, move, Math.random);
 
-  replay.gameBefore = game;
-  replay.shownOwners = game.owners.slice();
-  replay.shownOwners[move.cell] = mover;
-  replay.justPlaced.add(move.cell);
-  replay.laterBreaks = result.brokenSpikes;
+  replay.before = game;
+  replay.owners = game.owners.slice();
+  replay.owners[move.cell] = mover;
+  replay.placed.add(move.cell);
+  replay.pending = result.breaks;
   replay.step = -1;
   game = result;
-  player.selectedStone = -1;
-  player.hoveredSquare = -1;
-  player.lastSquare = move.cell;
-  drawEverything();
-  drawStoneInfo();
+  ui.selected = -1;
+  ui.hovered = -1;
+  ui.lastMove = move.cell;
+  render();
+  renderInfo();
 
   const nameTagClass = mover === YOU ? 'name-tag you' : 'name-tag opponent';
-  popUp(move.cell, stoneName(stone), nameTagClass, scaled(1300), -squareCentre(move.cell).size * 0.62);
-  const endTime = playOutSteps(result, move.cell);
-  showPointsWon(replay.gameBefore, result, move.cell, mover, endTime);
+  popUp(move.cell, nameOf(stone), nameTagClass, scaled(1300), -centreOf(move.cell).size * 0.62);
+  const endTime = animate(result, move.cell);
+  popGain(replay.before, result, move.cell, mover, endTime);
 
   const anyTurnedOver = result.flips.length > 0;
   after(endTime + (anyTurnedOver ? 560 : 300), () => {
-    replay.shownOwners = null;
-    replay.laterBreaks = [];
+    replay.owners = null;
+    replay.pending = [];
     replay.step = -1;
-    replay.gameBefore = null;
-    player.waiting = false;
-    drawEverything();
+    replay.before = null;
+    ui.waiting = false;
+    render();
     nextTurn(anyTurnedOver);
   });
 }
@@ -1657,7 +1637,7 @@ function makeMove(move) {
 // Schedules the steps one after another: spikes that break shatter, and a stone turns over when it changes colour.
 // A stone can change colour more than once in a chain, so every flip says which owner it turns to.
 // Returns the time at which the last step ends.
-function playOutSteps(result, placedCell) {
+function animate(result, placedCell) {
   const lastStep = Math.max(
     0,
     ...result.fights.map((fight) => fight.step),
@@ -1665,10 +1645,10 @@ function playOutSteps(result, placedCell) {
     ...result.promotions.map((promotion) => promotion.step),
   );
   const pace = Math.min(1, LONGEST_UNHURRIED_CHAIN / (lastStep + 1));
-  element('#board').style.setProperty('--pace', pace);
+  find('#board').style.setProperty('--pace', pace);
 
   const placedStone = result.stones[placedCell];
-  if (PIECES[placedStone.type].swarm || PIECES[stoneAsShown(placedCell).type].swarm) {
+  if (PIECES[placedStone.type].swarm || PIECES[shownStone(placedCell).type].swarm) {
     after(PAUSE_BEFORE_FIRST_STEP_MS - 200, () => releaseBees(placedCell));
   }
 
@@ -1676,7 +1656,7 @@ function playOutSteps(result, placedCell) {
   for (let step = 0; step <= lastStep; step++) {
     const fights = result.fights.filter((fight) => fight.step === step);
     const flips = result.flips.filter((flip) => flip.step === step);
-    const breaks = result.brokenSpikes.filter((broken) => broken.step === step);
+    const breaks = result.breaks.filter((broken) => broken.step === step);
     const promotions = result.promotions.filter((promotion) => promotion.step === step);
     if (fights.length === 0 && flips.length === 0 && breaks.length === 0 && promotions.length === 0) continue;
 
@@ -1689,22 +1669,22 @@ function playOutSteps(result, placedCell) {
 
 function showStep(result, step, fights, flips, breaks, promotions) {
   replay.step = step;
-  replay.breakingNow = breaksPerSquare(breaks);
+  replay.breaking = breaksBySquare(breaks);
   // A golden shield that breaks spikes flashes gold, and a poisonous bite splashes green.
   for (const fight of fights) {
     const sides = [
-      { cell: fight.from, other: fight.to, hit: fight.spikesFrom },
-      { cell: fight.to, other: fight.from, hit: fight.spikesTo },
+      { cell: fight.from, target: fight.to, hit: fight.spikesFrom },
+      { cell: fight.to, target: fight.from, hit: fight.spikesTo },
     ];
-    for (const { cell, other, hit } of sides) {
+    for (const { cell, target, hit } of sides) {
       if (PIECES[result.stones[cell].type].goldenShields) replay.effects.set(cell, 'shield-hit');
-      else if (hit && PIECES[stoneAsShown(cell).type].poisonous) replay.effects.set(other, 'bitten');
+      else if (hit && PIECES[shownStone(cell).type].poisonous) replay.effects.set(target, 'bitten');
     }
   }
   for (const flip of flips) {
-    replay.turningOver.set(flip.cell, replay.shownOwners[flip.cell]);
-    replay.shownOwners[flip.cell] = flip.newOwner;
-    if (flip.newOwner === RUBBLE) replay.effects.set(flip.cell, 'crumbling');
+    replay.turning.set(flip.cell, replay.owners[flip.cell]);
+    replay.owners[flip.cell] = flip.owner;
+    if (flip.owner === RUBBLE) replay.effects.set(flip.cell, 'crumbling');
   }
   for (const promotion of promotions) replay.effects.set(promotion.cell, 'crowned');
 
@@ -1714,13 +1694,13 @@ function showStep(result, step, fights, flips, breaks, promotions) {
     ...promotions.map((promotion) => promotion.cell),
     ...replay.effects.keys(),
   ]);
-  redrawSquares(changed);
-  drawScoreboard();
+  repaint(changed);
+  renderScores();
 }
 
 // The +/- pop after a move: the points it won or lost, not counting the new stone itself.
-function showPointsWon(gameBefore, result, cell, mover, endTime) {
-  const net = pointsOf(result, mover) - pointsOf(gameBefore, mover) - 1;
+function popGain(before, result, cell, mover, endTime) {
+  const net = pointsOf(result, mover) - pointsOf(before, mover) - 1;
   if (net === 0) return;
   const text = net > 0 ? `+${net}` : `−${-net}`;
   const className = net > 0 ? 'points-pop' : 'points-pop loss';
@@ -1734,25 +1714,24 @@ function nextTurn(somethingJustTurned) {
     return;
   }
   if (game.turn === OPPONENT) {
-    player.waiting = true;
-    drawYourHand();
-    const thinkingTime = opponent.isBoss ? BOSS_THINKING_TIME_MS : THINKING_TIME_MS;
+    ui.waiting = true;
+    renderHand();
+    const thinkingTime = opponent.isBoss ? BOSS_THINK_MS : THINK_MS;
     after(somethingJustTurned ? 700 : 350, () => {
-      makeMove(chooseMove(game, thinkingTime, Math.random, currentDifficulty().lookAhead));
+      makeMove(bestMove(game, thinkingTime, Math.random, currentDifficulty().lookAhead));
     });
     return;
   }
-  player.waiting = false;
-  drawYourHand();
-  drawBoard();
+  ui.waiting = false;
+  renderHand();
+  renderBoard();
 }
 
 /* ---------- Cards between matches ----------
-   A run goes: chooseDifficulty, then for every match introduceMatch, startMatch, finishMatch and offerRewards,
-   until endRun. */
+   A run goes: chooseDifficulty, then for every match intro, startMatch, finishMatch and offerRewards, until endRun. */
 
 function closeCard() {
-  element('#card-modal').hidden = true;
+  find('#card-modal').hidden = true;
 }
 
 // A card: a small label on top, its content, then choices to pick from and/or one main button.
@@ -1763,8 +1742,8 @@ function showCard(label, contentHtml, { choices = [], button } = {}) {
     html += `<div class="choices">${choices.map((choice) => `<button class="choice">${choice.html}</button>`).join('')}</div>`;
   }
   if (button) html += `<div><button class="primary">${button.label}</button></div>`;
-  element('#card').innerHTML = html;
-  element('#card-modal').hidden = false;
+  find('#card').innerHTML = html;
+  find('#card-modal').hidden = false;
 
   document.querySelectorAll('#card .choice').forEach((choiceButton, index) => {
     choiceButton.onclick = () => {
@@ -1773,7 +1752,7 @@ function showCard(label, contentHtml, { choices = [], button } = {}) {
     };
   });
   if (button) {
-    const mainButton = element('#card .primary');
+    const mainButton = find('#card .primary');
     mainButton.onclick = () => {
       closeCard();
       button.onClick();
@@ -1782,28 +1761,28 @@ function showCard(label, contentHtml, { choices = [], button } = {}) {
   }
 }
 
-function stonePicture(code) {
-  return drawStone(stoneFromCode(code, YOU), YOU, { className: '' });
+function picture(code) {
+  return drawStone(fromCode(code, YOU), YOU, { className: '' });
 }
 
 function handRow(codes) {
-  return codes.map(stonePicture).join('');
+  return codes.map(picture).join('');
 }
 
 // The old stone, an arrow, the new stone.
 function swapPicture(oldCode, newCode) {
-  return `<span class="swap">${stonePicture(oldCode)}<span>→</span>${stonePicture(newCode)}</span>`;
+  return `<span class="swap">${picture(oldCode)}<span>→</span>${picture(newCode)}</span>`;
 }
 
 // Each of the six regular opponents comes three times in a random order, plus one extra, then the boss.
-function startNewRun() {
+function newRun() {
   const order = shuffle([0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, Math.floor(Math.random() * 6)]);
   const luxIndex = order.indexOf(LADY_LUX);
   const swerveIndex = order.indexOf(MADAME_SWERVE);
   if (swerveIndex < luxIndex) [order[swerveIndex], order[luxIndex]] = [order[luxIndex], order[swerveIndex]];
   save.run = { match: 1, hand: save.startingHand.slice(), opponentOrder: order, changedSlots: [] };
   save.runsPlayed++;
-  storeProgress();
+  store();
 }
 
 function chooseDifficulty() {
@@ -1811,109 +1790,104 @@ function chooseDifficulty() {
     html: difficulty.name,
     onPick: () => {
       save.run.difficulty = key;
-      storeProgress();
-      drawRunProgress();
-      introduceMatch();
+      store();
+      renderLadder();
+      intro();
     },
   }));
   showCard('New run', '', { choices });
 }
 
 // The next opponent, and your stones.
-function introduceMatch() {
+function intro() {
   const run = save.run;
-  opponent = opponentForMatch(run.match);
+  opponent = opponentFor(run.match);
   save.bestMatch = Math.max(save.bestMatch, run.match);
-  storeProgress();
-  drawRunProgress();
-  const label = run.match === MATCHES_PER_RUN ? 'Boss' : `${run.match} / ${MATCHES_PER_RUN}`;
+  store();
+  renderLadder();
+  const label = run.match === RUN_LENGTH ? 'Boss' : `${run.match} / ${RUN_LENGTH}`;
   const portraitClass = opponent.isBoss ? 'big-portrait boss' : 'big-portrait';
   const content = `<div class="${portraitClass}">${drawPortrait(opponent)}</div><h2>${opponent.name}</h2><q>${opponent.line}</q>
 <div class="hand-row">${handRow(run.hand)}</div>`;
   showCard(label, content, { button: { label: 'Fight', onClick: startMatch } });
 }
 
+// Your hand is shown pawns first, then by piece, turn and level.
+function handOrder(a, b) {
+  const pieceOrder = 'PNBRQK';
+  return pieceOrder.indexOf(a.type) - pieceOrder.indexOf(b.type) || a.variant - b.variant || a.level - b.level;
+}
+
 function startMatch() {
   const run = save.run;
-  const pieceOrder = 'PNBRQK';
-  const yourStones = run.hand
-    .map((code) => stoneFromCode(code, YOU))
-    .sort(
-      (a, b) => pieceOrder.indexOf(a.type) - pieceOrder.indexOf(b.type) || a.variant - b.variant || a.level - b.level,
-    );
+  const yourStones = run.hand.map((code) => fromCode(code, YOU)).sort(handOrder);
   const matchesWon = run.match - 1;
-  const theirStones = shuffle(
-    opponentHand(opponentForMatch(run.match), matchesWon)
-      .split(' ')
-      .map((code) => stoneFromCode(code, OPPONENT)),
-  );
-  game = newGame(BOARD_SIZE, [yourStones, theirStones], firstPlayerForMatch(run.match));
-  Object.assign(player, { selectedStone: -1, hoveredSquare: -1, lastSquare: -1, waiting: false });
-  replay.shownOwners = null;
-  drawEverything();
-  drawStoneInfo();
+  const theirCodes = handOf(opponentFor(run.match), matchesWon).split(' ');
+  const theirStones = shuffle(theirCodes.map((code) => fromCode(code, OPPONENT)));
+  game = newGame(SIZE, [yourStones, theirStones], firstFor(run.match));
+  Object.assign(ui, { selected: -1, hovered: -1, lastMove: -1, waiting: false });
+  replay.owners = null;
+  render();
+  renderInfo();
   nextTurn();
 }
 
 // How the match was decided: points, or spikes left when level on points, or who placed first when level on both.
-function tallyText() {
-  const [yourPoints, theirPoints] = [pointsOf(game, YOU), pointsOf(game, OPPONENT)];
-  const [yourSpikes, theirSpikes] = [spikesLeft(game, YOU), spikesLeft(game, OPPONENT)];
-  if (yourPoints !== theirPoints) return `${Math.max(yourPoints, theirPoints)} to ${Math.min(yourPoints, theirPoints)}`;
-  if (yourSpikes !== theirSpikes)
-    return `on spikes, ${Math.max(yourSpikes, theirSpikes)} to ${Math.min(yourSpikes, theirSpikes)}`;
+function tally() {
+  const versus = (a, b) => `${Math.max(a, b)} to ${Math.min(a, b)}`;
+  const yourPoints = pointsOf(game, YOU);
+  const theirPoints = pointsOf(game, OPPONENT);
+  const yourSpikes = spikesLeft(game, YOU);
+  const theirSpikes = spikesLeft(game, OPPONENT);
+  if (yourPoints !== theirPoints) return versus(yourPoints, theirPoints);
+  if (yourSpikes !== theirSpikes) return `on spikes, ${versus(yourSpikes, theirSpikes)}`;
   return 'level on spikes, by placing first';
 }
 
 function finishMatch() {
-  player.waiting = true;
-  drawEverything();
+  ui.waiting = true;
+  render();
   const run = save.run;
-  const popeTaken = game.winnerByPope;
-  const youWon = winnerOf(game) === YOU;
-  if (!youWon) {
-    endRun(
-      false,
-      popeTaken === OPPONENT ? `${opponent.name} took your Pope.` : `${opponent.name} wins ${tallyText()}.`,
-    );
+  const pope = game.popeWinner;
+  if (winnerOf(game) !== YOU) {
+    const text = pope === OPPONENT ? `${opponent.name} took your Pope.` : `${opponent.name} wins ${tally()}.`;
+    endRun(false, text);
     return;
   }
-  if (run.match === MATCHES_PER_RUN) {
+  if (run.match === RUN_LENGTH) {
     save.crowns++;
-    endRun(
-      true,
-      popeTaken === YOU ? `You took the Pope of ${opponent.name}.` : `You beat ${opponent.name} ${tallyText()}.`,
-    );
+    const text = pope === YOU ? `You took the Pope of ${opponent.name}.` : `You beat ${opponent.name} ${tally()}.`;
+    endRun(true, text);
     return;
   }
-  storeProgress();
-  offerRewards(popeTaken === YOU ? 'Took the Pope' : `Won ${tallyText()}`);
+  store();
+  offerRewards(pope === YOU ? 'Took the Pope' : `Won ${tally()}`);
 }
 
-function goToNextMatch() {
+function nextMatch() {
   save.run.match++;
-  storeProgress();
-  introduceMatch();
+  store();
+  intro();
 }
 
 // After a win the opponent shows three random stones from the hand they just played. Take one, or skip.
 function offerRewards(label) {
-  const handPlayed = opponentHand(opponent, save.run.match - 1).split(' ');
+  const handPlayed = handOf(opponent, save.run.match - 1).split(' ');
   const offer = shuffle([...new Set(handPlayed)]).slice(0, 3);
   const choices = offer.map((code) => ({
-    html: `<span class="swap">${stonePicture(code)}</span>${nameWithLevel(code)}`,
-    onPick: () => chooseStoneToReplace(label, code),
+    html: `<span class="swap">${picture(code)}</span>${titleOf(code)}`,
+    onPick: () => swapIn(label, code),
   }));
-  showCard(label, '<h2>Take one</h2>', { choices, button: { label: 'Skip', onClick: goToNextMatch } });
+  showCard(label, '<h2>Take one</h2>', { choices, button: { label: 'Skip', onClick: nextMatch } });
 }
 
 // The new stone takes the place of a stone you choose, for the rest of the run.
-function chooseStoneToReplace(label, newCode) {
+function swapIn(label, newCode) {
   const choices = save.run.hand.map((oldCode, slot) => ({
-    html: swapPicture(oldCode, newCode) + nameWithLevel(oldCode),
+    html: swapPicture(oldCode, newCode) + titleOf(oldCode),
     onPick: () => {
       putInHand(slot, newCode);
-      goToNextMatch();
+      nextMatch();
     },
   }));
   showCard(label, '<h2>Swap for</h2>', { choices });
@@ -1930,10 +1904,10 @@ function endRun(won, text) {
   const run = save.run;
   const gainedSlots = run.changedSlots.filter((slot) => run.hand[slot] !== save.startingHand[slot]);
   run.over = true;
-  storeProgress();
+  store();
 
   const beginAgain = () => {
-    startNewRun();
+    newRun();
     chooseDifficulty();
   };
   const label = won ? 'Champion' : `Run over at match ${run.match}`;
@@ -1943,7 +1917,7 @@ function endRun(won, text) {
     return;
   }
   const choices = gainedSlots.map((slot) => ({
-    html: swapPicture(save.startingHand[slot], run.hand[slot]) + nameWithLevel(run.hand[slot]),
+    html: swapPicture(save.startingHand[slot], run.hand[slot]) + titleOf(run.hand[slot]),
     onPick: () => {
       save.startingHand[slot] = run.hand[slot];
       beginAgain();
@@ -1955,7 +1929,7 @@ function endRun(won, text) {
 /* ---------- Rules ---------- */
 
 // Every piece at level 1 and 3 (the king has no levels), with what it does.
-function pieceGuideHtml() {
+function pieceGuide() {
   return [...'PNBRQKSWEJGHO']
     .map((type) => {
       const piece = PIECES[type];
@@ -1971,91 +1945,91 @@ function pieceGuideHtml() {
 
 // The rules sit on their own layer, over the board or over a card between matches.
 function showRules() {
-  element('#rules-card').innerHTML = element('#rules-template').innerHTML;
-  element('#rules-modal').hidden = false;
-  element('#piece-guide').innerHTML = pieceGuideHtml();
-  drawRunProgress();
-  element('#close-rules-button').onclick = () => {
-    element('#rules-modal').hidden = true;
+  find('#rules-card').innerHTML = find('#rules-template').innerHTML;
+  find('#rules-modal').hidden = false;
+  find('#piece-guide').innerHTML = pieceGuide();
+  renderLadder();
+  find('#close-rules-button').onclick = () => {
+    find('#rules-modal').hidden = true;
   };
-  element('#give-up-button').onclick = () => {
+  find('#give-up-button').onclick = () => {
     if (!confirm('Give up this run? You still get to keep one upgraded stone.')) return;
-    element('#rules-modal').hidden = true;
+    find('#rules-modal').hidden = true;
     cancelTimers();
-    player.waiting = true;
+    ui.waiting = true;
     endRun(false, 'You gave up.');
   };
 }
 
 /* ---------- Input ---------- */
 
-const board = element('#board');
-let lastTouchWasFinger = false; // a finger has no hover: the first tap on a square previews, a second tap places
+const board = find('#board');
+let fingerTap = false; // a finger has no hover: the first tap on a square previews, a second tap places
 
 function squareUnder(event) {
   const square = event.target.closest('.square');
   return square ? Number(square.dataset.cell) : -1;
 }
 
-function hoverSquare(cell) {
-  if (cell === player.hoveredSquare || !game) return;
-  player.hoveredSquare = cell;
-  if (player.selectedStone >= 0 && !player.waiting) drawBoard();
-  drawStoneInfo();
+function hover(cell) {
+  if (cell === ui.hovered || !game) return;
+  ui.hovered = cell;
+  if (ui.selected >= 0 && !ui.waiting) renderBoard();
+  renderInfo();
 }
 
 board.addEventListener('click', (event) => {
   const cell = squareUnder(event);
-  if (cell < 0 || !isYourTurn() || game.owners[cell] !== EMPTY || player.selectedStone < 0) return;
-  if (lastTouchWasFinger && player.hoveredSquare !== cell) {
-    player.hoveredSquare = cell;
-    drawBoard();
+  if (cell < 0 || !isYourTurn() || game.owners[cell] !== EMPTY || ui.selected < 0) return;
+  if (fingerTap && ui.hovered !== cell) {
+    ui.hovered = cell;
+    renderBoard();
     return;
   }
-  makeMove({ handIndex: player.selectedStone, cell });
+  makeMove({ handIndex: ui.selected, cell });
 });
 board.addEventListener('pointerdown', (event) => {
-  lastTouchWasFinger = event.pointerType !== 'mouse';
+  fingerTap = event.pointerType !== 'mouse';
 });
 // Phones send a fake hover with every tap, so only a mouse hovers.
 board.addEventListener('pointermove', (event) => {
-  if (event.pointerType === 'mouse') hoverSquare(squareUnder(event));
+  if (event.pointerType === 'mouse') hover(squareUnder(event));
 });
 board.addEventListener('pointerleave', (event) => {
-  if (event.pointerType === 'mouse') hoverSquare(-1);
+  if (event.pointerType === 'mouse') hover(-1);
 });
 
 // S toggles slow motion, Escape drops the selected stone, the number keys pick a stone from your hand.
 addEventListener('keydown', (event) => {
-  const aCardIsOpen = !element('#card-modal').hidden || !element('#rules-modal').hidden;
+  const aCardIsOpen = !find('#card-modal').hidden || !find('#rules-modal').hidden;
   if (aCardIsOpen) return;
   const isS = event.key === 's' || event.key === 'S';
-  if (isS && !event.metaKey && !event.ctrlKey) setSlowMotion(!settings.slowMotion);
-  if (event.key === 'Escape' && player.selectedStone >= 0) selectStone(-1);
+  if (isS && !event.metaKey && !event.ctrlKey) setSlow(!settings.slowMotion);
+  if (event.key === 'Escape' && ui.selected >= 0) select(-1);
   const number = Number(event.key);
-  if (game && isYourTurn() && number >= 1 && number <= game.hands[YOU].length) selectStone(number - 1);
+  if (game && isYourTurn() && number >= 1 && number <= game.hands[YOU].length) select(number - 1);
 });
 
-function setSlowMotion(on) {
+function setSlow(on) {
   settings.slowMotion = on;
   document.body.classList.toggle('slow', on);
-  element('#slow-button').setAttribute('aria-pressed', on);
-  storeProgress();
+  find('#slow-button').setAttribute('aria-pressed', on);
+  store();
 }
 
-element('#slow-button').onclick = () => setSlowMotion(!settings.slowMotion);
-element('#rules-button').onclick = showRules;
+find('#slow-button').onclick = () => setSlow(!settings.slowMotion);
+find('#rules-button').onclick = showRules;
 
 /* ---------- Start ---------- */
 
-setSlowMotion(settings.slowMotion);
+setSlow(settings.slowMotion);
 const needsNewRun = !save.run || save.run.over;
-if (needsNewRun) startNewRun();
-opponent = opponentForMatch(save.run.match);
-game = newGame(BOARD_SIZE, [[], []], YOU);
-drawEverything();
+if (needsNewRun) newRun();
+opponent = opponentFor(save.run.match);
+game = newGame(SIZE, [[], []], YOU);
+render();
 if (needsNewRun) chooseDifficulty();
-else introduceMatch();
+else intro();
 </script>
 </body>
 </html>
