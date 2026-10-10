@@ -64,6 +64,7 @@ button.primary{background:var(--accent);color:#2a2410}
 .who.p1{flex-direction:row-reverse;text-align:right}
 .who .nm{font-weight:600;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .who .pts{font-weight:700;font-size:28px;font-variant-numeric:tabular-nums}
+.who .spk{font-size:13px;opacity:.6;font-variant-numeric:tabular-nums;white-space:nowrap}
 .p0{color:var(--blue)}.p1{color:var(--red)}
 .face{width:44px;height:44px;flex:none;border-radius:50%;overflow:hidden;box-shadow:0 0 0 2px currentColor}
 .table{display:grid;grid-template-columns:auto auto auto;gap:calc(var(--c)*.3);justify-content:center;align-items:center}
@@ -205,9 +206,9 @@ body.slow{--t:4}
     <div class="controls"><button id="bRules">How to play</button><button id="bSlow" aria-pressed="false" title="Slow motion (S)">Slow-mo</button></div>
   </div>
   <div class="scores">
-    <div class="who p0" id="side0"><span class="nm">You</span><span class="pts" id="s0">0</span></div>
+    <div class="who p0" id="side0"><span class="nm">You</span><span class="pts" id="s0">0</span><span class="spk" id="k0" title="Spikes left: breaks a tie on points"></span></div>
     <div class="tug" aria-hidden="true"><div class="t0" id="tug0"></div><div class="t1" id="tug1"></div></div>
-    <div class="who p1" id="side1"><div class="face" id="foeFace"></div><span class="nm" id="foeName"></span><span class="pts" id="s1">0</span></div>
+    <div class="who p1" id="side1"><div class="face" id="foeFace"></div><span class="nm" id="foeName"></span><span class="pts" id="s1">0</span><span class="spk" id="k1" title="Spikes left: breaks a tie on points"></span></div>
   </div>
   <div class="table">
     <div class="hand" id="hand"></div>
@@ -229,7 +230,7 @@ body.slow{--t:4}
     <li><b>Rare stones</b> have their own powers and their own growth (see below). Each belongs to one opponent, who always plays it and may offer it when you win.</li>
     <li><b>Clash:</b> each side of your new stone that touches an enemy stone fights it. Facing spikes break off one for one, and the side with spikes left over wins and takes the other stone. A spike that hits is used up, so the winner always loses at least one spike: 2 against 1 ends 1 against 0, and 1 against 0 ends 0 against 0. That works both ways: lose any clash and your new stone is taken.</li>
     <li><b>Chain:</b> after the new stone has fought, as long as two stones of different colours touch with a spike between them, they fight the same way, the pair closest to the new stone first. So when a move ends, no two stones of different colours touch with a spike between them.</li>
-    <li>When the board is full, count your stones, one point each. Most points wins. A draw is replayed. Whoever loses the Pope loses the match at once.</li>
+    <li>When the board is full, count your stones, one point each. Most points wins. Level on points: most spikes left on your stones wins (the small number by each score). Level on spikes too: whoever placed first wins, since the other side had the last move. Whoever loses the Pope loses the match at once.</li>
     <li>Opponents come in a random order, but Lady Lux, whose Old Woman cures poison, always comes before Madame Swerve and her Serpent. Every match you win makes the next opponents' stones stronger.</li>
     <li>After a win the opponent shows you three random stones from the deck they played, sometimes their rare stone too. Take one, in the place of a stone you pick, or keep your hand. When a run ends, keep one stone you gained: it stays in your starting hand for good.</li>
     <li>Every opponent always brings the same stones, a level stronger for every match you have won. Remember what they play.</li>
@@ -293,10 +294,17 @@ function neighbour(n,cell,side){
   return x<0||y<0||x>=n||y>=n?-1:y*n+x;
 }
 const distance=(n,a,b)=>Math.abs(a%n-b%n)+Math.abs((a/n|0)-(b/n|0));
-function newGame(n,hands,first){return {n,own:new Int8Array(n*n).fill(-1),at:new Array(n*n).fill(null),hands,turn:first,moves:0};}
+function newGame(n,hands,first){return {n,own:new Int8Array(n*n).fill(-1),at:new Array(n*n).fill(null),hands,turn:first,first,moves:0};}
 const over=g=>g.winner!==undefined||!g.own.includes(-1); // a full board, or a Pope was taken
 const full=over;
 function score(g,p){let k=0;for(let i=0;i<g.own.length;i++)if(g.own[i]===p)k++;return k;}
+function spikes(g,p){let k=0;for(let i=0;i<g.own.length;i++)if(g.own[i]===p)k+=g.at[i].s.reduce((a,b)=>a+b,0);return k;}
+// Who wins a finished match: the Pope, then points, then spikes left, then whoever placed first (the other side moved last).
+function winnerOf(g){
+  if(g.winner!==undefined)return g.winner;
+  const edge=score(g,0)-score(g,1)||spikes(g,0)-spikes(g,1);
+  return edge?(edge>0?0:1):g.first;
+}
 const isPlayer=o=>o===0||o===1;
 const takeable=stone=>!PIECES[stone.t].shield&&!(PIECES[stone.t].pope&&!stone.grounded); // the king never, a flying Pope not yet
 
@@ -341,7 +349,7 @@ function play(g,handIndex,cell,luck){
   // lines: every fight as [from, to, spikes from, spikes to, step]; flips: colour changes as [cell, new owner, step];
   // broke: spikes broken as [cell, side, count, step]; promoted: Old Women who became the Grand Empress as [cell, step].
   const me=g.turn;
-  const a={n:g.n,own:g.own.slice(),at:g.at.slice(),hands:g.hands.slice(),turn:1-me,moves:g.moves+1,winner:g.winner,
+  const a={n:g.n,own:g.own.slice(),at:g.at.slice(),hands:g.hands.slice(),turn:1-me,first:g.first,moves:g.moves+1,winner:g.winner,
     lines:[],flips:[],broke:[],luck};
   a.hands[me]=g.hands[me].filter((_,i)=>i!==handIndex);
   a.own[cell]=me;a.at[cell]=g.hands[me][handIndex];
@@ -464,16 +472,21 @@ function legal(g){
   return moves;
 }
 
-/* Computer player: negamax with alpha-beta and iterative deepening. Scores are point differences x100;
-   taking the Pope ends the match and is worth more than any score. */
+/* Computer player: negamax with alpha-beta and iterative deepening. Scores are point differences x2000,
+   plus spike differences x2 (at most 640, so a point always outweighs them), plus 1 for having placed first:
+   the same order of tiebreaks as winnerOf. Taking the Pope ends the match and is worth more than any score. */
 let deadline=0,aborted=false,nodes=0;
 const now=()=>typeof performance!=='undefined'?performance.now():Date.now();
-const lead=g=>g.winner!==undefined?(g.winner===g.turn?1e6:-1e6):(score(g,g.turn)-score(g,1-g.turn))*100;
+const lead=g=>{
+  const me=g.turn,you=1-me;
+  if(g.winner!==undefined)return g.winner===me?1e6:-1e6;
+  return (score(g,me)-score(g,you))*2000+(spikes(g,me)-spikes(g,you))*2+(g.first===me?1:-1);
+};
 function ordered(g){return legal(g).map(m=>[m,gain(g,...m)]).sort((x,y)=>y[1]-x[1]).map(x=>x[0]);}
 function evaluate(g){
   if(over(g))return lead(g);
   let best=0;for(const m of legal(g))best=Math.max(best,gain(g,...m));
-  return lead(g)+60*best; // the side to move can cash in its best capture next
+  return lead(g)+1200*best; // the side to move can cash in its best capture next
 }
 function nega(g,depth,alpha,beta){
   if((++nodes&255)===0&&now()>deadline)aborted=true;
@@ -509,7 +522,7 @@ function think(g,ms,rnd=Math.random,maxDepth=99){
   }
   return best;
 }
-if(typeof module!=='undefined')module.exports={PIECES,MAXL,RUBBLE,mkStone,stoneName,parseCode,stoneOf,withLevel,newGame,over,full,score,play,gain,legal,think};
+if(typeof module!=='undefined')module.exports={PIECES,MAXL,RUBBLE,mkStone,stoneName,parseCode,stoneOf,withLevel,newGame,over,full,score,spikes,winnerOf,play,gain,legal,think};
 </script>
 
 <script>
@@ -559,7 +572,7 @@ function strengthen(deck,levels){
 }
 const deckFor=(f,wins)=>strengthen(f.deck,wins*LEVELS_PER_WIN+(f.boss?BOSS_EXTRA:0));
 const foeOf=m=>m===RUN?BOSS:FOES[save.run.order[m-1]];
-const firstOf=m=>m===RUN?1:(m+(save.run.rematch||0))%2?0:1; // you place first in odd matches, the boss always first
+const firstOf=m=>m===RUN?1:m%2?0:1; // you place first in odd matches, the boss always first
 
 /* ---------- Drawing ---------- */
 const STONE=[{lite:'#bfe0ff',mid:'#5aa6f5',dark:'#123a6e'},{lite:'#ffd0c4',mid:'#f06a55',dark:'#6e1a12'},{lite:'#8a8a96',mid:'#55555f',dark:'#0b0b0e'}]; // you, the opponent, rubble
@@ -773,7 +786,7 @@ function renderSides(){
   const view=shown?{own:shown,at:game.at}:game,pts=[score(view,0),score(view,1)]; // during a move: the colours on screen
   const total=pts[0]+pts[1]+handValue(game.hands[0])+handValue(game.hands[1])||1;
   for(const p of [0,1]){
-    $('#s'+p).textContent=pts[p];
+    $('#s'+p).textContent=pts[p];$('#k'+p).textContent=spikes(view,p)+' spikes';
     $('#tug'+p).style.width=100*pts[p]/total+'%';
     $('#side'+p).classList.toggle('turn',!full(game)&&game.turn===p);
   }
@@ -955,10 +968,10 @@ ${button?`<div><button class="primary">${button.label}</button></div>`:''}`;
 }
 const deckRow=codes=>codes.map(c=>stoneSVG(stoneOf(c,0),0,'')).join('');
 const upgrade=(from,to)=>`<span class="arrow">${stoneSVG(stoneOf(from,0),0,'')}<span>→</span>${stoneSVG(stoneOf(to,0),0,'')}</span>`;
-function intro(rematch){
+function intro(){
   const r=save.run,m=r.m;foe=foeOf(m);
   save.best=Math.max(save.best,m);store();renderLadder();
-  card(rematch?'Draw. Rematch':m===RUN?'Final match':`Match ${m} of ${RUN}`,
+  card(m===RUN?'Final match':`Match ${m} of ${RUN}`,
     `<div class="big${foe.boss?' boss':''}">${faceSVG(foe)}</div><h2>${foe.name}</h2><q>${foe.line}</q>
 <p>${firstOf(m)===0?'You place first.':`${foe.name} places first.`} Their 8 stones stay hidden until played${m>1?`, and they are ${(m-1)*LEVELS_PER_WIN+(foe.boss?BOSS_EXTRA:0)} levels stronger for your ${m-1} win${m>2?'s':''}`:''}.</p>
 <p class="kicker muted">Your stones</p><div class="deckrow">${deckRow(r.deck)}</div>`,
@@ -974,13 +987,14 @@ function begin(){
 }
 function finish(){
   busy=true;render();
-  const a=score(game,0),b=score(game,1),r=save.run,pope=game.winner;
-  if(pope===undefined&&a===b){r.rematch=(r.rematch||0)+1;store();return intro(true);}
-  r.rematch=0;
-  if(pope===1||(pope===undefined&&a<b))return endRun(false,pope===1?`${foe.name} took your Pope.`:`${foe.name} wins ${b} to ${a}.`);
+  const r=save.run,pope=game.winner,won=winnerOf(game)===0;
+  // the tally that decided it: points, or spikes left when level on points, or who placed first when level on both
+  const [a,b]=[0,1].map(p=>score(game,p)),[sa,sb]=[0,1].map(p=>spikes(game,p));
+  const tally=a!==b?`${Math.max(a,b)} to ${Math.min(a,b)}`:sa!==sb?`on spikes, ${Math.max(sa,sb)} to ${Math.min(sa,sb)}`:'level on spikes, by placing first';
+  if(!won)return endRun(false,pope===1?`${foe.name} took your Pope.`:`${foe.name} wins ${tally}.`);
   if(pope===0&&r.m===RUN){save.champs++;return endRun(true,`You took the Pope of ${foe.name}.`);}
-  if(r.m===RUN){save.champs++;return endRun(true,`You beat ${foe.name} ${a} to ${b}.`);}
-  store();rewards(`Won ${a} to ${b}`);
+  if(r.m===RUN){save.champs++;return endRun(true,`You beat ${foe.name} ${tally}.`);}
+  store();rewards(pope===0?'Took the Pope':`Won ${tally}`);
 }
 const nextMatch=()=>{save.run.m++;store();intro();};
 function rewards(kicker){
