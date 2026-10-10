@@ -1,40 +1,21 @@
 <!doctype html>
 <html><head><meta charset="utf-8"><title>Rook-like icon</title>
 <style>html,body{margin:0;background:transparent}svg{display:block;width:1024px;height:1024px}</style></head>
-<body><div id="out"></div>
-<!-- The game's own stone art: these gradients are copied from the <defs> of index.html, so re-copy them if those change. -->
-<svg width="0" height="0" style="position:absolute"><defs id="stone-defs">
-    <linearGradient id="body-you" x1="0" y1="0" x2=".6" y2="1"><stop offset="0" stop-color="#7cc0ff"/><stop offset=".5" stop-color="#3b8be8"/><stop offset="1" stop-color="#1f5bb0"/></linearGradient>
-    <linearGradient id="body-opponent" x1="0" y1="0" x2=".6" y2="1"><stop offset="0" stop-color="#ff9a84"/><stop offset=".5" stop-color="#ec5440"/><stop offset="1" stop-color="#b02d1f"/></linearGradient>
-    <linearGradient id="body-debris" x1="0" y1="0" x2=".6" y2="1"><stop offset="0" stop-color="#4a4a54"/><stop offset="1" stop-color="#121216"/></linearGradient>
-    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff2a8"/><stop offset=".5" stop-color="#f3c54a"/><stop offset="1" stop-color="#b8860b"/></linearGradient>
-    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".38"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/></linearGradient>
-    <!-- art.js: skin, the right-side shading every shape gets, metal, the stone's inner face, portrait vignette and glow -->
-    <radialGradient id="art-skin" cx=".38" cy=".32" r=".8"><stop offset="0" stop-color="#fde3c6"/><stop offset=".55" stop-color="#f2c9a0"/><stop offset="1" stop-color="#d39b72"/></radialGradient>
-    <linearGradient id="art-shade" x1="0" y1="0" x2="1" y2=".35"><stop offset=".45" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".28"/></linearGradient>
-    <linearGradient id="art-metal" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f2f5fa"/><stop offset=".45" stop-color="#b9c1d1"/><stop offset="1" stop-color="#6f7a8e"/></linearGradient>
-    <radialGradient id="art-face" cx=".45" cy=".4" r=".7"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".7" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".12"/></radialGradient>
-    <radialGradient id="art-vignette" cx=".5" cy=".45" r=".7"><stop offset=".6" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".45"/></radialGradient>
-    <radialGradient id="well-you" cx=".5" cy=".38" r=".62"><stop offset="0" stop-color="#2d66b4"/><stop offset="1" stop-color="#0c1f40"/></radialGradient>
-    <radialGradient id="well-opponent" cx=".5" cy=".38" r=".62"><stop offset="0" stop-color="#b03a2c"/><stop offset="1" stop-color="#430d09"/></radialGradient>
-    <radialGradient id="well-debris" cx=".5" cy=".38" r=".62"><stop offset="0" stop-color="#2e2e36"/><stop offset="1" stop-color="#08080a"/></radialGradient>
-    <clipPath id="art-clip"><rect x="19" y="19" width="62" height="62" rx="9"/></clipPath>
-    <radialGradient id="art-glow"><stop offset="0" stop-color="#9b5de5" stop-opacity=".45"/><stop offset="1" stop-color="#9b5de5" stop-opacity="0"/></radialGradient>
-</defs></svg>
-<script src="../src/rules.js"></script><script src="../src/art.js"></script>
-<script>
-STONE_ART_FOLDER = '../art/stones/'; // the portraits, relative to this page
-/* The Rook-like app icon: a macOS-style rounded square (824px tile, 100px margin) drawn as SVG. */
-const tile=(bg,inner)=>`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024"><defs><clipPath id="c"><rect x="100" y="100" width="824" height="824" rx="185"/></clipPath>
-<linearGradient id="sh" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".18"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>
-<g clip-path="url(#c)">${bg}${inner}<rect x="100" y="100" width="824" height="824" fill="url(#sh)"/></g></svg>`;
-const fill=(c1,c2)=>`<defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient></defs><rect x="0" y="0" width="1024" height="1024" fill="url(#bg)"/>`;
-const ICON=tile(fill('#2b3d66','#121a2c'),(()=>{ // two real game stones (art.js) clashing: the rook against Neigh Nigel the knight
-      const place=(svg,x,y,size)=>svg.replace('<svg ',`<svg x="${x}" y="${y}" width="${size}" height="${size}" `);
-      const spark=`<g transform="translate(594 520)"><circle r="120" fill="url(#glow)"/>${[0,90].map(a=>`<path d="M0 -84 L15 0 L0 84 L-15 0 Z" fill="#fff4c2" transform="rotate(${a})"/>`).join('')}${[45,135].map(a=>`<path d="M0 -54 L11 0 L0 54 L-11 0 Z" fill="#ffd34d" transform="rotate(${a})"/>`).join('')}<circle r="20" fill="#fff"/></g>`;
-      return `<defs>${document.getElementById('stone-defs').innerHTML}<radialGradient id="glow"><stop offset="0" stop-color="#ffd34d" stop-opacity=".75"/><stop offset="1" stop-color="#ffd34d" stop-opacity="0"/></radialGradient></defs>`
-        +`<ellipse cx="490" cy="790" rx="320" ry="34" fill="#000" opacity=".22"/>`
-        +place(drawStone({type:'knight',spikes:[0,0,0,2]},OPPONENT),562,350,340)
-        +place(drawStone({type:'rook',spikes:[2,2,2,2]},YOU),106,260,520)+spark;})());
-document.getElementById('out').innerHTML=ICON;
-</script></body></html>
+<body>
+<!-- The Rook-like app icon: a macOS-style rounded square (824px tile, 100px margin) with the rook's own
+     64 x 64 PixelLab portrait on it, blown up 12x with its pixels kept sharp and his bust resting on the bottom edge. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <clipPath id="c"><rect x="100" y="100" width="824" height="824" rx="185"/></clipPath>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2b3d66"/><stop offset="1" stop-color="#121a2c"/></linearGradient>
+    <radialGradient id="glow" cx=".5" cy=".42" r=".5"><stop offset="0" stop-color="#5aa6f5" stop-opacity=".45"/><stop offset="1" stop-color="#5aa6f5" stop-opacity="0"/></radialGradient>
+    <linearGradient id="sh" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".18"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient>
+  </defs>
+  <g clip-path="url(#c)">
+    <rect width="1024" height="1024" fill="url(#bg)"/>
+    <rect width="1024" height="1024" fill="url(#glow)"/>
+    <image href="../art/stones/rook-blue.png" x="128" y="156" width="768" height="768" style="image-rendering:pixelated"/>
+    <rect x="100" y="100" width="824" height="824" fill="url(#sh)"/>
+  </g>
+</svg>
+</body></html>
