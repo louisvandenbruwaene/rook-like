@@ -4,29 +4,29 @@ const html=fs.readFileSync(process.argv[2],'utf8');
 const core=html.match(/<script id="core">([\s\S]*?)<\/script>/)[1];
 const art=html.match(/<script id="art">([\s\S]*?)<\/script>/)[1];
 const defs=html.match(/<defs>[\s\S]*?<\/defs>/)[0];
-const E=new Function(core+'\n'+art+'\nreturn {PIECES,MAXL,mkStone,stoneName,newGame,play,score,stoneSVG};')();
+const E=new Function(core+'\n'+art+'\nreturn {PIECES,makeStone,drawStone};')();
 const ORDER='PNBRQKSWEJGHO',DIRS={P:4,N:4};
 // every stone an opponent can bring: each piece, level and direction
 const all=[];for(const t of ORDER)for(let l=1;l<=5;l++)for(let d=0;d<(DIRS[t]||1);d++)all.push([t,l,d]);
 // Rating: every spike is worth 5 points, so 5 spikes on all four sides (20 spikes) make 100.
-const out=k=>E.mkStone(k[0],+k[1],0).s.reduce((a,b)=>a+b,0)*5;
-const svg=(t,l,d)=>E.stoneSVG(E.mkStone(t,l,0,d),0,'');
+const out=k=>E.makeStone(k[0],+k[1],0).spikes.reduce((a,b)=>a+b,0)*5;
+const svg=(t,l,d)=>E.drawStone(E.makeStone(t,l,0,d),0,{className:''});
 let rows='',first=true;
 for(const t of ORDER){
   const P=E.PIECES[t];
   if(first&&!P.chess){rows+=`<h1 class="part">Rare stones</h1><p class="intro">Each rare stone belongs to one opponent, who brings it in the middle and late matches and drops it half the time when you win. They grow by their own table instead of one spike per side.</p>`;first=false;}
   rows+=`<section><div class="head"><h2>${P.name}</h2><span class="chess">${P.chess||'rare stone'}</span>
-<p>${P.text[0].toUpperCase()+P.text.slice(1)}.</p></div><div class="levels">`;
-  const levels=P.fixed?[1]:[1,2,3,4,5];
+<p>${P.description[0].toUpperCase()+P.description.slice(1)}.</p></div><div class="levels">`;
+  const levels=P.hasNoLevels?[1]:[1,2,3,4,5];
   for(const l of levels){
-    const st=E.mkStone(t,l,0,0);
-    rows+=`<div class="lv"><div class="pic">${svg(t,l,0)}</div><div class="lvl">${P.fixed?'Always':'Level '+l}</div><div class="sp">${P.shield?'golden shields':st.s.join(' · ')}</div>${P.shield?'':`<div class="score"><b>${out(t+l)}</b>/100</div>`}</div>`;
+    const st=E.makeStone(t,l,0,0);
+    rows+=`<div class="lv"><div class="pic">${svg(t,l,0)}</div><div class="lvl">${P.hasNoLevels?'Always':'Level '+l}</div><div class="sp">${P.goldenShields?'golden shields':st.spikes.join(' · ')}</div>${P.goldenShields?'':`<div class="score"><b>${out(t+l)}</b>/100</div>`}</div>`;
   }
   rows+='</div>';
   if(DIRS[t])rows+=`<div class="variants"><span>Four turns, all rated the same:</span>${[0,1,2,3].map(d=>`<div class="mini">${svg(t,1,d)}<small>${P.variants[d]}</small></div>`).join('')}</div>`;
   rows+='</section>';
 }
-const table=ORDER.split('').filter(t=>!E.PIECES[t].fixed).map(t=>`<tr><td>${E.PIECES[t].name}</td>${[1,2,3,4,5].map(l=>`<td>${out(t+l)}</td>`).join('')}</tr>`).join('');
+const table=ORDER.split('').filter(t=>!E.PIECES[t].hasNoLevels).map(t=>`<tr><td>${E.PIECES[t].name}</td>${[1,2,3,4,5].map(l=>`<td>${out(t+l)}</td>`).join('')}</tr>`).join('');
 fs.writeFileSync('stones.html',`<!doctype html><html><head><meta charset="utf-8"><title>Rook-like: every stone</title>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
 <style>@page{size:A4;margin:14mm}body{font-family:Nunito,system-ui,sans-serif;color:#1d2433;margin:0;font-size:12px}
@@ -46,4 +46,4 @@ h1.part{break-before:page;margin-top:0}
 <p class="intro">The six chess pieces at levels 1 to 5, facing up, with their spikes listed as top · right · bottom · left. The rating out of 100 counts spikes: every spike is worth 5 points, so a stone with the maximum of 5 spikes on all four sides (20 spikes) scores 100. Old King Coal has no spikes but golden shields: every spike that touches him breaks and he is never taken. The rating counts spikes only, not the powers of the rare stones.</p>
 <table><tr><th>stone</th><th>Lv 1</th><th>Lv 2</th><th>Lv 3</th><th>Lv 4</th><th>Lv 5</th></tr>${table}</table>
 ${rows}</body></html>`);
-console.log(ORDER.split('').filter(t=>!E.PIECES[t].fixed).map(t=>t+': '+[1,2,3,4,5].map(l=>out(t+l)).join(' ')).join('\n'));
+console.log(ORDER.split('').filter(t=>!E.PIECES[t].hasNoLevels).map(t=>t+': '+[1,2,3,4,5].map(l=>out(t+l)).join(' ')).join('\n'));
