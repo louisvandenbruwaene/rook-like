@@ -3,6 +3,8 @@
    The board, the stones, one fight and one move. Pure logic: it never touches the page.
    Shared by the game, the computer player (computer.js) and stone-sheet.js.
 
+   Contents: constants · the pieces · stones · stone codes · the board · a game · one fight · one move
+
    A game is:
      size         the board is size x size squares, numbered row by row from the top left
      owners[i]    who owns square i: EMPTY, YOU, OPPONENT or RUBBLE (nobody's)
@@ -132,8 +134,11 @@ function takeable(stone) {
   return true;
 }
 
-// Hands are written as stone codes: piece letter, level, and for a turned stone its direction.
-// For example N2 (Neigh Nigel, level 2), P1> (a pawn turned to point right) or N1v.
+/* ---------- Stone codes ----------
+   Hands, collections, decks and saves write a stone as a short code: piece letter, level, and for a turned
+   stone its direction. For example N2 (Neigh Nigel, level 2), P1> (a pawn turned to point right) or N1v.
+   The same stone at another level has the same code but for the digit. */
+
 const DIRECTIONS = '^>v<';
 
 function parseCode(code) {
@@ -144,6 +149,35 @@ function parseCode(code) {
 function fromCode(code, facing) {
   const { type, level, variant } = parseCode(code);
   return makeStone(type, level, facing, variant);
+}
+
+function pieceOf(code) {
+  return code[0];
+}
+
+function withLevel(code, level) {
+  return pieceOf(code) + level + code.slice(2);
+}
+
+// The stone without its level: its piece letter and its turn. Two codes with the same stone are one stone.
+function withoutLevel(code) {
+  return pieceOf(code) + code.slice(2);
+}
+
+function upgraded(code) {
+  return withLevel(code, parseCode(code).level + 1);
+}
+
+function canGrow(code) {
+  const { type, level } = parseCode(code);
+  return canLevelUp(type, level);
+}
+
+// "Neigh Nigel Lv 2", or just the name for a stone without levels.
+function titleOf(code) {
+  const stone = fromCode(code, YOU);
+  if (PIECES[stone.type].hasNoLevels) return nameOf(stone);
+  return `${nameOf(stone)} Lv ${stone.level}`;
 }
 
 /* ---------- The board ---------- */
@@ -430,8 +464,8 @@ function cure(game, step) {
       if (neighbour < 0 || game.owners[neighbour] !== game.owners[cell]) continue;
       if (!PIECES[game.stones[neighbour].type].curesPoison) continue;
       game.stones[cell] = { ...game.stones[cell], poison: undefined };
-      const oldWoman = game.stones[neighbour];
-      game.stones[neighbour] = { ...makeStone('E', oldWoman.level, oldWoman.facing), poison: oldWoman.poison };
+      const edna = game.stones[neighbour];
+      game.stones[neighbour] = { ...makeStone('E', edna.level, edna.facing), poison: edna.poison };
       game.promotions.push({ cell: neighbour, step });
       step = chain(game, neighbour, step);
       break;

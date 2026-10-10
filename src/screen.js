@@ -1,7 +1,10 @@
 /* =====================================================================
-   SCREEN
+   SCREEN  (builds on rules.js and art.js)
    What is on the page: the state of the match, and the render...() functions that draw it.
    Naming: render...() updates the page, draw...() (in art.js) returns an SVG string.
+
+   Contents: finding things · the match being played · a move playing out · drawing the page ·
+             under the board and your hand · the board
    ===================================================================== */
 
 /* ---------- Finding things on the page ---------- */
@@ -10,7 +13,8 @@ function find(selector) {
   return document.querySelector(selector);
 }
 
-/* ---------- State ---------- */
+/* ---------- The match being played ----------
+   game and opponent are set by run.js when a match starts, and game is replaced after every move. */
 
 let game = null;
 let opponent = null;
@@ -22,6 +26,12 @@ const ui = {
   lastMove: -1, // the square of the last move, marked on the board
   waiting: true, // while a move plays out or the computer thinks: your input is ignored
 };
+
+function isYourTurn() {
+  return !ui.waiting && !isOver(game) && game.turn === YOU;
+}
+
+/* ---------- A move playing out ---------- */
 
 // While a move plays out, the board shows replay.owners instead of the final owners,
 // and steps through the move's records one step at a time.
@@ -36,8 +46,24 @@ const replay = {
   effects: new Map(), // one-off effects this step, per square: a CSS class
 };
 
-function isYourTurn() {
-  return !ui.waiting && !isOver(game) && game.turn === YOU;
+// A move starts playing: `result` becomes the game, but the board keeps showing the colours from before the move,
+// plus the new stone, until each step of the move is shown.
+function startReplay(cell, result) {
+  replay.before = game;
+  replay.owners = game.owners.slice();
+  replay.owners[cell] = game.turn;
+  replay.placed.add(cell);
+  replay.pending = result.breaks;
+  replay.step = -1;
+  game = result;
+}
+
+// The move has played out: the board shows the game itself again.
+function endReplay() {
+  replay.owners = null;
+  replay.before = null;
+  replay.pending = [];
+  replay.step = -1;
 }
 
 // Broken spike records counted per square and side.
@@ -75,7 +101,7 @@ function shownStone(cell) {
   return changed ? { ...stone, spikes } : stone;
 }
 
-/* ---------- On screen ---------- */
+/* ---------- Drawing the page ---------- */
 
 function render() {
   renderOpponent();
@@ -135,6 +161,8 @@ function renderScores() {
   }
 }
 
+/* ---------- Under the board, and your hand ---------- */
+
 // Under the board: the name and level of the stone under the mouse, or else of the stone you selected,
 // or else whose move it is.
 function renderInfo() {
@@ -180,11 +208,31 @@ function renderHand() {
   });
 }
 
-// The classes and contents of one square. `preview` is the game after the selected stone is placed on the
-// hovered square (or null), and previewBreaks the spikes that placing it would break.
+/* ---------- The board ---------- */
+
+// One square of the board: its CSS classes and its contents. `preview` is the game after the selected stone is
+// placed on the hovered square (or null), and previewBreaks the spikes that placing it would break, per square.
 function squareView(cell, preview, previewBreaks, canPlace) {
-  const owners = replay.owners || game.owners;
-  const owner = owners[cell];
+  const owner = (replay.owners || game.owners)[cell];
+  let stone = null;
+  if (owner !== EMPTY) stone = previewBreaks.has(cell) ? preview.stones[cell] : shownStone(cell);
+  const breakingSpikes = previewBreaks.get(cell) || replay.breaking.get(cell);
+  return {
+    classes: squareClasses(cell, owner, stone, preview, previewBreaks, canPlace).join(' '),
+    contents: squareContents(cell, owner, stone, breakingSpikes, preview, previewBreaks),
+  };
+}
+
+function isPoisoned(stone, owner) {
+  return Boolean(stone && stone.poison && owner !== RUBBLE);
+}
+
+function isFlying(stone) {
+  return Boolean(stone && PIECES[stone.type].isPope && !stone.grounded);
+}
+
+// Every class is styled in style.css: the preview rings, the steps of a move, and the rare stones' looks.
+function squareClasses(cell, owner, stone, preview, previewBreaks, canPlace) {
   const wouldTake = preview && game.owners[cell] === OPPONENT && preview.owners[cell] === YOU;
   const yours = game.owners[cell] === YOU || cell === ui.hovered;
   const wouldLose = preview && yours && preview.owners[cell] === OPPONENT;
@@ -192,45 +240,41 @@ function squareView(cell, preview, previewBreaks, canPlace) {
   if (owner === EMPTY && canPlace) classes.push('playable');
   if (wouldTake) classes.push('would-take');
   if (wouldLose) classes.push('would-lose');
-  if (replay.placed.has(cell)) classes.push('just-placed');
-  if (replay.turning.has(cell)) classes.push('turning-over');
   if (previewBreaks.has(cell)) classes.push('preview');
   if (cell === ui.lastMove && !ui.waiting) classes.push('last-move');
+  if (replay.placed.has(cell)) classes.push('just-placed');
+  if (replay.turning.has(cell)) classes.push('turning-over');
   if (replay.effects.has(cell)) classes.push(replay.effects.get(cell));
+  if (isPoisoned(stone, owner)) classes.push('poisoned');
+  if (isFlying(stone)) classes.push('flying');
+  return classes;
+}
 
-  let contents = '';
-  if (owner !== EMPTY) {
-    const stone = previewBreaks.has(cell) ? preview.stones[cell] : shownStone(cell);
-    const breakingSpikes = previewBreaks.get(cell) || replay.breaking.get(cell);
-    const poisoned = stone.poison && owner !== RUBBLE;
-    const flying = PIECES[stone.type].isPope && !stone.grounded;
-    if (poisoned) classes.push('poisoned');
-    if (flying) classes.push('flying');
-
-    if (replay.turning.has(cell)) {
-      // A collapsing Brittle Bernard turns over from Bernard himself; any other stone from itself in its old colour.
-      let front = stone;
-      if (owner === RUBBLE && shownStone(cell).type === 'X') {
-        front = game.flips.find((flip) => flip.cell === cell && flip.owner === RUBBLE).collapsed;
-      }
-      const frontFace = drawStone(front, replay.turning.get(cell), { breakingSpikes });
-      const backFace = drawStone(stone, owner, { breakingSpikes });
-      contents = `<div class="flip-card"><div class="front">${frontFace}</div><div class="back-face">${backFace}</div></div>`;
-    } else {
-      contents = drawStone(stone, owner, { breakingSpikes });
-    }
-
-    if (flying) contents = `<div class="jet-flames"><i></i><i></i></div>` + contents;
-    if (poisoned) {
-      const movesLeft = Math.max(1, stone.poison.dueAtMove - game.moveCount);
-      contents += `<div class="poison-countdown" title="poisoned">${movesLeft}</div>`;
-    }
-  }
+// The stone (turning over, while it changes colour), the Pope's jet flames, the poison countdown,
+// or the ghost of the stone you are about to place.
+function squareContents(cell, owner, stone, breakingSpikes, preview, previewBreaks) {
   if (preview && cell === ui.hovered) {
     const ghost = drawStone(preview.stones[cell], YOU, { breakingSpikes: previewBreaks.get(cell) });
-    contents = `<div class="preview-stone">${ghost}</div>`;
+    return `<div class="preview-stone">${ghost}</div>`;
   }
-  return { classes: classes.join(' '), contents };
+  if (owner === EMPTY) return '';
+
+  let contents = drawStone(stone, owner, { breakingSpikes });
+  if (replay.turning.has(cell)) {
+    // A collapsing Brittle Bernard turns over from Bernard himself; any other stone from itself in its old colour.
+    let front = stone;
+    if (owner === RUBBLE && stone.type === 'X') {
+      front = game.flips.find((flip) => flip.cell === cell && flip.owner === RUBBLE).collapsed;
+    }
+    const frontFace = drawStone(front, replay.turning.get(cell), { breakingSpikes });
+    contents = `<div class="flip-card"><div class="front">${frontFace}</div><div class="back-face">${contents}</div></div>`;
+  }
+  if (isFlying(stone)) contents = `<div class="jet-flames"><i></i><i></i></div>` + contents;
+  if (isPoisoned(stone, owner)) {
+    const movesLeft = Math.max(1, stone.poison.dueAtMove - game.moveCount);
+    contents += `<div class="poison-countdown" title="poisoned">${movesLeft}</div>`;
+  }
+  return contents;
 }
 
 // The whole board. With a stone selected and a square hovered it shows the preview:

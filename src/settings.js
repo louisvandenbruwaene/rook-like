@@ -1,17 +1,23 @@
 /* =====================================================================
    SETTINGS AND OPPONENTS
-   The fixed numbers of the game, the difficulties, the opponents and their decks,
-   and two helpers for stone codes.
+   The fixed numbers of the game, the difficulties, the opponents and their decks.
+
+   Contents: the game's numbers · difficulties · opponents · opponent decks · small helpers
    ===================================================================== */
+
+/* ---------- The game's numbers ---------- */
 
 const SIZE = 4;
 const RUN_LENGTH = 20; // the last match is against the boss
 const DECK_SIZE = 8; // the stones you take into a match, chosen from your collection
 const ONE_PER_DECK = 'KQ'; // a deck holds at most one king and one queen, whatever their turn
+const ONLY_ONE_OWNED = 'Q'; // you own one queen: an upgraded or newly kept queen replaces the old one
 const UPGRADE_CHOICES = 3; // after a win, you pick one of this many stones from your deck to upgrade
 const STARTER_COLLECTION = 'P1^ P1> P1< N1 B1 R1 Q1 K1'; // Tiny Tim, Tony and Ted; Tiny Tom comes from the opponents
 const THINK_MS = 1000;
 const BOSS_THINK_MS = 1600;
+
+/* ---------- Difficulties ---------- */
 
 // Difficulty, picked at the start of a run.
 //   lookAhead     how many moves ahead the opponent looks (its own move counts as one). 99 is as far as it can
@@ -55,15 +61,11 @@ const MADAME_SWERVE = 2;
 
 const BOSS_HEAD_START = 6;
 
-function withLevel(code, level) {
-  return code[0] + level + code.slice(2);
-}
-
 function newDecks(difficulty) {
   const decks = {};
   for (const opponent of [...OPPONENTS, BOSS]) {
     decks[opponent.portrait] = opponent.deck.split(' ').map((code) => {
-      return PIECES[code[0]].hasNoLevels ? code : withLevel(code, difficulty.startLevel);
+      return PIECES[pieceOf(code)].hasNoLevels ? code : withLevel(code, difficulty.startLevel);
     });
   }
   for (let i = 0; i < BOSS_HEAD_START; i++) decks[BOSS.portrait] = upgradeOne(decks[BOSS.portrait], difficulty);
@@ -123,11 +125,4 @@ function shuffle(list) {
     [list[i], list[j]] = [list[j], list[i]];
   }
   return list;
-}
-
-// "Neigh Nigel Lv 2", or just the name for a stone without levels.
-function titleOf(code) {
-  const stone = fromCode(code, YOU);
-  if (PIECES[stone.type].hasNoLevels) return nameOf(stone);
-  return `${nameOf(stone)} Lv ${stone.level}`;
 }

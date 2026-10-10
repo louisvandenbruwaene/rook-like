@@ -3,6 +3,8 @@
    Every stone and portrait is an SVG string drawn in code. Shared with stone-sheet.js.
    Stones are drawn in a 100 x 100 box: the body is a rounded square from 15 to 85,
    and the spikes stand outside it.
+
+   Contents: colours · characters · stones · opponent portraits
    ===================================================================== */
 
 /* ---------- Colours ---------- */
