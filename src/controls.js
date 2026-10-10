@@ -39,6 +39,11 @@ function showRules() {
     ui.waiting = true;
     endRun(false, 'You gave up.');
   };
+  find('#new-game-button').onclick = () => {
+    if (!confirm('Start a new game? Your collection and difficulty start over. Your records stay.')) return;
+    find('#rules-modal').hidden = true;
+    startNewGame();
+  };
 }
 
 /* ---------- Input ---------- */

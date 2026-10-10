@@ -880,6 +880,10 @@ h1 {
   justify-content: space-between;
   align-items: center;
 }
+.rules-footer-links {
+  display: flex;
+  gap: 18px;
+}
 .piece-guide {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));

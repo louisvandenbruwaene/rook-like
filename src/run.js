@@ -5,7 +5,7 @@
      (chooseDifficulty, once a game) -> intro (pick your deck) -> startMatch -> ... -> finishMatch -> offerRewards -> nextMatch -> intro
                                                                                    \-> endRun (lost, gave up, or won the last match)
 
-   Contents: cards · the run, match by match · your deck · rewards · the end of a run
+   Contents: cards · the run, match by match · your deck · rewards · a new game · the end of a run
    ===================================================================== */
 
 /* ---------- Cards ----------
@@ -198,15 +198,16 @@ function deckFrom(collection, preferredCodes) {
   return deck;
 }
 
-// The indexes of the DECK_SIZE stones with the most spikes, keeping to one king and one queen.
+// The indexes of a deck of DECK_SIZE stones: the king, then the stones with the most spikes, keeping to one queen.
 // Level on spikes, the stone listed first in the collection goes in.
 function spikiestDeck(collection) {
-  const bySpikes = collection
-    .map((code, index) => ({ index, spikes: spikeCount(fromCode(code, YOU)) }))
-    .sort((a, b) => b.spikes - a.spikes);
+  const isKing = (code) => pieceOf(code) === 'king';
+  const preferred = collection
+    .map((code) => ({ code, king: isKing(code), spikes: spikeCount(fromCode(code, YOU)) }))
+    .sort((a, b) => b.king - a.king || b.spikes - a.spikes);
   return deckFrom(
     collection,
-    bySpikes.map(({ index }) => collection[index]),
+    preferred.map(({ code }) => code),
   );
 }
 
@@ -335,6 +336,22 @@ function upgradeInDeck(index) {
   let newIndex = run.collection.indexOf(code);
   if (newIndex < 0) newIndex = run.collection.push(code) - 1;
   run.deck[run.deck.indexOf(index)] = newIndex;
+}
+
+/* ---------- A new game ----------
+   Starts over from the starter collection, and asks for a difficulty again. Your records stay. */
+
+function startNewGame() {
+  cancelTimers();
+  save.collection = STARTER_COLLECTION.slice();
+  save.difficulty = null;
+  newRun();
+  opponent = opponentFor(save.run.match);
+  game = newGame(SIZE, [[], []], YOU);
+  endReplay();
+  render();
+  renderLadder();
+  chooseDifficulty();
 }
 
 /* ---------- The end of a run ----------

@@ -221,6 +221,7 @@ function nextTurn(somethingJustTurned) {
     return;
   }
   ui.waiting = false;
+  if (game.hands[YOU].length === 1) ui.selected = 0; // your last stone is picked for you
   renderHand();
   renderBoard();
   renderInfo();
