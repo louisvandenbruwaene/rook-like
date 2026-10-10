@@ -2,10 +2,9 @@
 const fs=require('fs');
 const html=fs.readFileSync(process.argv[2],'utf8');
 const core=html.match(/<script id="core">([\s\S]*?)<\/script>/)[1];
-const ui=html.match(/<script>\nconst \$=[\s\S]*?<\/script>/)[0];
-const draw=ui.slice(ui.indexOf('const STONE='),ui.indexOf('const backSVG'));
+const art=html.match(/<script id="art">([\s\S]*?)<\/script>/)[1];
 const defs=html.match(/<defs>[\s\S]*?<\/defs>/)[0];
-const E=new Function(core+'\n'+draw+'\nreturn {PIECES,MAXL,mkStone,stoneName,newGame,play,score,stoneSVG};')();
+const E=new Function(core+'\n'+art+'\nreturn {PIECES,MAXL,mkStone,stoneName,newGame,play,score,stoneSVG};')();
 const ORDER='PNBRQKSWEJGHO',DIRS={P:4,N:4};
 // every stone an opponent can bring: each piece, level and direction
 const all=[];for(const t of ORDER)for(let l=1;l<=5;l++)for(let d=0;d<(DIRS[t]||1);d++)all.push([t,l,d]);
@@ -15,7 +14,7 @@ const svg=(t,l,d)=>E.stoneSVG(E.mkStone(t,l,0,d),0,'');
 let rows='',first=true;
 for(const t of ORDER){
   const P=E.PIECES[t];
-  if(first&&P.rare){rows+=`<h1 class="part">Rare stones</h1><p class="intro">Each rare stone belongs to one opponent, who brings it in the middle and late matches and drops it half the time when you win. They grow by their own table instead of one spike per side.</p>`;first=false;}
+  if(first&&!P.chess){rows+=`<h1 class="part">Rare stones</h1><p class="intro">Each rare stone belongs to one opponent, who brings it in the middle and late matches and drops it half the time when you win. They grow by their own table instead of one spike per side.</p>`;first=false;}
   rows+=`<section><div class="head"><h2>${P.name}</h2><span class="chess">${P.chess||'rare stone'}</span>
 <p>${P.text[0].toUpperCase()+P.text.slice(1)}.</p></div><div class="levels">`;
   const levels=P.fixed?[1]:[1,2,3,4,5];
