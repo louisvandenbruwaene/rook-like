@@ -22,26 +22,26 @@ const SKIN = '#f2c9a0';
    One per piece, drawn in a 56 x 56 box that sits on the stone's face. */
 
 const CHARACTERS = {
-  P: `<path d="M17 54 Q18 38 28 36 Q38 38 39 54 Z" fill="#e3d6bd" stroke="${OUTLINE}" stroke-width="2" stroke-linejoin="round"/>
+  pawn: `<path d="M17 54 Q18 38 28 36 Q38 38 39 54 Z" fill="#e3d6bd" stroke="${OUTLINE}" stroke-width="2" stroke-linejoin="round"/>
 <path d="M20 44 q-5 4 -3 9 M36 44 q5 4 3 9" stroke="${OUTLINE}" stroke-width="2" fill="none" stroke-linecap="round"/>
 <circle cx="28" cy="24" r="11" fill="${SKIN}" stroke="${OUTLINE}" stroke-width="2"/>
 <path d="M21 20 L26 18.5 M35 20 L30 18.5" stroke="${OUTLINE}" stroke-width="1.8" stroke-linecap="round"/>
 <circle cx="24" cy="24" r="1.7" fill="${OUTLINE}"/><circle cx="32" cy="24" r="1.7" fill="${OUTLINE}"/>
 <path d="M23.5 30.5 q2 -2 3.5 0 q2 2 3.5 0 q1 -1.5 2 0" fill="none" stroke="${OUTLINE}" stroke-width="1.6" stroke-linecap="round"/>
 <path d="M40 13 q4 5 0 7.5 q-4 -2.5 0 -7.5 Z" fill="#9fd8ff" stroke="${OUTLINE}" stroke-width="1.2"/>`,
-  N: `<path d="M41 54 L40 34 Q42 21 36 14 L38 5 L31.5 10.5 L28 5 L26.5 12 Q17 14 11 26 Q8 31 12.5 34.5 Q17 37 22 33 L26 32 Q24 43 18 54 Z" fill="#e7c398" stroke="${OUTLINE}" stroke-width="2" stroke-linejoin="round"/>
+  knight: `<path d="M41 54 L40 34 Q42 21 36 14 L38 5 L31.5 10.5 L28 5 L26.5 12 Q17 14 11 26 Q8 31 12.5 34.5 Q17 37 22 33 L26 32 Q24 43 18 54 Z" fill="#e7c398" stroke="${OUTLINE}" stroke-width="2" stroke-linejoin="round"/>
 <path d="M36 14 Q47 21 45 34 Q48 44 46 54 L41 54 L40 34 Q42 21 36 14 Z" fill="#7a4a2a" stroke="${OUTLINE}" stroke-width="2" stroke-linejoin="round"/>
 <circle cx="26" cy="19.5" r="5" fill="#fff" stroke="${OUTLINE}" stroke-width="1.6"/><circle cx="27.3" cy="21" r="2.3" fill="${OUTLINE}"/>
 <circle cx="14" cy="29" r="1.4" fill="${OUTLINE}"/>
 <path d="M14.5 34 L14.5 38 L18 38 L18 33.5" fill="#fff" stroke="${OUTLINE}" stroke-width="1.3" stroke-linejoin="round"/>`,
-  B: `<path d="M17 55 Q24 47 22.5 43 Q17 37 22 33 L34 33 Q39 37 33.5 43 Q32 47 39 55 Z" fill="#8a4fd1" stroke="${OUTLINE}" stroke-width="2" stroke-linejoin="round"/>
+  bishop: `<path d="M17 55 Q24 47 22.5 43 Q17 37 22 33 L34 33 Q39 37 33.5 43 Q32 47 39 55 Z" fill="#8a4fd1" stroke="${OUTLINE}" stroke-width="2" stroke-linejoin="round"/>
 <path d="M22.6 42.5 Q28 45 33.4 42.5" fill="none" stroke="#f3c54a" stroke-width="2.2"/>
 <circle cx="28" cy="25" r="7.5" fill="${SKIN}" stroke="${OUTLINE}" stroke-width="2"/>
 <path d="M21.5 20.5 Q20.5 10 28 2.5 Q35.5 10 34.5 20.5 Z" fill="#fbefd9" stroke="${OUTLINE}" stroke-width="2" stroke-linejoin="round"/>
 <path d="M30.5 6 L25.5 14" stroke="${OUTLINE}" stroke-width="1.6"/><path d="M21.5 18 H34.5" stroke="#f3c54a" stroke-width="2"/>
 <path d="M24 25 q1.5 -1.5 3 0" stroke="${OUTLINE}" stroke-width="1.4" fill="none"/><circle cx="31.5" cy="25" r="1.3" fill="${OUTLINE}"/>
 <path d="M25.5 28.5 q2.5 2 5 0" stroke="#c0304e" stroke-width="1.6" fill="none" stroke-linecap="round"/>`,
-  R: `<rect x="11" y="43" width="34" height="13" fill="#2fa7a0" stroke="${OUTLINE}" stroke-width="2"/>
+  rook: `<rect x="11" y="43" width="34" height="13" fill="#2fa7a0" stroke="${OUTLINE}" stroke-width="2"/>
 <rect x="22" y="43" width="12" height="4" fill="#c99868"/>
 <rect x="13" y="9" width="30" height="32" fill="#c99868" stroke="${OUTLINE}" stroke-width="2"/>
 <path d="M13 9 H43 V17 H39 V14 H17 V17 H13 Z" fill="#4a2f1c"/>
@@ -50,7 +50,7 @@ const CHARACTERS = {
 <rect x="30.5" y="23" width="4" height="4" fill="#4a3b9a"/><rect x="34.5" y="23" width="4.5" height="4" fill="#fff"/>
 <rect x="25.5" y="27" width="5" height="4" fill="#8a5a3a"/><rect x="21.5" y="32" width="13" height="3.5" fill="#6b3a24"/>
 <rect x="21.5" y="35.5" width="4" height="3" fill="#6b3a24"/><rect x="30.5" y="35.5" width="4" height="3" fill="#6b3a24"/>`,
-  Q: `<path d="M13 54 Q9 30 15.5 17 Q28 6 40.5 17 Q47 30 43 54 Q37 47 37 36 L19 36 Q19 47 13 54 Z" fill="#f0bf48" stroke="${OUTLINE}" stroke-width="2" stroke-linejoin="round"/>
+  queen: `<path d="M13 54 Q9 30 15.5 17 Q28 6 40.5 17 Q47 30 43 54 Q37 47 37 36 L19 36 Q19 47 13 54 Z" fill="#f0bf48" stroke="${OUTLINE}" stroke-width="2" stroke-linejoin="round"/>
 <path d="M17 56 Q19 43 28 42 Q37 43 39 56 Z" fill="#d6427a" stroke="${OUTLINE}" stroke-width="2"/>
 <ellipse cx="28" cy="28" rx="10" ry="12" fill="${SKIN}" stroke="${OUTLINE}" stroke-width="2"/>
 <path d="M18.5 22 Q24 14 33 17 Q37 19 38 24 Q33 18 25 20 Z" fill="#f0bf48" stroke="${OUTLINE}" stroke-width="1.5" stroke-linejoin="round"/>
@@ -59,7 +59,7 @@ const CHARACTERS = {
 <path d="M21.5 27 l-2 -1.5 M34.5 27 l2 -1.5 M23 28 l-1 1.6 M33 28 l1 1.6" stroke="${OUTLINE}" stroke-width="1.2" stroke-linecap="round"/>
 <circle cx="21" cy="32" r="2.3" fill="#ff8aa8" opacity=".6"/><circle cx="35" cy="32" r="2.3" fill="#ff8aa8" opacity=".6"/>
 <path d="M25 34 q3 2.6 6 0 q-3 -1.2 -6 0 Z" fill="#e0304e" stroke="#a01d35" stroke-width=".8"/><circle cx="34" cy="35.5" r=".9" fill="${OUTLINE}"/>`,
-  K: `<circle cx="28" cy="31" r="12.5" fill="${SKIN}" stroke="${OUTLINE}" stroke-width="2"/>
+  king: `<circle cx="28" cy="31" r="12.5" fill="${SKIN}" stroke="${OUTLINE}" stroke-width="2"/>
 <path d="M15.5 31 Q15 52 28 54 Q41 52 40.5 31 Q37 40 28 40 Q19 40 15.5 31 Z" fill="#8a5a3a" stroke="${OUTLINE}" stroke-width="2" stroke-linejoin="round"/>
 <path d="M20 37.5 Q28 31.5 36 37.5 Q28 35.5 20 37.5 Z" fill="#6a4228" stroke="${OUTLINE}" stroke-width="1.2" stroke-linejoin="round"/>
 <circle cx="23.5" cy="29" r="1.8" fill="${OUTLINE}"/><circle cx="32.5" cy="29" r="1.8" fill="${OUTLINE}"/>
@@ -67,14 +67,14 @@ const CHARACTERS = {
 <path d="M13 22 L13 6 L20.5 12.5 L28 2 L35.5 12.5 L43 6 L43 22 Z" fill="#ffcf3f" stroke="${OUTLINE}" stroke-width="2" stroke-linejoin="round"/>
 <rect x="13" y="17.5" width="30" height="4.5" fill="#e0a92e" stroke="${OUTLINE}" stroke-width="1.4"/>
 <circle cx="20.5" cy="14.5" r="2" fill="#4aa3ff" stroke="${OUTLINE}" stroke-width="1"/><circle cx="28" cy="12" r="2.4" fill="#e0304e" stroke="${OUTLINE}" stroke-width="1"/><circle cx="35.5" cy="14.5" r="2" fill="#3cc47a" stroke="${OUTLINE}" stroke-width="1"/>`,
-  S: `<path d="M10 50 Q4 40 14 36 Q26 33 24 26 Q22 18 30 15" fill="none" stroke="${OUTLINE}" stroke-width="9" stroke-linecap="round"/>
+  venom_veronica: `<path d="M10 50 Q4 40 14 36 Q26 33 24 26 Q22 18 30 15" fill="none" stroke="${OUTLINE}" stroke-width="9" stroke-linecap="round"/>
 <path d="M10 50 Q4 40 14 36 Q26 33 24 26 Q22 18 30 15" fill="none" stroke="#5fb24a" stroke-width="6" stroke-linecap="round"/>
 <path d="M12 46 L16 44 M15 38 L19 37 M22 30 L26 30 M24 22 L28 22" stroke="#2f6e27" stroke-width="1.6" stroke-linecap="round"/>
 <path d="M27 8 Q40 4 46 13 Q46 22 36 23 Q27 22 26 15 Z" fill="#6cc153" stroke="${OUTLINE}" stroke-width="2" stroke-linejoin="round"/>
 <circle cx="37" cy="12" r="2.2" fill="#ffe14a" stroke="${OUTLINE}" stroke-width="1"/><path d="M37 10.6 V13.4" stroke="${OUTLINE}" stroke-width="1"/>
 <path d="M40 21 L41 26 L43 21 M44 18 L49 20 M49 20 L52 18 M49 20 L52 22" fill="#fff" stroke="${OUTLINE}" stroke-width="1.2" stroke-linejoin="round"/>
 <path d="M44 18 L49 20" stroke="#e0304e" stroke-width="1.6"/>`,
-  W: `<path d="M15 55 Q16 40 28 38 Q40 40 41 55 Z" fill="#8a6d9e" stroke="${OUTLINE}" stroke-width="2"/>
+  experienced_edna: `<path d="M15 55 Q16 40 28 38 Q40 40 41 55 Z" fill="#8a6d9e" stroke="${OUTLINE}" stroke-width="2"/>
 <path d="M17 44 Q28 50 39 44 L38 41 Q28 46 18 41 Z" fill="#c9b6d6" stroke="${OUTLINE}" stroke-width="1.2"/>
 <circle cx="28" cy="26" r="11" fill="${SKIN}" stroke="${OUTLINE}" stroke-width="2"/>
 <path d="M17 24 Q18 12 28 12 Q38 12 39 24 Q34 17 28 17 Q22 17 17 24 Z" fill="#d6d6dc" stroke="${OUTLINE}" stroke-width="1.6"/>
@@ -83,7 +83,7 @@ const CHARACTERS = {
 <circle cx="23.5" cy="26" r="1" fill="${OUTLINE}"/><circle cx="32.5" cy="26" r="1" fill="${OUTLINE}"/>
 <path d="M24 32 q4 2.4 8 0" stroke="${OUTLINE}" stroke-width="1.5" fill="none" stroke-linecap="round"/>
 <path d="M44 20 Q49 20 49 25 M48 24 L45 55" fill="none" stroke="#7a4a2a" stroke-width="2.6" stroke-linecap="round"/>`,
-  E: `<path d="M12 55 Q14 38 28 37 Q42 38 44 55 Z" fill="#6a2fb0" stroke="${OUTLINE}" stroke-width="2"/>
+  empress_edna: `<path d="M12 55 Q14 38 28 37 Q42 38 44 55 Z" fill="#6a2fb0" stroke="${OUTLINE}" stroke-width="2"/>
 <path d="M18 42 Q24 50 28 44 Q32 50 38 42" fill="none" stroke="#6cc153" stroke-width="2.4" stroke-linecap="round"/><circle cx="38" cy="42" r="1.8" fill="#6cc153" stroke="${OUTLINE}" stroke-width=".8"/>
 <circle cx="28" cy="27" r="10.5" fill="${SKIN}" stroke="${OUTLINE}" stroke-width="2"/>
 <path d="M18 26 Q18 14 28 14 Q38 14 38 26 Q34 20 28 20 Q22 20 18 26 Z" fill="#d6d6dc" stroke="${OUTLINE}" stroke-width="1.5"/>
@@ -91,7 +91,7 @@ const CHARACTERS = {
 <circle cx="20.5" cy="11.5" r="1.8" fill="#6cc153" stroke="${OUTLINE}" stroke-width=".8"/><circle cx="28" cy="9" r="2.2" fill="#e0304e" stroke="${OUTLINE}" stroke-width=".8"/><circle cx="35.5" cy="11.5" r="1.8" fill="#4aa3ff" stroke="${OUTLINE}" stroke-width=".8"/>
 <path d="M22.5 27 q2 -2 4 0 M29.5 27 q2 -2 4 0" stroke="${OUTLINE}" stroke-width="1.6" fill="none" stroke-linecap="round"/>
 <path d="M24 32.5 q4 2 8 0" stroke="#a01d35" stroke-width="1.6" fill="none" stroke-linecap="round"/>`,
-  J: `<path d="M15 55 Q16 41 28 39 Q40 41 41 55 Z" fill="#3b9ad8" stroke="${OUTLINE}" stroke-width="2"/>
+  brittle_bernard: `<path d="M15 55 Q16 41 28 39 Q40 41 41 55 Z" fill="#3b9ad8" stroke="${OUTLINE}" stroke-width="2"/>
 <path d="M28 39 L25 55 M28 39 L31 55" stroke="#ffd34d" stroke-width="2"/>
 <circle cx="28" cy="27" r="11.5" fill="${SKIN}" stroke="${OUTLINE}" stroke-width="2"/>
 <path d="M16 17 L19 7 L23 13 L28 4 L31 12 L36 8 L37 17 Z" fill="#ffcf3f" stroke="${OUTLINE}" stroke-width="1.7" stroke-linejoin="round" transform="rotate(-14 27 13)"/>
@@ -99,27 +99,27 @@ const CHARACTERS = {
 <circle cx="33" cy="25" r="2.4" fill="#fff" stroke="${OUTLINE}" stroke-width="1.2"/><circle cx="31.9" cy="25.4" r="1.1" fill="${OUTLINE}"/>
 <path d="M22 33 Q28 37 34 32" fill="none" stroke="${OUTLINE}" stroke-width="1.6" stroke-linecap="round"/>
 <rect x="26" y="33.5" width="3" height="3" fill="#fff" stroke="${OUTLINE}" stroke-width=".8"/><rect x="29" y="33.3" width="3" height="3" fill="#fff" stroke="${OUTLINE}" stroke-width=".8"/>`,
-  G: `<path d="M9 55 Q8 38 28 35 Q48 38 47 55 Z" fill="#3d3a40" stroke="${OUTLINE}" stroke-width="2"/>
+  hairy_harambe: `<path d="M9 55 Q8 38 28 35 Q48 38 47 55 Z" fill="#3d3a40" stroke="${OUTLINE}" stroke-width="2"/>
 <circle cx="28" cy="26" r="14" fill="#3d3a40" stroke="${OUTLINE}" stroke-width="2"/>
 <path d="M17 26 Q17 16 28 16 Q39 16 39 26 Q39 36 28 37 Q17 36 17 26 Z" fill="#8c7b78" stroke="${OUTLINE}" stroke-width="1.5"/>
 <path d="M17.5 21 Q28 15 38.5 21 L38 24 Q28 19 18 24 Z" fill="#2a272c"/>
 <circle cx="23.5" cy="24" r="1.8" fill="${OUTLINE}"/><circle cx="32.5" cy="24" r="1.8" fill="${OUTLINE}"/>
 <ellipse cx="28" cy="29.5" rx="5" ry="3" fill="#5d4f4c"/><circle cx="26" cy="29.5" r="1" fill="${OUTLINE}"/><circle cx="30" cy="29.5" r="1" fill="${OUTLINE}"/>
 <path d="M23 33.5 Q28 31.5 33 33.5" stroke="${OUTLINE}" stroke-width="1.5" fill="none"/>`,
-  H: `<path d="M15 55 Q16 40 28 38 Q40 40 41 55 Z" fill="#f2e6c4" stroke="${OUTLINE}" stroke-width="2"/>
+  buzzy_beatrice: `<path d="M15 55 Q16 40 28 38 Q40 40 41 55 Z" fill="#f2e6c4" stroke="${OUTLINE}" stroke-width="2"/>
 <circle cx="28" cy="27" r="10.5" fill="${SKIN}" stroke="${OUTLINE}" stroke-width="2"/>
 <path d="M14 18 Q28 4 42 18 Z" fill="#f2e6c4" stroke="${OUTLINE}" stroke-width="2" stroke-linejoin="round"/><path d="M10 19 H46" stroke="${OUTLINE}" stroke-width="2.4" stroke-linecap="round"/>
 <path d="M14 19 L15 38 M42 19 L41 38 M17 19 V38 M21 19 V38 M25 19 V38 M29 19 V38 M33 19 V38 M37 19 V38 M40 19 V38 M15 24 H41 M15 29 H41 M15 34 H41" stroke="${OUTLINE}" stroke-opacity=".28" stroke-width=".9"/>
 <circle cx="24" cy="27" r="1.6" fill="${OUTLINE}"/><circle cx="32" cy="27" r="1.6" fill="${OUTLINE}"/><path d="M25 32 q3 2 6 0" stroke="${OUTLINE}" stroke-width="1.4" fill="none"/>
 <g transform="translate(43 44)"><ellipse rx="5" ry="3.6" fill="#ffd34d" stroke="${OUTLINE}" stroke-width="1.2"/><path d="M-1.5 -3.4 V3.4 M1.5 -3.4 V3.4" stroke="${OUTLINE}" stroke-width="1.4"/><ellipse cx="-1" cy="-4.5" rx="3" ry="2" fill="#fff" fill-opacity=".8" stroke="${OUTLINE}" stroke-width=".8"/></g>`,
-  O: `<path d="M13 55 Q15 39 28 37 Q41 39 43 55 Z" fill="#fbfbf6" stroke="${OUTLINE}" stroke-width="2"/>
+  his_hovering_holiness: `<path d="M13 55 Q15 39 28 37 Q41 39 43 55 Z" fill="#fbfbf6" stroke="${OUTLINE}" stroke-width="2"/>
 <path d="M28 38 V55 M23 46 H33" stroke="#e0a92e" stroke-width="2.4"/>
 <circle cx="28" cy="29" r="9.5" fill="${SKIN}" stroke="${OUTLINE}" stroke-width="2"/>
 <path d="M19.5 22 Q19 8 28 2 Q37 8 36.5 22 Z" fill="#fbfbf6" stroke="${OUTLINE}" stroke-width="2" stroke-linejoin="round"/>
 <path d="M28 6 V18 M24 11 H32" stroke="#e0a92e" stroke-width="2.2" stroke-linecap="round"/>
 <path d="M24 29 q1.5 -1.5 3 0 M29 29 q1.5 -1.5 3 0" stroke="${OUTLINE}" stroke-width="1.4" fill="none" stroke-linecap="round"/>
 <path d="M25 33.5 q3 2 6 0" stroke="${OUTLINE}" stroke-width="1.4" fill="none" stroke-linecap="round"/>`,
-  X: `<path d="M6 30 L14 18 L24 22 L30 12 L42 16 L50 28 L46 44 L32 50 L18 48 L8 42 Z" fill="#26262c" stroke="#0b0b0e" stroke-width="2" stroke-linejoin="round"/>
+  debris: `<path d="M6 30 L14 18 L24 22 L30 12 L42 16 L50 28 L46 44 L32 50 L18 48 L8 42 Z" fill="#26262c" stroke="#0b0b0e" stroke-width="2" stroke-linejoin="round"/>
 <path d="M14 18 L20 32 L30 12 M20 32 L32 30 L42 16 M32 30 L46 44 M20 32 L18 48 M32 30 L32 50" fill="none" stroke="#45454f" stroke-width="1.4"/>
 <path d="M22 26 L26 24 M36 22 L38 26" stroke="#6a6a76" stroke-width="1.2"/>`,
 };

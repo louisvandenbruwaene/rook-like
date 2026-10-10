@@ -16,7 +16,7 @@
 
 const SAVE_KEY = 'chainstones-run';
 const SETTINGS_KEY = 'chainstones-cfg';
-const SAVE_VERSION = 4;
+const SAVE_VERSION = 5;
 
 function readStorage(key) {
   try {
@@ -27,10 +27,9 @@ function readStorage(key) {
 }
 
 function newSave() {
-  const starter = STARTER_COLLECTION.split(' ');
   return {
     version: SAVE_VERSION,
-    collection: starter,
+    collection: STARTER_COLLECTION.slice(),
     difficulty: null,
     bestMatch: 0,
     runsPlayed: 0,
@@ -63,9 +62,10 @@ function currentDifficulty() {
 // Older saves are converted step by step. Saves from before version 2 (before the rare stones) start over.
 function loadSave() {
   let stored = readStorage(SAVE_KEY);
-  if (!stored || ![2, 3, 4].includes(stored.version)) return newSave();
+  if (!stored || ![2, 3, 4, 5].includes(stored.version)) return newSave();
   if (stored.version === 2) stored = fromVersion2(stored);
   if (stored.version === 3) stored = fromVersion3(stored);
+  if (stored.version === 4) stored = fromVersion4(stored);
   return stored;
 }
 
@@ -107,6 +107,35 @@ function fromVersion3(old) {
       difficulty: oldRun.difficulty,
       decks: oldRun.decks,
       over: oldRun.over,
+    },
+  };
+}
+
+// Version 5 writes stone codes in full: N2 became knight_level_2, P1> pawn_level_1_right.
+// prettier-ignore
+const OLD_PIECE_LETTERS = {
+  P: 'pawn', N: 'knight', B: 'bishop', R: 'rook', Q: 'queen', K: 'king', S: 'venom_veronica', W: 'experienced_edna',
+  E: 'empress_edna', J: 'brittle_bernard', G: 'hairy_harambe', H: 'buzzy_beatrice', O: 'his_hovering_holiness',
+};
+
+function fullCode(oldCode) {
+  const [, letter, level, direction] = /^([A-Z])(\d)([\^>v<]?)$/.exec(oldCode);
+  const turn = direction ? `_${DIRECTIONS['^>v<'.indexOf(direction)]}` : '';
+  return `${OLD_PIECE_LETTERS[letter]}_level_${level}${turn}`;
+}
+
+function fromVersion4(old) {
+  const { deck, ...rest } = old; // the deck you last played is no longer kept
+  const run = old.run;
+  const decks = run && run.decks;
+  return {
+    ...rest,
+    version: 5,
+    collection: old.collection.map(fullCode),
+    run: run && {
+      ...run,
+      collection: run.collection.map(fullCode),
+      decks: decks && Object.fromEntries(Object.entries(decks).map(([name, codes]) => [name, codes.map(fullCode)])),
     },
   };
 }

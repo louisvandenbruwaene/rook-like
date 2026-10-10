@@ -10,10 +10,20 @@
 const SIZE = 4;
 const RUN_LENGTH = 20; // the last match is against the boss
 const DECK_SIZE = 8; // the stones you take into a match, chosen from your collection
-const ONE_PER_DECK = 'KQ'; // a deck holds at most one king and one queen, whatever their turn
-const ONLY_ONE_OWNED = 'Q'; // you own one queen: an upgraded or newly kept queen replaces the old one
+const ONE_PER_DECK = ['king', 'queen']; // a deck holds at most one king and one queen, whatever their turn
+const ONLY_ONE_OWNED = ['queen']; // you own one queen: an upgraded or newly kept queen replaces the old one
 const UPGRADE_CHOICES = 3; // after a win, you pick one of this many stones from your deck to upgrade
-const STARTER_COLLECTION = 'P1^ P1> P1< N1 B1 R1 Q1 K1'; // Tiny Tim, Tony and Ted; Tiny Tom comes from the opponents
+// Tiny Tim, Tony and Ted; Tiny Tom comes from the opponents
+const STARTER_COLLECTION = [
+  'pawn_level_1_up',
+  'pawn_level_1_right',
+  'pawn_level_1_left',
+  'knight_level_1',
+  'bishop_level_1',
+  'rook_level_1',
+  'queen_level_1',
+  'king_level_1',
+];
 const THINK_MS = 1000;
 const BOSS_THINK_MS = 1600;
 
@@ -23,12 +33,12 @@ const BOSS_THINK_MS = 1600;
 //   lookAhead     how many moves ahead the opponent looks (its own move counts as one). 99 is as far as it can
 //                 in its thinking time, which in the last moves of a match is to the very end.
 //   startLevel    the level of every opponent stone at the start of a run
-//   upgradeOrder  which stones the opponents upgrade first after your wins, as groups of piece letters, with
+//   upgradeOrder  which stones the opponents upgrade first after your wins, as groups of pieces, with
 //                 every other piece as one last group (see upgradeOne). null: any stone, at random.
 // prettier-ignore
 const DIFFICULTIES = {
-  easy:     { name: 'Easy',      lookAhead: 2,  startLevel: 0, upgradeOrder: ['P'] },
-  normal:   { name: 'Normal',    lookAhead: 99, startLevel: 0, upgradeOrder: ['PNBR'] },
+  easy:     { name: 'Easy',      lookAhead: 2,  startLevel: 0, upgradeOrder: [['pawn']] },
+  normal:   { name: 'Normal',    lookAhead: 99, startLevel: 0, upgradeOrder: [['pawn', 'knight', 'bishop', 'rook']] },
   hard:     { name: 'Hard',      lookAhead: 2,  startLevel: 1, upgradeOrder: null },
   veryHard: { name: 'Very hard', lookAhead: 99, startLevel: 1, upgradeOrder: null },
 };
@@ -37,17 +47,114 @@ const DIFFICULTIES = {
    Each opponent brings the same stones in every run, their rare stone included.
    The levels in these codes are replaced by the difficulty's startLevel when a run begins. */
 
-// prettier-ignore
 const OPPONENTS = [
-  { name: 'Pawnbroker Pete', portrait: 'pete',   deck: 'P1^ P1> P1v P1< N1 B1 G1 K1', line: 'Everything has a price. My Harambe collects.' },
-  { name: 'Sir Neighsalot',  portrait: 'neigh',  deck: 'N1 N1> N1v P1^ P1> H1 R1 K1', line: 'Hold your horses. All of them.' },
-  { name: 'Madame Swerve',   portrait: 'swerve', deck: 'B1 B1 S1 P1^ P1> P1v N1 K1',  line: 'Darling, I never take the straight road.' },
-  { name: 'Blocky Barb',     portrait: 'barb',   deck: 'R1 R1 P1^ P1> P1v P1< N1 K1', line: 'Square deal. Square face. Square loss.' },
-  { name: 'Lady Lux',        portrait: 'lux',    deck: 'Q1 W1 B1 P1^ P1> P1v N1 K1',  line: 'I brought my sisters. You brought Tiny Tims.' },
-  { name: 'Uncle Gambit',    portrait: 'gambit', deck: 'N1 B1 R1 J1 P1^ P1> P1v K1',  line: 'I sacrifice. You suffer.' },
+  {
+    name: 'Pawnbroker Pete',
+    portrait: 'pete',
+    deck: [
+      'pawn_level_1_up',
+      'pawn_level_1_right',
+      'pawn_level_1_down',
+      'pawn_level_1_left',
+      'knight_level_1',
+      'bishop_level_1',
+      'hairy_harambe_level_1',
+      'king_level_1',
+    ],
+    line: 'Everything has a price. My Harambe collects.',
+  },
+  {
+    name: 'Sir Neighsalot',
+    portrait: 'neigh',
+    deck: [
+      'knight_level_1',
+      'knight_level_1_right',
+      'knight_level_1_down',
+      'pawn_level_1_up',
+      'pawn_level_1_right',
+      'buzzy_beatrice_level_1',
+      'rook_level_1',
+      'king_level_1',
+    ],
+    line: 'Hold your horses. All of them.',
+  },
+  {
+    name: 'Madame Swerve',
+    portrait: 'swerve',
+    deck: [
+      'bishop_level_1',
+      'bishop_level_1',
+      'venom_veronica_level_1',
+      'pawn_level_1_up',
+      'pawn_level_1_right',
+      'pawn_level_1_down',
+      'knight_level_1',
+      'king_level_1',
+    ],
+    line: 'Darling, I never take the straight road.',
+  },
+  {
+    name: 'Blocky Barb',
+    portrait: 'barb',
+    deck: [
+      'rook_level_1',
+      'rook_level_1',
+      'pawn_level_1_up',
+      'pawn_level_1_right',
+      'pawn_level_1_down',
+      'pawn_level_1_left',
+      'knight_level_1',
+      'king_level_1',
+    ],
+    line: 'Square deal. Square face. Square loss.',
+  },
+  {
+    name: 'Lady Lux',
+    portrait: 'lux',
+    deck: [
+      'queen_level_1',
+      'experienced_edna_level_1',
+      'bishop_level_1',
+      'pawn_level_1_up',
+      'pawn_level_1_right',
+      'pawn_level_1_down',
+      'knight_level_1',
+      'king_level_1',
+    ],
+    line: 'I brought my sisters. You brought Tiny Tims.',
+  },
+  {
+    name: 'Uncle Gambit',
+    portrait: 'gambit',
+    deck: [
+      'knight_level_1',
+      'bishop_level_1',
+      'rook_level_1',
+      'brittle_bernard_level_1',
+      'pawn_level_1_up',
+      'pawn_level_1_right',
+      'pawn_level_1_down',
+      'king_level_1',
+    ],
+    line: 'I sacrifice. You suffer.',
+  },
 ];
-// prettier-ignore
-const BOSS = { name: 'The Obsidian Monarch', portrait: 'boss', isBoss: true, deck: 'O1 Q1 Q1 R1 B1 N1 N1> K1', line: 'Nineteen boards behind you. One crown ahead.' };
+const BOSS = {
+  name: 'The Obsidian Monarch',
+  portrait: 'boss',
+  isBoss: true,
+  deck: [
+    'his_hovering_holiness_level_1',
+    'queen_level_1',
+    'queen_level_1',
+    'rook_level_1',
+    'bishop_level_1',
+    'knight_level_1',
+    'knight_level_1_right',
+    'king_level_1',
+  ],
+  line: 'Nineteen boards behind you. One crown ahead.',
+};
 
 // Lady Lux's Experienced Edna cures the poison of Madame Swerve's Venom Veronica, so Lady Lux always comes first.
 const LADY_LUX = 4;
@@ -64,7 +171,7 @@ const BOSS_HEAD_START = 6;
 function newDecks(difficulty) {
   const decks = {};
   for (const opponent of [...OPPONENTS, BOSS]) {
-    decks[opponent.portrait] = opponent.deck.split(' ').map((code) => {
+    decks[opponent.portrait] = opponent.deck.map((code) => {
       return PIECES[pieceOf(code)].hasNoLevels ? code : withLevel(code, difficulty.startLevel);
     });
   }

@@ -83,7 +83,7 @@ function shownStone(cell) {
   if (replay.before) {
     for (const promotion of game.promotions) {
       if (promotion.cell === cell && promotion.step > replay.step) {
-        stone = { ...makeStone('W', stone.level, stone.facing), poison: stone.poison };
+        stone = { ...makeStone('experienced_edna', stone.level, stone.facing), poison: stone.poison };
       }
     }
     for (const flip of game.flips) {
@@ -263,7 +263,7 @@ function squareContents(cell, owner, stone, breakingSpikes, preview, previewBrea
   if (replay.turning.has(cell)) {
     // A collapsing Brittle Bernard turns over from Bernard himself; any other stone from itself in its old colour.
     let front = stone;
-    if (owner === RUBBLE && stone.type === 'X') {
+    if (owner === RUBBLE && stone.type === 'debris') {
       front = game.flips.find((flip) => flip.cell === cell && flip.owner === RUBBLE).collapsed;
     }
     const frontFace = drawStone(front, replay.turning.get(cell), { breakingSpikes });

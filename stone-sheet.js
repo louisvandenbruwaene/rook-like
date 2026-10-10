@@ -13,7 +13,7 @@ const { PIECES, makeStone, drawStone } = new Function(
   `${read('src/rules.js')}\n${read('src/art.js')}\nreturn { PIECES, makeStone, drawStone };`,
 )();
 
-const TYPES = Object.keys(PIECES).filter((type) => type !== 'X'); // every piece but debris, chess pieces first
+const TYPES = Object.keys(PIECES).filter((type) => type !== 'debris'); // every piece but debris, chess pieces first
 const LEVELS = [1, 2, 3, 4, 5];
 const YOU = 0;
 
