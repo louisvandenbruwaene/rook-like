@@ -9,7 +9,7 @@ The page is [`index.html`](index.html) (layout and rules text) with [`style.css`
 | [`src/rules.js`](src/rules.js) | 454 | the pieces, stones, the board, one fight, one move. Pure logic, never touches the page |
 | [`src/computer.js`](src/computer.js) | 117 | the computer player |
 | [`src/art.js`](src/art.js) | 240 | every stone and portrait as an SVG string (120 lines are drawing data) |
-| [`src/settings.js`](src/settings.js) | 95 | board size, run length, difficulties, the opponents and how they grow |
+| [`src/settings.js`](src/settings.js) | 130 | board size, run length, difficulties, the opponents and their decks |
 | [`src/save.js`](src/save.js) | 79 | progress and settings in localStorage |
 | [`src/screen.js`](src/screen.js) | 255 | the state of a match and the `render…()` functions |
 | [`src/move.js`](src/move.js) | 202 | how a move plays out on screen, step by step |
@@ -71,7 +71,7 @@ classDiagram
     }
     class Stone {
         type : piece letter, P N B R Q K ...
-        level : 1 to 5
+        level : 0 to 5, only opponents start at 0
         facing : YOU or OPPONENT
         variant : 0 to 3, the quarter turn
         spikes : [top, right, bottom, left]
@@ -185,7 +185,16 @@ flowchart TD
 | each spike ahead | 2 (at most 640 in total, so one point always counts more) |
 | having placed first | 1 |
 
-The difficulty only sets `maxDepth`, how many moves ahead it may look: Easy 1, Normal 2, Hard as deep as its thinking time allows. Near the end of a match Hard sees all the way to the last move.
+The difficulty sets two things: `maxDepth`, how many moves ahead the computer may look, and how strong its stones are.
+
+| Difficulty | Looks ahead | Opponent stones start at | After each of your wins, every deck upgrades one stone |
+|---|---|---|---|
+| Easy | 2 moves | level 0 | tinies first, then everything else, one level at a time |
+| Normal | as far as it can | level 0 | tinies, then knight, bishop and rook, then everything else, one level at a time |
+| Hard | 2 moves | level 1 | any stone, at random |
+| Very hard | as far as it can | level 1 | any stone, at random |
+
+"As far as it can" means one second of thinking (1.6 for the boss). Near the end of a match that reaches the very last move. A level 0 stone has one spike fewer on every spiked side, so a level 0 tiny has none.
 
 ## A turn on screen
 
@@ -221,7 +230,7 @@ While a move plays out the board shows `replay.owners`, the colours as they are 
 ```mermaid
 stateDiagram-v2
     [*] --> chooseDifficulty
-    chooseDifficulty --> intro : Easy · Normal · Hard
+    chooseDifficulty --> intro : Easy · Normal · Hard · Very hard
     intro --> startMatch : Fight
     startMatch --> finishMatch : board full or Pope taken
     finishMatch --> offerRewards : you won
@@ -233,7 +242,7 @@ stateDiagram-v2
     endRun --> chooseDifficulty : keep one stone, new run
 ```
 
-- **Opponents** (`OPPONENTS`, `BOSS`) each always bring the same hand. `handOf(opponent, matchesWon)` adds one level per win, most valuable piece first. The boss starts 6 levels ahead.
+- **Opponent decks** (`newDecks`, `upgradeOne`, `upgradeAllDecks` in `settings.js`): every opponent keeps one deck for the whole run, starting at the difficulty's level. After each match you win, every deck upgrades one stone, so they all grow, even the ones you are not facing. The boss starts with 6 extra upgrades. Rewards are never below level 1.
 - **Who places first** (`firstFor`): you in odd matches, the opponent in even ones, the boss always.
 - **Winning a match** (`winnerOf`): taking the Pope, else most points (stones), else most spikes left, else whoever placed first.
 - **Saves** (`loadSave`, `store`) keep your starting hand, records and the run in localStorage. Older saves are converted when they load.

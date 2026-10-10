@@ -7,7 +7,7 @@
    Settings and progress live in localStorage, under their old keys so earlier saves carry over.
    save: { version, startingHand (stone codes, kept between runs), bestMatch, runsPlayed, crowns, run }
    run:  { match, hand (stone codes), opponentOrder, changedSlots (hand slots that got a new stone),
-           difficulty, over } */
+           difficulty, decks (each opponent's stone codes, see settings.js), over } */
 
 const SAVE_KEY = 'chainstones-run';
 const SETTINGS_KEY = 'chainstones-cfg';
@@ -73,7 +73,17 @@ function store() {
   }
 }
 
-// Runs from before difficulties were added play on hard.
+// Runs from before difficulties were added play on Very hard, which is how they always played.
 function currentDifficulty() {
-  return DIFFICULTIES[save.run.difficulty || 'hard'];
+  return DIFFICULTIES[save.run.difficulty || 'veryHard'];
 }
+
+// Runs from before opponent decks get them now: built for their difficulty, with one upgrade per match won.
+function addMissingDecks() {
+  const run = save.run;
+  if (!run || run.over || run.decks) return;
+  run.decks = newDecks(currentDifficulty());
+  for (let won = 1; won < run.match; won++) upgradeAllDecks(run.decks, currentDifficulty());
+  store();
+}
+addMissingDecks();

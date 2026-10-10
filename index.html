@@ -65,17 +65,17 @@
 <template id="rules-template">
   <h2>How to play</h2>
   <ul>
-    <li>A run is <b>20 matches</b>. Lose one and the run is over. Match 20 is the boss. At the start of a run you pick Easy, Normal or Hard: how many moves ahead your opponents look.</li>
+    <li>A run is <b>20 matches</b>. Lose one and the run is over. Match 20 is the boss. At the start of a run you pick a difficulty: Easy (opponents look 2 moves ahead, stones from level 0), Normal (as far ahead as they can, level 0), Hard (2 moves, level 1) or Very hard (as far as they can, level 1).</li>
     <li>Take turns placing a stone from your hand on an empty square of the 4 × 4 board. You never see the opponent's hand.</li>
-    <li>Your hand: Tiny Tim, Tiny Tony and Tiny Ted (pawns), Sir Gallops (knight), Mitre Mandy (bishop), Castle Carl (rook), Her Majesty Mayhem (queen) and Old King Coal (king). Your stones face up the board, the opponent's are turned round and face down. Each level adds a spike to every side that has some, up to 5.</li>
+    <li>Your hand: Tiny Tim, Tiny Tony and Tiny Ted (pawns), Sir Gallops (knight), Mitre Mandy (bishop), Castle Carl (rook), Her Majesty Mayhem (queen) and Old King Coal (king). Your stones face up the board, the opponent's are turned round and face down. Each level adds a spike to every side that has some, up to 5. Opponents' stones can be level 0: one spike fewer on every spiked side, so a level 0 tiny has none.</li>
     <li><b>Old King Coal</b> has golden shields on every side: every spike that touches him breaks, and he can never be taken.</li>
     <li><b>Rare stones</b> have their own powers and their own growth (see below). Each belongs to one opponent, who always plays it and may offer it when you win.</li>
     <li><b>Clash:</b> each side of your new stone that touches an enemy stone fights it. Facing spikes break off one for one, and the side with spikes left over wins and takes the other stone. A spike that hits is used up, so the winner always loses at least one spike: 2 against 1 ends 1 against 0, and 1 against 0 ends 0 against 0. That works both ways: lose any clash and your new stone is taken.</li>
     <li><b>Chain:</b> after the new stone has fought, as long as two stones of different colours touch with a spike between them, they fight the same way, the pair closest to the new stone first. So when a move ends, no two stones of different colours touch with a spike between them.</li>
     <li>When the board is full, count your stones, one point each. Most points wins. Level on points: most spikes left on your stones wins (the small number by each score). Level on spikes too: whoever placed first wins, since the other side had the last move. Whoever loses the Pope loses the match at once.</li>
-    <li>Opponents come in a random order, but Lady Lux, whose Old Woman cures poison, always comes before Madame Swerve and her Serpent. Every match you win makes the next opponents' stones stronger.</li>
-    <li>After a win the opponent shows you three random stones from the hand they played, sometimes their rare stone too. Take one, in the place of a stone you pick, or skip. When a run ends, keep one stone you gained: it stays in your starting hand for good.</li>
-    <li>Every opponent always brings the same stones, a level stronger for every match you have won. Remember what they play.</li>
+    <li>Opponents come in a random order, but Lady Lux, whose Old Woman cures poison, always comes before Madame Swerve and her Serpent. Every opponent keeps their own deck for the whole run. After each match you win, every deck upgrades one stone by one level, so they all grow even while you face someone else. On Easy and Normal the tinies go up first, one level at a time. The boss starts 6 upgrades ahead.</li>
+    <li>After a win the opponent shows you three random stones from the hand they played, sometimes their rare stone too (never below level 1). Take one, in the place of a stone you pick, or skip. When a run ends, keep one stone you gained: it stays in your starting hand for good.</li>
+    <li>Every opponent always brings the same stones. Remember what they play.</li>
     <li>Pick a stone, then hover over a square (or tap it once on a phone): yellow stones you would take, red stones you would lose, faded spikes would break. Slow (or S) plays every move four times slower.</li>
   </ul>
   <div class="piece-guide" id="piece-guide"></div>
