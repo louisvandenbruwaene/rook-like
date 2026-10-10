@@ -6,15 +6,15 @@ The page is [`index.html`](index.html) (layout and rules text) with [`style.css`
 
 | File | Lines | What it holds |
 |---|---|---|
-| [`src/rules.js`](src/rules.js) | 454 | the pieces, stones, the board, one fight, one move. Pure logic, never touches the page |
-| [`src/computer.js`](src/computer.js) | 117 | the computer player |
-| [`src/art.js`](src/art.js) | 240 | every stone and portrait as an SVG string (120 lines are drawing data) |
-| [`src/settings.js`](src/settings.js) | 130 | board size, run length, difficulties, the opponents and their decks |
-| [`src/save.js`](src/save.js) | 120 | progress and settings in localStorage |
-| [`src/screen.js`](src/screen.js) | 255 | the state of a match and the `render…()` functions |
-| [`src/move.js`](src/move.js) | 202 | how a move plays out on screen, step by step |
-| [`src/run.js`](src/run.js) | 289 | the cards between matches, from difficulty to the end of a run |
-| [`src/controls.js`](src/controls.js) | 109 | the rules panel, mouse, touch and keys, and the start |
+| [`src/rules.js`](src/rules.js) | 460 | the pieces, stones, the board, one fight, one move. Pure logic, never touches the page |
+| [`src/computer.js`](src/computer.js) | 119 | the computer player |
+| [`src/art.js`](src/art.js) | 242 | every stone and portrait as an SVG string (120 lines are drawing data) |
+| [`src/settings.js`](src/settings.js) | 133 | board size, run length, difficulties, the opponents and their decks |
+| [`src/save.js`](src/save.js) | 131 | progress and settings in localStorage |
+| [`src/screen.js`](src/screen.js) | 272 | the state of a match and the `render…()` functions |
+| [`src/move.js`](src/move.js) | 218 | how a move plays out on screen, step by step |
+| [`src/run.js`](src/run.js) | 325 | the cards between matches, from difficulty to the end of a run |
+| [`src/controls.js`](src/controls.js) | 110 | the rules panel, mouse, touch and keys, and the start |
 
 ## How the files fit together
 
@@ -252,5 +252,5 @@ stateDiagram-v2
 
 The code is checked by behaviour, not by tests in the repo:
 
-- `node stone-sheet.js` prints every stone's rating and writes `stones.html`. Its output should not change unless you meant to change a stone.
+- `node stone-sheet.js` prints every stone's rating (in the order of `PIECES`) and writes `stones.html`. Its output should not change unless you meant to change a stone.
 - For rule changes, play a few seeded games in node with `src/rules.js` and `src/computer.js` (see how `stone-sheet.js` loads them) and compare the move records before and after.

@@ -1,8 +1,8 @@
 /* ===== Base =====
-   Your hand on the left, the board in the middle, the opponent's hidden hand on the right; stacked on phones.
+   Your hand on the left, the board in the middle, the opponent's hidden hand as a slim stack on the right; stacked on phones.
    Every size follows the stone size --c, so the whole table fits the window. --t stretches every animation in slow motion. */
 :root{
-  --c:clamp(56px,min(calc((100vh - 250px)/4.4),calc((100vw - 120px)/9.2)),128px);--gap:calc(var(--c)*.13);
+  --c:clamp(56px,min(calc((100vh - 240px)/4.75),calc((100vw - 120px)/8.2)),136px);--gap:calc(var(--c)*.13);
   --bg:#162034; --panel:#212d45; --panel2:#2c3b59; --ink:#eef2fb; --muted:#9eadc8; --line:#3a4a6a;
   --accent:#f3c54a; --blue:#4aa3ff; --red:#ff6150;
   --grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
@@ -15,8 +15,8 @@ body.slow{--t:4}
 *,*::before,*::after{box-sizing:border-box}
 [hidden]{display:none!important}
 body{margin:0;background:radial-gradient(ellipse at 50% -10%,#2b3d66 0%,var(--bg) 60%) fixed var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;min-height:100vh;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-h1,h2,button,.back-link,.run-line,.name,.points,#stone-info b,#stone-info .level,.card-label,.name-tag,.points-pop,.piece-guide b{font-family:var(--f-display)}
-.page{max-width:1300px;margin:0 auto;padding:max(10px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) 10px max(14px,env(safe-area-inset-left));display:grid;gap:10px;min-height:100vh;align-content:start}
+h1,h2,h3,button,.back-link,.run-line,.name,.points,.hand-count,#stone-info b,#stone-info .level,.card-label,.name-tag,.points-pop,.piece-guide b{font-family:var(--f-display)}
+.page{max-width:1300px;margin:0 auto;padding:max(10px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) 10px max(14px,env(safe-area-inset-left));display:grid;grid-template-rows:auto auto 1fr;gap:10px;min-height:100vh}
 
 /* ===== Buttons ===== */
 button{font-size:16px;font-weight:600;border:0;border-radius:10px;padding:9px 14px;background:var(--panel2);color:var(--ink);cursor:pointer;box-shadow:0 3px 0 #0e1422;transition:transform .06s}
@@ -46,23 +46,23 @@ h1{font-weight:700;font-size:28px;margin:0;letter-spacing:-.01em}
 .run-line{font-size:13px;color:var(--muted);margin-top:4px}
 
 /* ===== Scores: you, the tug of war, the opponent ===== */
-.scoreboard{display:grid;grid-template-columns:minmax(0,max-content) minmax(40px,1fr) minmax(0,max-content);gap:14px;align-items:center;max-width:calc(var(--c)*8.6 + 80px);width:100%;justify-self:center}
-.player{display:flex;align-items:center;gap:10px;min-width:0;padding:4px 10px;border-radius:14px;border:2px solid transparent;transition:border-color .2s}
-.player.to-move{border-color:currentColor}
-.player.opponent{flex-direction:row-reverse;text-align:right}
+.scoreboard{display:grid;grid-template-columns:minmax(0,max-content) minmax(40px,1fr) minmax(0,max-content);gap:14px;align-items:center;max-width:calc(var(--c)*7.6 + 60px);width:100%;justify-self:center}
+.player{display:flex;align-items:center;gap:10px;min-width:0;padding:4px 12px;border-radius:16px;background:rgba(33,45,69,.7);border:2px solid var(--line);transition:border-color .2s,box-shadow .2s}
+.player.to-move{border-color:currentColor;box-shadow:0 0 0 4px color-mix(in srgb,currentColor 16%,transparent),0 0 22px color-mix(in srgb,currentColor 30%,transparent)}
+.player.opponent{flex-direction:row-reverse;text-align:right;padding-right:5px}
 .player .name{font-weight:600;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .player .points{font-weight:700;font-size:28px;font-variant-numeric:tabular-nums}
 .player .spikes{font-size:13px;opacity:.6;font-variant-numeric:tabular-nums;white-space:nowrap}
 .you{color:var(--blue)}
 .opponent{color:var(--red)}
-.portrait{width:44px;height:44px;flex:none;border-radius:50%;overflow:hidden;box-shadow:0 0 0 2px currentColor}
+.portrait{width:40px;height:40px;flex:none;border-radius:50%;overflow:hidden;box-shadow:0 0 0 2px currentColor}
 .tug-of-war{display:flex;height:8px;border-radius:99px;background:rgba(10,14,26,.5);overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,.5)}
 .tug-of-war div{transition:width .35s ease-out}
 .tug-of-war .you{background:linear-gradient(90deg,#2f7fe0,var(--blue))}
 .tug-of-war .opponent{background:linear-gradient(90deg,var(--red),#d8402f);margin-left:auto}
 
 /* ===== Table: the two hands around the board ===== */
-.table{display:grid;grid-template-columns:auto auto auto;gap:calc(var(--c)*.3);justify-content:center;align-items:center}
+.table{display:grid;grid-template-columns:auto auto auto;gap:calc(var(--c)*.3);justify-content:center;align-items:center;align-content:center;padding-bottom:12px}
 .centre{display:grid;gap:8px}
 .hand{display:grid;grid-template-columns:repeat(2,var(--c));gap:var(--gap);align-content:center;min-height:calc(var(--c)*4 + var(--gap)*3)}
 .hand:not(.active) .hand-stone{opacity:.55;filter:saturate(.8)}
@@ -71,12 +71,21 @@ h1{font-weight:700;font-size:28px;margin:0;letter-spacing:-.01em}
 .hand-stone.selected{transform:translateY(-6px) scale(1.06);background:radial-gradient(circle,rgba(243,197,74,.4) 0%,rgba(243,197,74,0) 70%)}
 .hand-stone:disabled{cursor:default}
 .hand-stone:disabled:hover{filter:none}
-.hidden-hand .hidden-stone{width:var(--c);height:var(--c);filter:drop-shadow(0 4px 3px rgba(0,0,0,.45))}
+.hidden-hand{display:grid;justify-items:center;gap:10px;width:calc(var(--c)*.75)}
+.hidden-stack{display:flex;flex-direction:column;align-items:center}
+.hidden-stone{width:calc(var(--c)*.62);height:calc(var(--c)*.62);filter:drop-shadow(0 3px 2px rgba(0,0,0,.5))}
+.hidden-stone+.hidden-stone{margin-top:calc(var(--c)*-.34)}
+.hidden-stone:nth-child(odd){transform:rotate(-4deg)}
+.hidden-stone:nth-child(even){transform:rotate(3deg)}
+.hand-count{font-size:14px;color:var(--red);opacity:.8;font-variant-numeric:tabular-nums}
 .portrait svg,.hidden-stone svg,.big-portrait svg,.hand-stone svg,.square svg.stone{width:100%;height:100%;display:block}
 .hand-stone svg,.square svg.stone{overflow:visible;filter:drop-shadow(0 4px 3px rgba(0,0,0,.45))}
 #stone-info{min-height:1.5em;max-width:calc(var(--c)*4.4);justify-self:center;text-align:center;font-size:15px;color:var(--muted)}
 #stone-info b{font-weight:600;color:var(--ink)}
 #stone-info .level{color:var(--accent);font-weight:600}
+#stone-info .status{font-family:var(--f-display);font-weight:500}
+#stone-info .status.opponent{color:var(--red)}
+#stone-info .status.you{color:var(--blue)}
 
 /* ===== Board ===== */
 .board-frame{position:relative}
@@ -97,6 +106,8 @@ h1{font-weight:700;font-size:28px;margin:0;letter-spacing:-.01em}
 
 /* ===== A move: drop, shatter, turn over ===== */
 .square.just-placed svg.stone{animation:drop calc(.3s*var(--t)) cubic-bezier(.3,1.5,.5,1)}
+.board.thump{animation:thump calc(.28s*var(--t)) ease-out calc(.12s*var(--t))}
+.board.shake{animation:shake calc(.4s*var(--t)) ease-in-out}
 .square:not(.preview) .breaking{transform-box:fill-box;transform-origin:50% 100%;animation:shatter calc(.45s*var(--t)) ease-in forwards}
 .flip-card{position:absolute;inset:0;transform-style:preserve-3d;animation:turn calc(.42s*var(--t)*var(--pace,1)) ease-in-out forwards}
 .flip-card .front,.flip-card .back-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden}
@@ -144,6 +155,10 @@ h1{font-weight:700;font-size:28px;margin:0;letter-spacing:-.01em}
 .choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
 .choice{display:grid;gap:6px;justify-items:center;padding:12px 8px;background:var(--panel2);border-radius:14px;font-size:14px;font-weight:600;line-height:1.3}
 .choice svg{width:76px;height:76px;overflow:visible}
+.choices.difficulties{grid-template-columns:repeat(2,1fr)}
+.choice .difficulty{font-size:19px}
+.choice .difficulty-detail{font-family:var(--f-body);font-weight:400;font-size:13px;color:var(--muted)}
+.choice .pips{color:var(--red);letter-spacing:2px;font-size:12px}
 .choice .swap{display:flex;align-items:center;gap:2px}
 .choice .swap svg{width:56px;height:56px}
 /* A long list of choices, like every stone of a run: smaller tiles. */
@@ -163,6 +178,7 @@ h1{font-weight:700;font-size:28px;margin:0;letter-spacing:-.01em}
 
 /* ===== Rules ===== */
 .card.rules{text-align:left;width:min(760px,100%);line-height:1.5}
+.rules h3{font-size:17px;font-weight:600;color:var(--accent);margin:8px 0 0}
 .rules ul{margin:0;padding-left:20px}
 .rules li{margin:4px 0}
 .rules .rules-footer{display:flex;justify-content:space-between;align-items:center}
@@ -174,6 +190,8 @@ h1{font-weight:700;font-size:28px;margin:0;letter-spacing:-.01em}
 .record{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
 
 /* ===== Keyframes ===== */
+@keyframes thump{0%,100%{transform:none}35%{transform:translateY(3px) scale(.995)}}
+@keyframes shake{0%,100%{transform:none}20%{transform:translateX(-5px) rotate(-.4deg)}40%{transform:translateX(5px) rotate(.4deg)}60%{transform:translateX(-3px)}80%{transform:translateX(2px)}}
 @keyframes drop{0%{transform:scale(1.35);opacity:0}100%{transform:scale(1);opacity:1}}
 @keyframes shatter{0%{transform:none;opacity:1}35%{transform:scale(1.25);opacity:1}100%{transform:translateY(-6px) scale(.2) rotate(40deg);opacity:0}}
 @keyframes turn{0%{transform:perspective(500px) rotateY(0)}50%{transform:perspective(500px) rotateY(90deg) scale(1.1)}100%{transform:perspective(500px) rotateY(180deg)}}
@@ -192,14 +210,18 @@ h1{font-weight:700;font-size:28px;margin:0;letter-spacing:-.01em}
 @media (prefers-reduced-motion:reduce){
   .square:not(.preview) .breaking{animation:none;opacity:0}
   .flip-card{animation:none;transform:rotateY(180deg)}
-  .square.just-placed svg.stone,.square.turning-over::after,.square.would-take::after,.points-pop,.name-tag,.card{animation:none}
+  .board.thump,.board.shake,.square.just-placed svg.stone,.square.turning-over::after,.square.would-take::after,.points-pop,.name-tag,.card{animation:none}
 }
 @media (max-width:760px){
   :root{--c:calc((100vw - 60px)/4.5)}
   .table{grid-template-columns:1fr}
   .hand{grid-template-columns:repeat(4,var(--c));min-height:0;justify-content:center}
-  .hidden-hand{order:-1;display:flex;justify-content:center;gap:4px}
-  .hidden-hand .hidden-stone{width:calc(var(--c)*.4);height:calc(var(--c)*.4)}
+  .hidden-hand{order:-1;width:auto;display:flex;justify-content:center;align-items:center}
+  .hidden-stack{flex-direction:row}
+  .hidden-stone{width:calc(var(--c)*.42);height:calc(var(--c)*.42)}
+  .hidden-stone+.hidden-stone{margin:0 0 0 calc(var(--c)*-.1)}
+  .player .points{font-size:24px}
+  .portrait{width:34px;height:34px}
   h1{font-size:23px}
   button{font-size:14px;padding:8px 11px}
   .player .name{font-size:15px}

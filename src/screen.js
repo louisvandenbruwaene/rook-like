@@ -78,6 +78,7 @@ function shownStone(cell) {
 /* ---------- On screen ---------- */
 
 function render() {
+  renderOpponent();
   renderScores();
   renderHand();
   renderBoard();
@@ -107,6 +108,20 @@ function renderLadder() {
 
 const PLAYER_IDS = ['you', 'opponent']; // the scoreboard's element ids end in these, for YOU and OPPONENT
 
+// The opponent's portrait and name, and the backs of the stones still in their hand. The portrait is only
+// redrawn when the opponent changes, since it is redrawn otherwise at every step of a move.
+let portraitShown = null;
+function renderOpponent() {
+  if (portraitShown !== opponent) {
+    find('#opponent-portrait').innerHTML = drawPortrait(opponent);
+    find('#opponent-name').textContent = opponent.name;
+    portraitShown = opponent;
+  }
+  const left = game.hands[OPPONENT].length;
+  find('#opponent-hand').innerHTML = `<div class="hidden-stone">${drawHiddenStone()}</div>`.repeat(left);
+  find('#opponent-hand-count').textContent = left > 0 ? `${left} left` : '';
+}
+
 // Points, spikes left and the tug of war, counted from the colours on screen while a move plays out.
 function renderScores() {
   const shown = replay.owners ? { owners: replay.owners, stones: game.stones } : game;
@@ -118,19 +133,20 @@ function renderScores() {
     find(`#tug-${id}`).style.width = `${(100 * points) / (SIZE * SIZE)}%`;
     find(`#player-${id}`).classList.toggle('to-move', !isOver(game) && game.turn === who);
   }
-  find('#opponent-portrait').innerHTML = drawPortrait(opponent);
-  find('#opponent-name').textContent = opponent.name;
-  const hiddenStone = `<div class="hidden-stone">${drawHiddenStone()}</div>`;
-  find('#opponent-hand').innerHTML = hiddenStone.repeat(game.hands[OPPONENT].length);
 }
 
-// Under the board: the name and level of the stone under the mouse, or else of the stone you selected.
+// Under the board: the name and level of the stone under the mouse, or else of the stone you selected,
+// or else whose move it is.
 function renderInfo() {
   const stone = stoneToDescribe();
   let html = '';
   if (stone) {
     const level = PIECES[stone.type].hasNoLevels ? '' : ` <span class="level">Lv ${stone.level}</span>`;
     html = `<b>${nameOf(stone)}</b>${level}`;
+  } else if (isYourTurn()) {
+    html = '<span class="status you">Your move: pick a stone</span>';
+  } else if (!isOver(game) && !replay.before && game.turn === OPPONENT && game.hands[OPPONENT].length > 0) {
+    html = `<span class="status opponent">${opponent.name} is thinking…</span>`;
   }
   find('#stone-info').innerHTML = html;
 }

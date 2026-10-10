@@ -1,34 +1,71 @@
-// Builds an HTML sheet of every stone and level, drawn with the game's own code, rated by single fights.
-// Run it from anywhere: node stone-sheet.js  (writes stones.html in the current folder)
-const fs=require('fs'),path=require('path');
-const read=file=>fs.readFileSync(path.join(__dirname,file),'utf8');
-const defs=read('index.html').match(/<defs>[\s\S]*?<\/defs>/)[0];
-const E=new Function(read('src/rules.js')+'\n'+read('src/art.js')+'\nreturn {PIECES,makeStone,drawStone};')();
-const ORDER='PNBRQKSWEJGHO',DIRS={P:4,N:4};
-// every stone an opponent can bring: each piece, level and direction
-const all=[];for(const t of ORDER)for(let l=1;l<=5;l++)for(let d=0;d<(DIRS[t]||1);d++)all.push([t,l,d]);
-// Rating: every spike is worth 5 points, so 5 spikes on all four sides (20 spikes) make 100.
-const out=k=>E.makeStone(k[0],+k[1],0).spikes.reduce((a,b)=>a+b,0)*5;
-const svg=(t,l,d)=>E.drawStone(E.makeStone(t,l,0,d),0,{className:''});
-let rows='',first=true;
-for(const t of ORDER){
-  const P=E.PIECES[t];
-  if(first&&!P.chess){rows+=`<h1 class="part">Rare stones</h1><p class="intro">Each rare stone belongs to one opponent, who brings it in the middle and late matches and drops it half the time when you win. They grow by their own table instead of one spike per side.</p>`;first=false;}
-  rows+=`<section><div class="head"><h2>${P.name}</h2><span class="chess">${P.chess||'rare stone'}</span>
-<p>${P.description[0].toUpperCase()+P.description.slice(1)}.</p></div><div class="levels">`;
-  const levels=P.hasNoLevels?[1]:[1,2,3,4,5];
-  for(const l of levels){
-    const st=E.makeStone(t,l,0,0);
-    rows+=`<div class="lv"><div class="pic">${svg(t,l,0)}</div><div class="lvl">${P.hasNoLevels?'Always':'Level '+l}</div><div class="sp">${P.goldenShields?'golden shields':st.spikes.join(' · ')}</div>${P.goldenShields?'':`<div class="score"><b>${out(t+l)}</b>/100</div>`}</div>`;
-  }
-  rows+='</div>';
-  if(DIRS[t])rows+=`<div class="variants"><span>Four turns, all rated the same:</span>${[0,1,2,3].map(d=>`<div class="mini">${svg(t,1,d)}<small>${P.variants[d]}</small></div>`).join('')}</div>`;
-  rows+='</section>';
+/* =====================================================================
+   STONE SHEET
+   An HTML sheet of every stone at every level, drawn with the game's own code and rated by its spikes.
+   Run it from anywhere: node stone-sheet.js  (writes stones.html in the current folder, prints the ratings)
+   ===================================================================== */
+
+const fs = require('fs');
+const path = require('path');
+
+const read = (file) => fs.readFileSync(path.join(__dirname, file), 'utf8');
+const gradients = read('index.html').match(/<defs>[\s\S]*?<\/defs>/)[0];
+const { PIECES, makeStone, drawStone } = new Function(
+  `${read('src/rules.js')}\n${read('src/art.js')}\nreturn { PIECES, makeStone, drawStone };`,
+)();
+
+const TYPES = Object.keys(PIECES).filter((type) => type !== 'X'); // every piece but debris, chess pieces first
+const LEVELS = [1, 2, 3, 4, 5];
+const YOU = 0;
+
+// Every spike is worth 5 points, so 5 spikes on all four sides (20 spikes) make 100.
+function rating(type, level) {
+  return makeStone(type, level, YOU).spikes.reduce((sum, count) => sum + count, 0) * 5;
 }
-const table=ORDER.split('').filter(t=>!E.PIECES[t].hasNoLevels).map(t=>`<tr><td>${E.PIECES[t].name}</td>${[1,2,3,4,5].map(l=>`<td>${out(t+l)}</td>`).join('')}</tr>`).join('');
-fs.writeFileSync('stones.html',`<!doctype html><html><head><meta charset="utf-8"><title>Rook-like: every stone</title>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
-<style>@page{size:A4;margin:14mm}body{font-family:Nunito,system-ui,sans-serif;color:#1d2433;margin:0;font-size:12px}
+
+function picture(type, level, variant = 0) {
+  return drawStone(makeStone(type, level, YOU, variant), YOU, { className: '' });
+}
+
+const capitalised = (text) => text[0].toUpperCase() + text.slice(1);
+
+function levelTile(type, level) {
+  const piece = PIECES[type];
+  const spikes = piece.goldenShields ? 'golden shields' : makeStone(type, level, YOU).spikes.join(' · ');
+  const score = piece.goldenShields ? '' : `<div class="score"><b>${rating(type, level)}</b>/100</div>`;
+  const label = piece.hasNoLevels ? 'Always' : `Level ${level}`;
+  return `<div class="lv"><div class="pic">${picture(type, level)}</div><div class="lvl">${label}</div><div class="sp">${spikes}</div>${score}</div>`;
+}
+
+function section(type) {
+  const piece = PIECES[type];
+  const levels = piece.hasNoLevels ? [1] : LEVELS;
+  let html = `<section><div class="head"><h2>${piece.name}</h2><span class="chess">${piece.chess || 'rare stone'}</span>
+<p>${capitalised(piece.description)}.</p></div><div class="levels">`;
+  html += levels.map((level) => levelTile(type, level)).join('');
+  html += '</div>';
+  if (piece.variants) {
+    const turns = piece.variants.map((name, variant) => `<div class="mini">${picture(type, 1, variant)}<small>${name}</small></div>`);
+    html += `<div class="variants"><span>Four turns, all rated the same:</span>${turns.join('')}</div>`;
+  }
+  return html + '</section>';
+}
+
+let sections = '';
+let rareHeadingShown = false;
+for (const type of TYPES) {
+  if (!rareHeadingShown && !PIECES[type].chess) {
+    sections += `<h1 class="part">Rare stones</h1><p class="intro">Each rare stone belongs to one opponent, who always plays it and may offer it when you win. They grow by their own table instead of one spike per side.</p>`;
+    rareHeadingShown = true;
+  }
+  sections += section(type);
+}
+
+const growing = TYPES.filter((type) => !PIECES[type].hasNoLevels);
+const table = growing
+  .map((type) => `<tr><td>${PIECES[type].name}</td>${LEVELS.map((level) => `<td>${rating(type, level)}</td>`).join('')}</tr>`)
+  .join('');
+
+const STYLE = `@page{size:A4;margin:14mm}body{font-family:Nunito,system-ui,sans-serif;color:#1d2433;margin:0;font-size:12px}
 h1{font-family:Fredoka;font-size:26px;margin:0 0 4px}h2{font-family:Fredoka;font-size:18px;margin:0}
 .intro{color:#4a5468;margin:0 0 10px;line-height:1.45}
 table{border-collapse:collapse;margin:6px 0 14px;font-size:12px}td,th{border:1px solid #d6dbe6;padding:3px 10px;text-align:center}td:first-child,th:first-child{text-align:left}th{background:#eef1f7;font-family:Fredoka;font-weight:600}
@@ -40,9 +77,16 @@ section{break-inside:avoid;border:1px solid #d6dbe6;border-radius:10px;padding:1
 .lvl{font-family:Fredoka;font-weight:600}.sp{color:#7a8396;font-size:11px}.score{font-family:Fredoka;font-size:13px}.score b{font-size:20px;color:#2e6fba}
 .variants{display:flex;align-items:center;gap:14px;margin-top:6px;color:#4a5468}.mini{width:46px;text-align:center;margin:4px}.mini svg{height:40px}.mini small{display:block;font-size:9.5px;white-space:nowrap}
 h1.part{break-before:page;margin-top:0}
-</style></head><body><svg width="0" height="0" style="position:absolute">${defs}</svg>
+`;
+
+fs.writeFileSync(
+  'stones.html',
+  `<!doctype html><html><head><meta charset="utf-8"><title>Rook-like: every stone</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+<style>${STYLE}</style></head><body><svg width="0" height="0" style="position:absolute">${gradients}</svg>
 <h1>Rook-like: every stone</h1>
 <p class="intro">The six chess pieces at levels 1 to 5, facing up, with their spikes listed as top · right · bottom · left. The rating out of 100 counts spikes: every spike is worth 5 points, so a stone with the maximum of 5 spikes on all four sides (20 spikes) scores 100. King Kobe has no spikes but golden shields: every spike that touches him breaks and he is never taken. The rating counts spikes only, not the powers of the rare stones.</p>
 <table><tr><th>stone</th><th>Lv 1</th><th>Lv 2</th><th>Lv 3</th><th>Lv 4</th><th>Lv 5</th></tr>${table}</table>
-${rows}</body></html>`);
-console.log(ORDER.split('').filter(t=>!E.PIECES[t].hasNoLevels).map(t=>t+': '+[1,2,3,4,5].map(l=>out(t+l)).join(' ')).join('\n'));
+${sections}</body></html>`,
+);
+console.log(growing.map((type) => `${type}: ${LEVELS.map((level) => rating(type, level)).join(' ')}`).join('\n'));

@@ -64,6 +64,14 @@ function releaseBees(cell) {
   }
 }
 
+// Restarts a one-off animation of the board: "thump" when a stone lands, "shake" for a big capture.
+function bump(className) {
+  const board = find('#board');
+  board.classList.remove('thump', 'shake');
+  void board.offsetWidth; // a reflow, so the same animation can play again
+  board.classList.add(className);
+}
+
 /* ---------- A move ----------
    A move plays out step by step: step 0 is the new stone's own fights, then every fight of the chain in turn. */
 
@@ -71,6 +79,7 @@ const PAUSE_BEFORE_FIRST_STEP_MS = 260;
 const STEP_MS = 240;
 const STEP_WITH_TURNOVER_MS = 440;
 const LONGEST_UNHURRIED_CHAIN = 12; // a longer chain plays faster, so a move never drags
+const BIG_CAPTURE = 3; // a move that wins this many points or more shakes the board
 
 function makeMove(move) {
   if (ui.waiting && game.turn === YOU) return;
@@ -91,6 +100,7 @@ function makeMove(move) {
   ui.lastMove = move.cell;
   render();
   renderInfo();
+  bump('thump');
 
   const nameTagClass = mover === YOU ? 'name-tag you' : 'name-tag opponent';
   popUp(move.cell, nameOf(stone), nameTagClass, scaled(1300), -centreOf(move.cell).size * 0.62);
@@ -179,7 +189,10 @@ function popGain(before, result, cell, mover, endTime) {
   if (net === 0) return;
   const text = net > 0 ? `+${net}` : `−${-net}`;
   const className = net > 0 ? 'points-pop' : 'points-pop loss';
-  after(endTime + 140, () => popUp(cell, text, className, scaled(1200)));
+  after(endTime + 140, () => {
+    popUp(cell, text, className, scaled(1200));
+    if (net >= BIG_CAPTURE) bump('shake');
+  });
 }
 
 // After a move: the end of the match, the computer's turn, or yours.
@@ -191,6 +204,7 @@ function nextTurn(somethingJustTurned) {
   if (game.turn === OPPONENT) {
     ui.waiting = true;
     renderHand();
+    renderInfo();
     const thinkingTime = opponent.isBoss ? BOSS_THINK_MS : THINK_MS;
     after(somethingJustTurned ? 700 : 350, () => {
       makeMove(bestMove(game, thinkingTime, Math.random, currentDifficulty().lookAhead));
@@ -200,4 +214,5 @@ function nextTurn(somethingJustTurned) {
   ui.waiting = false;
   renderHand();
   renderBoard();
+  renderInfo();
 }

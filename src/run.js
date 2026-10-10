@@ -12,11 +12,12 @@ function closeCard() {
 }
 
 // A card: a small label on top, its content, then choices to pick from and/or one main button.
-// choices: [{ html, onPick }], button: { label, onClick }, compact: smaller choices, for long lists
-function showCard(label, contentHtml, { choices = [], button, compact = false } = {}) {
+// choices: [{ html, onPick }], button: { label, onClick }, layout: an extra class for the choices,
+// 'compact' (smaller choices, for long lists) or 'difficulties'
+function showCard(label, contentHtml, { choices = [], button, layout = '' } = {}) {
   let html = `<div class="card-label">${label}</div>${contentHtml}`;
   if (choices.length > 0) {
-    html += `<div class="choices${compact ? ' compact' : ''}">${choices.map((choice) => `<button class="choice">${choice.html}</button>`).join('')}</div>`;
+    html += `<div class="choices ${layout}">${choices.map((choice) => `<button class="choice">${choice.html}</button>`).join('')}</div>`;
   }
   if (button) html += `<div><button class="primary">${button.label}</button></div>`;
   find('#card').innerHTML = html;
@@ -88,9 +89,17 @@ function deckCodes(run) {
   return run.deck.map((index) => run.collection[index]);
 }
 
+// "Looks 2 moves ahead · stones from Lv 0", with one pip per step up in difficulty.
+function difficultyTile(difficulty, rank) {
+  const looks = difficulty.lookAhead >= 99 ? 'Looks as far ahead as it can' : `Looks ${difficulty.lookAhead} moves ahead`;
+  const pips = '●'.repeat(rank + 1) + '○'.repeat(Object.keys(DIFFICULTIES).length - rank - 1);
+  return `<span class="pips">${pips}</span><span class="difficulty">${difficulty.name}</span>
+<span class="difficulty-detail">${looks} · stones from Lv ${difficulty.startLevel}</span>`;
+}
+
 function chooseDifficulty() {
-  const choices = Object.entries(DIFFICULTIES).map(([key, difficulty]) => ({
-    html: difficulty.name,
+  const choices = Object.entries(DIFFICULTIES).map(([key, difficulty], rank) => ({
+    html: difficultyTile(difficulty, rank),
     onPick: () => {
       save.run.difficulty = key;
       save.run.decks = newDecks(difficulty);
@@ -99,7 +108,7 @@ function chooseDifficulty() {
       intro();
     },
   }));
-  showCard('New run', '', { choices });
+  showCard('New run', '<h2>Choose a difficulty</h2>', { choices, layout: 'difficulties' });
 }
 
 // The next opponent, and your collection to pick a deck from.
@@ -312,5 +321,5 @@ function endRun(won, text) {
       beginAgain();
     },
   }));
-  showCard(label, heading + '<p class="card-label quiet">Keep one</p>', { choices, compact: true });
+  showCard(label, heading + '<p class="card-label quiet">Keep one</p>', { choices, layout: 'compact' });
 }
