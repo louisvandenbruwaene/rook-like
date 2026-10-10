@@ -103,7 +103,7 @@ classDiagram
         popeWinner : set when His Hovering Holiness is taken
     }
     class Stone {
-        type : piece letter, P N B R Q K ...
+        type : the piece, pawn knight ... king venom_veronica ...
         level : 0 to 5, only opponents start at 0
         facing : YOU or OPPONENT
         variant : 0 to 3, the quarter turn
@@ -135,7 +135,7 @@ classDiagram
     MoveResult --|> Game : is a
 ```
 
-Stones in hands, saves and opponents are written as short **codes**: piece letter, level, and for a turned piece its direction. `N2` is Neigh Nigel at level 2, `P1>` a pawn turned to point right. `fromCode(code, facing)` turns a code into a Stone.
+Stones in hands, saves and opponents are written as **codes**: the piece, the level, and for a turned piece its direction, all in full. `knight_level_2` is Neigh Nigel at level 2, `pawn_level_1_right` a pawn turned to point right, `king_level_1` the king. Saves from before version 5 used short codes (`N2`, `P1>`) and are converted by `fromVersion4` in `save.js`. `fromCode(code, facing)` turns a code into a Stone.
 
 The squares are numbered row by row:
 

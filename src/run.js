@@ -253,7 +253,21 @@ function toggleInDeck(index) {
 
 // Stones are shown pawns first, then by piece, turn and level; the king last.
 function handOrder(a, b) {
-  const pieceOrder = 'PNBRQSWEJGHOK';
+  const pieceOrder = [
+    'pawn',
+    'knight',
+    'bishop',
+    'rook',
+    'queen',
+    'venom_veronica',
+    'experienced_edna',
+    'empress_edna',
+    'brittle_bernard',
+    'hairy_harambe',
+    'buzzy_beatrice',
+    'his_hovering_holiness',
+    'king',
+  ];
   return pieceOrder.indexOf(a.type) - pieceOrder.indexOf(b.type) || a.variant - b.variant || a.level - b.level;
 }
 
@@ -301,10 +315,10 @@ function canUpgrade(collection, index) {
 // One stone from the opponent's deck that you do not own at any level, at level 1, or null.
 function newStoneFrom(opponentDeck) {
   const owned = new Set(save.run.collection.map(withoutLevel));
-  const missing = [...new Set(opponentDeck.map(withoutLevel))].filter((stone) => !owned.has(stone));
+  const oneOfEach = new Map(opponentDeck.map((code) => [withoutLevel(code), code]));
+  const missing = [...oneOfEach.values()].filter((code) => !owned.has(withoutLevel(code)));
   if (missing.length === 0) return null;
-  const stone = missing[Math.floor(Math.random() * missing.length)];
-  return stone[0] + '1' + stone.slice(1);
+  return withLevel(missing[Math.floor(Math.random() * missing.length)], 1);
 }
 
 function upgradeInDeck(index) {

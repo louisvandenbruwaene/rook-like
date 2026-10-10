@@ -16,7 +16,7 @@
      popeWinner   set when His Hovering Holiness changes colour: that player wins at once
 
    A stone is:
-     type     a piece letter, a key of PIECES
+     type     the piece, a key of PIECES: pawn, knight, ... king, or a rare stone like venom_veronica
      level    0 to MAX_LEVEL (only opponents start at 0)
      facing   YOU (spikes as drawn) or OPPONENT (turned half way round)
      variant  0 to 3: which quarter turn of a piece that comes in four turns
@@ -61,33 +61,33 @@ function other(player) {
 
 // prettier-ignore
 const PIECES = {
-  P: { name: 'Tiny Tim',       chess: 'pawn',   baseSpikes: [1, 0, 0, 0], variants: ['Tiny Tim', 'Tiny Tony', 'Tiny Tom', 'Tiny Ted'],
-       description: 'a single spike' },
-  N: { name: 'Neigh Nigel',    chess: 'knight', baseSpikes: [2, 0, 0, 2], variants: ['Neigh Nigel', 'Neigh Newman', 'Neigh Nathan', 'Neigh Nolan'],
-       description: 'two sides of one corner' },
-  B: { name: 'Bishop Bailey',  chess: 'bishop', baseSpikes: [2, 0, 2, 0], description: 'spikes up and down' },
-  R: { name: 'Castle Carl',    chess: 'rook',   baseSpikes: [0, 2, 0, 2], description: 'spikes left and right' },
-  Q: { name: 'Duchess Dagger', chess: 'queen',  baseSpikes: [2, 2, 2, 2], description: 'spikes on every side' },
-  K: { name: 'King Kobe',      chess: 'king',   baseSpikes: [0, 0, 0, 0], goldenShields: true, hasNoLevels: true,
-       description: 'golden shields on every side: every spike that touches him breaks, and he can never be taken' },
+  pawn:   { name: 'Tiny Tim',       chess: 'pawn',   baseSpikes: [1, 0, 0, 0], variants: ['Tiny Tim', 'Tiny Tony', 'Tiny Tom', 'Tiny Ted'],
+            description: 'a single spike' },
+  knight: { name: 'Neigh Nigel',    chess: 'knight', baseSpikes: [2, 0, 0, 2], variants: ['Neigh Nigel', 'Neigh Newman', 'Neigh Nathan', 'Neigh Nolan'],
+            description: 'two sides of one corner' },
+  bishop: { name: 'Bishop Bailey',  chess: 'bishop', baseSpikes: [2, 0, 2, 0], description: 'spikes up and down' },
+  rook:   { name: 'Castle Carl',    chess: 'rook',   baseSpikes: [0, 2, 0, 2], description: 'spikes left and right' },
+  queen:  { name: 'Duchess Dagger', chess: 'queen',  baseSpikes: [2, 2, 2, 2], description: 'spikes on every side' },
+  king:   { name: 'King Kobe',      chess: 'king',   baseSpikes: [0, 0, 0, 0], goldenShields: true, hasNoLevels: true,
+            description: 'golden shields on every side: every spike that touches him breaks, and he can never be taken' },
 
-  //                                                         level 0       level 1       level 2       level 3       level 4       level 5
-  S: { name: 'Venom Veronica',        poisonous: true,   levelSpikes: [[1, 0, 0, 0], [2, 0, 0, 0], [2, 1, 0, 0], [3, 1, 0, 0], [3, 1, 0, 1], [4, 1, 0, 1]],
-       description: 'poisons every stone her spikes hit' },
-  W: { name: 'Experienced Edna',      curesPoison: true, levelSpikes: [[0, 1, 0, 0], [0, 1, 0, 1], [1, 1, 0, 1], [1, 1, 1, 1], [2, 1, 1, 1], [2, 2, 1, 1]],
-       description: 'cures her poisoned neighbours, and becomes Empress Edna the first time she does' },
-  E: { name: 'Empress Edna',          poisonous: true,   levelSpikes: [[2, 1, 1, 2], [3, 2, 2, 3], [4, 3, 3, 4], [5, 4, 4, 5], [5, 5, 5, 5], [5, 5, 5, 5]],
-       description: 'knight, queen and serpent in one: her spikes poison' },
-  J: { name: 'Brittle Bernard',       mayCollapse: true, levelSpikes: [[2, 1, 1, 0], [3, 1, 2, 0], [3, 2, 2, 0], [4, 2, 3, 0], [4, 3, 3, 0], [5, 3, 4, 0]],
-       description: 'every time he changes colour, a 1 in 3 chance he collapses into debris' },
-  G: { name: 'Hairy Harambe',         thickFur: true,    levelSpikes: [[2, 1, 0, 1], [3, 1, 0, 1], [4, 1, 0, 1], [4, 2, 0, 1], [5, 2, 0, 2], [5, 2, 1, 2]],
-       description: 'thick fur: he loses at most one spike in a fight' },
-  H: { name: 'Buzzy Beatrice',        swarm: true,       levelSpikes: [[0, 0, 0, 0], [1, 0, 0, 0], [1, 0, 1, 0], [1, 1, 1, 0], [2, 1, 1, 0], [2, 1, 1, 1]],
-       description: 'when placed, her swarm breaks one spike on every enemy side around her and grounds His Hovering Holiness' },
-  O: { name: 'His Hovering Holiness', isPope: true,      levelSpikes: [[0, 1, 0, 1], [0, 2, 0, 2], [1, 2, 0, 2], [1, 3, 1, 2], [2, 3, 1, 3], [2, 4, 2, 3]],
-       description: 'flies on a jet pack until a swarm grounds him, and whoever loses him loses the match' },
+                      //                                                         level 0       level 1       level 2       level 3       level 4       level 5
+  venom_veronica:        { name: 'Venom Veronica',        poisonous: true,   levelSpikes: [[1, 0, 0, 0], [2, 0, 0, 0], [2, 1, 0, 0], [3, 1, 0, 0], [3, 1, 0, 1], [4, 1, 0, 1]],
+                           description: 'poisons every stone her spikes hit' },
+  experienced_edna:      { name: 'Experienced Edna',      curesPoison: true, levelSpikes: [[0, 1, 0, 0], [0, 1, 0, 1], [1, 1, 0, 1], [1, 1, 1, 1], [2, 1, 1, 1], [2, 2, 1, 1]],
+                           description: 'cures her poisoned neighbours, and becomes Empress Edna the first time she does' },
+  empress_edna:          { name: 'Empress Edna',          poisonous: true,   levelSpikes: [[2, 1, 1, 2], [3, 2, 2, 3], [4, 3, 3, 4], [5, 4, 4, 5], [5, 5, 5, 5], [5, 5, 5, 5]],
+                           description: 'knight, queen and serpent in one: her spikes poison' },
+  brittle_bernard:       { name: 'Brittle Bernard',       mayCollapse: true, levelSpikes: [[2, 1, 1, 0], [3, 1, 2, 0], [3, 2, 2, 0], [4, 2, 3, 0], [4, 3, 3, 0], [5, 3, 4, 0]],
+                           description: 'every time he changes colour, a 1 in 3 chance he collapses into debris' },
+  hairy_harambe:         { name: 'Hairy Harambe',         thickFur: true,    levelSpikes: [[2, 1, 0, 1], [3, 1, 0, 1], [4, 1, 0, 1], [4, 2, 0, 1], [5, 2, 0, 2], [5, 2, 1, 2]],
+                           description: 'thick fur: he loses at most one spike in a fight' },
+  buzzy_beatrice:        { name: 'Buzzy Beatrice',        swarm: true,       levelSpikes: [[0, 0, 0, 0], [1, 0, 0, 0], [1, 0, 1, 0], [1, 1, 1, 0], [2, 1, 1, 0], [2, 1, 1, 1]],
+                           description: 'when placed, her swarm breaks one spike on every enemy side around her and grounds His Hovering Holiness' },
+  his_hovering_holiness: { name: 'His Hovering Holiness', isPope: true,      levelSpikes: [[0, 1, 0, 1], [0, 2, 0, 2], [1, 2, 0, 2], [1, 3, 1, 2], [2, 3, 1, 3], [2, 4, 2, 3]],
+                           description: 'flies on a jet pack until a swarm grounds him, and whoever loses him loses the match' },
 
-  X: { name: 'Debris', baseSpikes: [0, 0, 0, 0], hasNoLevels: true, description: "what is left of Brittle Bernard, nobody's stone" },
+  debris: { name: 'Debris', baseSpikes: [0, 0, 0, 0], hasNoLevels: true, description: "what is left of Brittle Bernard, nobody's stone" },
 };
 
 /* ---------- Stones ---------- */
@@ -135,14 +135,15 @@ function takeable(stone) {
 }
 
 /* ---------- Stone codes ----------
-   Hands, collections, decks and saves write a stone as a short code: piece letter, level, and for a turned
-   stone its direction. For example N2 (Neigh Nigel, level 2), P1> (a pawn turned to point right) or N1v.
-   The same stone at another level has the same code but for the digit. */
+   Hands, collections, decks and saves write a stone as a code: its piece, its level, and for a turned stone its
+   direction. For example knight_level_2 (Neigh Nigel, level 2), pawn_level_1_right (a pawn turned to point right)
+   or knight_level_1_down. The same stone at another level has the same code but for the level. */
 
-const DIRECTIONS = '^>v<';
+const DIRECTIONS = ['up', 'right', 'down', 'left'];
+const CODE_PATTERN = /^([a-z_]+?)_level_(\d)(?:_(up|right|down|left))?$/;
 
 function parseCode(code) {
-  const [, type, level, direction] = /^([A-Z])(\d)([\^>v<]?)$/.exec(code);
+  const [, type, level, direction] = CODE_PATTERN.exec(code);
   return { type, level: Number(level), variant: direction ? DIRECTIONS.indexOf(direction) : 0 };
 }
 
@@ -152,16 +153,16 @@ function fromCode(code, facing) {
 }
 
 function pieceOf(code) {
-  return code[0];
+  return parseCode(code).type;
 }
 
 function withLevel(code, level) {
-  return pieceOf(code) + level + code.slice(2);
+  return code.replace(/_level_\d/, `_level_${level}`);
 }
 
-// The stone without its level: its piece letter and its turn. Two codes with the same stone are one stone.
+// The stone without its level: its piece and its turn, like pawn_right. Two codes with the same stone are one stone.
 function withoutLevel(code) {
-  return pieceOf(code) + code.slice(2);
+  return code.replace(/_level_\d/, '');
 }
 
 function upgraded(code) {
@@ -465,7 +466,7 @@ function cure(game, step) {
       if (!PIECES[game.stones[neighbour].type].curesPoison) continue;
       game.stones[cell] = { ...game.stones[cell], poison: undefined };
       const edna = game.stones[neighbour];
-      game.stones[neighbour] = { ...makeStone('E', edna.level, edna.facing), poison: edna.poison };
+      game.stones[neighbour] = { ...makeStone('empress_edna', edna.level, edna.facing), poison: edna.poison };
       game.promotions.push({ cell: neighbour, step });
       step = chain(game, neighbour, step);
       break;
@@ -483,7 +484,7 @@ function take(game, cell, step) {
   if (PIECES[stone.type].isPope && game.popeWinner === undefined) game.popeWinner = owner;
   if (PIECES[stone.type].mayCollapse && game.luck && game.luck() < 1 / 3) {
     game.owners[cell] = RUBBLE;
-    game.stones[cell] = makeStone('X', 1, YOU);
+    game.stones[cell] = makeStone('debris', 1, YOU);
     game.flips.push({ cell, owner: RUBBLE, step, collapsed: stone });
     return true;
   }
