@@ -5,9 +5,10 @@
 
 /* ---------- Rules ---------- */
 
-// Every piece at level 1 and 3 (the king has no levels), with what it does.
+// Every piece at level 1 and 3 (the king has no levels), with what it does. Debris is not a piece you play.
 function pieceGuide() {
-  return [...'PNBRQKSWEJGHO']
+  return Object.keys(PIECES)
+    .filter((type) => type !== 'X')
     .map((type) => {
       const piece = PIECES[type];
       const kind = piece.chess ? `The ${piece.chess}` : 'Rare stone';
