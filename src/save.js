@@ -8,8 +8,8 @@
 
 /* ---------- Reading and writing ----------
    Settings and progress live in localStorage, under their old keys so earlier saves carry over.
-   save: { version, collection (stone codes you own for good), deck (the 8 codes you last played),
-           bestMatch, runsPlayed, crowns, run }
+   save: { version, collection (stone codes you own for good),
+           difficulty (chosen once for the whole game, every run plays it), bestMatch, runsPlayed, crowns, run }
    run:  { match, collection (stone codes owned this run), startSize (how many of them you started with),
            deck (indexes into the run's collection), opponentOrder, difficulty,
            decks (each opponent's stone codes, see settings.js), over } */
@@ -31,7 +31,7 @@ function newSave() {
   return {
     version: SAVE_VERSION,
     collection: starter,
-    deck: starter.slice(),
+    difficulty: null,
     bestMatch: 0,
     runsPlayed: 0,
     crowns: 0,
@@ -143,6 +143,11 @@ function addMissingDecks() {
   store();
 }
 
+// Saves from before the difficulty belonged to the game take the one of their run.
+function adoptRunDifficulty() {
+  if (!save.difficulty && save.run && save.run.difficulty) save.difficulty = save.run.difficulty;
+}
+
 /* ---------- Loading ----------
    Runs once, when the page opens. */
 
@@ -150,3 +155,4 @@ const save = loadSave();
 dropCopies(save);
 const settings = loadSettings();
 addMissingDecks();
+adoptRunDifficulty();

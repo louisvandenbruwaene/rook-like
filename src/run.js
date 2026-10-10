@@ -2,7 +2,7 @@
    A RUN  (builds on settings.js, save.js, screen.js and move.js)
    Everything between matches, from choosing a difficulty to the end of the run. A run goes:
 
-     chooseDifficulty -> intro (pick your deck) -> startMatch -> ... -> finishMatch -> offerRewards -> nextMatch -> intro
+     (chooseDifficulty, once a game) -> intro (pick your deck) -> startMatch -> ... -> finishMatch -> offerRewards -> nextMatch -> intro
                                                                                    \-> endRun (lost, gave up, or won the last match)
 
    Contents: cards · the run, match by match · your deck · rewards · the end of a run
@@ -55,17 +55,29 @@ function swapPicture(oldCode, newCode) {
 /* ---------- The run, match by match ---------- */
 
 // Each of the six regular opponents comes three times in a random order, plus one extra, then the boss.
-// You start with your collection and the deck you last played.
+// You start with your collection and the game's difficulty. Your deck is picked in intro.
 function newRun() {
   const order = shuffle([0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, Math.floor(Math.random() * 6)]);
   const luxIndex = order.indexOf(LADY_LUX);
   const swerveIndex = order.indexOf(MADAME_SWERVE);
   if (swerveIndex < luxIndex) [order[swerveIndex], order[luxIndex]] = [order[luxIndex], order[swerveIndex]];
   const collection = save.collection.slice();
-  const deck = deckFrom(collection, save.deck);
-  save.run = { match: 1, collection, startSize: collection.length, deck, opponentOrder: order };
+  save.run = { match: 1, collection, startSize: collection.length, deck: [], opponentOrder: order };
+  if (save.difficulty) setRunDifficulty(save.difficulty);
   save.runsPlayed++;
   store();
+}
+
+function setRunDifficulty(key) {
+  save.run.difficulty = key;
+  save.run.decks = newDecks(DIFFICULTIES[key]);
+}
+
+// A new run, which asks for a difficulty only when the game has none yet: losing a run does not start a new game.
+function beginRun() {
+  newRun();
+  if (save.difficulty) intro();
+  else chooseDifficulty();
 }
 
 // "Looks 2 moves ahead · stones from Lv 0", with one pip per step up in difficulty.
@@ -81,21 +93,20 @@ function chooseDifficulty() {
   const choices = Object.entries(DIFFICULTIES).map(([key, difficulty], rank) => ({
     html: difficultyTile(difficulty, rank),
     onPick: () => {
-      save.run.difficulty = key;
-      save.run.decks = newDecks(difficulty);
+      save.difficulty = key;
+      setRunDifficulty(key);
       store();
       renderLadder();
       intro();
     },
   }));
-  showCard('New run', '<h2>Choose a difficulty</h2>', { choices, layout: 'difficulties' });
+  showCard('New game', '<h2>Choose a difficulty</h2>', { choices, layout: 'difficulties' });
 }
 
-// The next opponent, and your collection to pick a deck from.
+// The next opponent, and your collection to pick a deck from, with the spikiest deck already picked.
 function intro() {
   const run = save.run;
-  // A run saved before the one king, one queen rule may hold two: keep the first, the gap is yours to fill.
-  run.deck = run.deck.filter((index, n) => sameLimitedPiece(run.collection, run.deck.slice(0, n), index) === undefined);
+  run.deck = spikiestDeck(run.collection);
   opponent = opponentFor(run.match);
   save.bestMatch = Math.max(save.bestMatch, run.match);
   store();
@@ -181,6 +192,18 @@ function deckFrom(collection, preferredCodes) {
     if (fits(i)) deck.push(i);
   }
   return deck;
+}
+
+// The indexes of the DECK_SIZE stones with the most spikes, keeping to one king and one queen.
+// Level on spikes, the stone listed first in the collection goes in.
+function spikiestDeck(collection) {
+  const bySpikes = collection
+    .map((code, index) => ({ index, spikes: spikeCount(fromCode(code, YOU)) }))
+    .sort((a, b) => b.spikes - a.spikes);
+  return deckFrom(
+    collection,
+    bySpikes.map(({ index }) => collection[index]),
+  );
 }
 
 // The deck index of a king or queen of the same piece as collection[index], or undefined. A deck holds one king
@@ -298,8 +321,7 @@ function upgradeInDeck(index) {
 
 /* ---------- The end of a run ----------
    Offers every stone you owned this run that you do not own for good yet. The one you pick joins your collection
-   for good, and a queen replaces the queen you had. Your next run starts with the deck you played last, as far as
-   you still own it. */
+   for good, and a queen replaces the queen you had. The next run keeps the game's difficulty. */
 
 function endRun(won, text) {
   const run = save.run;
@@ -307,17 +329,12 @@ function endRun(won, text) {
     .filter((code) => !save.collection.includes(code))
     .sort((a, b) => handOrder(fromCode(a, YOU), fromCode(b, YOU)));
   run.over = true;
-  save.deck = deckCodes(run);
   store();
 
-  const beginAgain = () => {
-    newRun();
-    chooseDifficulty();
-  };
   const label = won ? 'Champion' : `Run over at match ${run.match}`;
   const heading = `<h2>${won ? 'You took the crown!' : 'Defeated'}</h2><p>${text}</p>`;
   if (gains.length === 0) {
-    showCard(label, heading, { button: { label: 'New run', onClick: beginAgain } });
+    showCard(label, heading, { button: { label: 'New run', onClick: beginRun } });
     return;
   }
   const choices = gains.map((code) => ({
@@ -327,7 +344,7 @@ function endRun(won, text) {
         save.collection = save.collection.filter((owned) => pieceOf(owned) !== pieceOf(code));
       }
       save.collection.push(code);
-      beginAgain();
+      beginRun();
     },
   }));
   showCard(label, heading + '<p class="card-label quiet">Keep one</p>', { choices, layout: 'compact' });
