@@ -143,7 +143,7 @@ function drawHiddenStone() {
 }
 
 /* ---------- Opponent portraits ----------
-   Every opponent is an 80 x 80 pixel-art portrait with its own small scene, a PNG in art/opponents named after
+   Every opponent is a 64 x 64 pixel-art portrait on a plain background, a PNG in art/opponents named after
    opponent.portrait (made with PixelLab), shown in a circle with its pixels kept sharp. */
 
 const PORTRAIT_FOLDER = 'art/opponents/';
