@@ -80,13 +80,13 @@ function beginRun() {
   else chooseDifficulty();
 }
 
-// "Looks 2 moves ahead · stones from Lv 0", with one pip per step up in difficulty.
+// "Looks 2 moves ahead · they gain 1 Lv a win", with one pip per step up in difficulty.
 function difficultyTile(difficulty, rank) {
   const looks =
     difficulty.lookAhead >= 99 ? 'Looks as far ahead as it can' : `Looks ${difficulty.lookAhead} moves ahead`;
   const pips = '●'.repeat(rank + 1) + '○'.repeat(Object.keys(DIFFICULTIES).length - rank - 1);
   return `<span class="pips">${pips}</span><span class="difficulty">${difficulty.name}</span>
-<span class="difficulty-detail">${looks} · stones from Lv ${difficulty.startLevel}</span>`;
+<span class="difficulty-detail">${looks} · they gain ${difficulty.growth} Lv a win</span>`;
 }
 
 function chooseDifficulty() {
@@ -178,7 +178,7 @@ function finishMatch() {
     return;
   }
   const deckPlayed = deckOf(opponent).slice();
-  upgradeAllDecks(run.decks, currentDifficulty());
+  upgradeAllDecks(run.decks, currentDifficulty(), run.match);
   store();
   offerRewards(`Won ${tally()}`, deckPlayed);
 }
@@ -307,8 +307,11 @@ function handOrder(a, b) {
 /* ---------- Rewards ----------
    After a win you upgrade one of UPGRADE_CHOICES random stones from your deck by one level. Only your highest level of a
    stone is offered, and only while it can still grow, so an upgrade never gives a level you already own. The upgraded stone takes its
-   place in your deck, and the old one stays in your collection, except a queen, who is replaced. And if the opponent
-   played a stone (piece and turn) that is not in your collection, you get one of those too, at level 1. */
+   place in your deck, and the old one stays in your collection, except a queen, who is replaced.
+   A pawn or knight turn grows to at most one level more than the number of its turns you own: with one horse you can
+   reach level 2, a level 3 horse needs a second horse first, and level 5 needs all four.
+   You also get one new stone (piece and turn) you do not own yet: one the opponent played, or a missing pawn or knight
+   turn. It comes at the level the opponent had it, or one below your best of that piece, and at least level 1. */
 
 function offerRewards(label, opponentDeck) {
   const run = save.run;
@@ -337,21 +340,46 @@ function offerRewards(label, opponentDeck) {
   showCard(label, giftHtml + '<h2>Upgrade one</h2>', { choices });
 }
 
-// collection[index] is offered as an upgrade when it can grow and you own no higher level of the same stone.
+// collection[index] is offered as an upgrade when it can grow, stays within its level cap, and you own no higher
+// level of the same stone.
 function canUpgrade(collection, index) {
   const code = collection[index];
-  const level = parseCode(code).level;
+  const { type, level } = parseCode(code);
   const stone = withoutLevel(code);
+  if (level + 1 > levelCap(collection, type)) return false;
   return canGrow(code) && !collection.some((other) => withoutLevel(other) === stone && parseCode(other).level > level);
 }
 
-// One stone from the opponent's deck that you do not own at any level, at level 1, or null.
+// The highest level a stone of this piece may reach: for a pawn or knight, one more than the number of its turns
+// the collection holds.
+function levelCap(collection, type) {
+  if (!PIECES[type].namesByDirection) return MAX_LEVEL;
+  const turns = new Set(collection.filter((code) => pieceOf(code) === type).map((code) => parseCode(code).direction));
+  return turns.size + 1;
+}
+
+// The highest level the collection holds of a piece, or 0.
+function bestLevelOf(collection, type) {
+  return Math.max(0, ...collection.filter((code) => pieceOf(code) === type).map((code) => parseCode(code).level));
+}
+
+// The stone's piece and turn, whatever its level; pawn_level_1_up and pawn_level_2 are the same stone.
+function stoneKey(code) {
+  const { type, direction } = parseCode(code);
+  return `${type}:${direction}`;
+}
+
+// One stone you do not own at any level, from the opponent's deck or a pawn or knight turn, or null.
 function newStoneFrom(opponentDeck) {
-  const owned = new Set(save.run.collection.map(withoutLevel));
-  const oneOfEach = new Map(opponentDeck.map((code) => [withoutLevel(code), code]));
-  const missing = [...oneOfEach.values()].filter((code) => !owned.has(withoutLevel(code)));
+  const collection = save.run.collection;
+  const owned = new Set(collection.map(stoneKey));
+  const oneOfEach = new Map([...TURNED_STONES, ...opponentDeck].map((code) => [stoneKey(code), code]));
+  const missing = [...oneOfEach.values()].filter((code) => !owned.has(stoneKey(code)));
   if (missing.length === 0) return null;
-  return withLevel(missing[Math.floor(Math.random() * missing.length)], 1);
+  const code = missing[Math.floor(Math.random() * missing.length)];
+  const type = pieceOf(code);
+  const level = Math.max(1, opponentDeck.includes(code) ? parseCode(code).level : 0, bestLevelOf(collection, type) - 1);
+  return withLevel(code, Math.min(level, levelCap([...collection, code], type)));
 }
 
 function upgradeInDeck(index) {

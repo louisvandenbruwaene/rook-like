@@ -196,12 +196,12 @@ function onePerOwned(codes) {
   return [...new Set(codes.map((code) => keptCode(codes, code)))];
 }
 
-// Runs from before opponent decks get them now: built for their difficulty, with one upgrade per match won.
+// Runs from before opponent decks get them now: built for their difficulty, grown for every match won.
 function addMissingDecks() {
   const run = save.run;
   if (!run || run.over || run.decks) return;
   run.decks = newDecks(currentDifficulty());
-  for (let won = 1; won < run.match; won++) upgradeAllDecks(run.decks, currentDifficulty());
+  for (let won = 1; won < run.match; won++) upgradeAllDecks(run.decks, currentDifficulty(), won);
   store();
 }
 

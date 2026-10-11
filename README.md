@@ -9,11 +9,11 @@ The page is [`index.html`](index.html) (layout and rules text) with [`style.css`
 | [`src/rules.js`](src/rules.js) | 496 | the pieces, stones and stone codes, the board, one fight, one move. Pure logic, never touches the page |
 | [`src/computer.js`](src/computer.js) | 134 | the computer player |
 | [`src/art.js`](src/art.js) | 279 | every stone and portrait: the stones show the pixel-art PNGs in [`art/stones/`](art/stones/), the opponent portraits are SVG strings |
-| [`src/settings.js`](src/settings.js) | 235 | board size, run length, difficulties, the opponents and their decks |
-| [`src/save.js`](src/save.js) | 196 | progress and settings in localStorage |
+| [`src/settings.js`](src/settings.js) | 255 | board size, run length, difficulties, the opponents and their decks |
+| [`src/save.js`](src/save.js) | 220 | progress and settings in localStorage |
 | [`src/screen.js`](src/screen.js) | 318 | the state of a match, a move playing out, and the `render…()` functions |
 | [`src/move.js`](src/move.js) | 262 | how a move plays out on screen, step by step |
-| [`src/run.js`](src/run.js) | 444 | the cards between matches: the run match by match, your deck, rewards, the end |
+| [`src/run.js`](src/run.js) | 458 | the cards between matches: the run match by match, your deck, rewards, the end |
 | [`src/tutorial.js`](src/tutorial.js) | 281 | the coach line under the board: the four practice boards, and a word and a demo board for each rare stone you meet |
 | [`src/controls.js`](src/controls.js) | 125 | the rules panel, mouse, touch and keys, and the start |
 
@@ -227,14 +227,14 @@ flowchart TD
 | each spike ahead | 2 (at most 640 in total, so one point always counts more) |
 | having placed first | 1 |
 
-The difficulty sets two things: `maxDepth`, how many moves ahead the computer may look, and how strong its stones are.
+The difficulty sets how many moves ahead the computer may look and how fast its stones grow. Every opponent starts at level 0; after each of your wins every deck gains `growth` levels (1.5 is 1, 2, 1, 2, ...), one stone one level at a time, so the opponents pull further ahead the longer the run goes. The boss misses the first `bossBehind` of those upgrades: with two queens and placing first it needs no more.
 
-| Difficulty | Looks ahead | Opponent stones start at | After each of your wins, every deck upgrades one stone |
-|---|---|---|---|
-| Easy | 2 moves | level 0 | tinies first, then everything else, one level at a time |
-| Normal | as far as it can | level 0 | tinies, knights, bishops and rooks, then everything else, one level at a time |
-| Hard | 2 moves | level 1 | any stone, at random |
-| Very hard | as far as it can | level 1 | any stone, at random |
+| Difficulty | Looks ahead | Levels a win | Boss misses | Which stones grow first |
+|---|---|---|---|---|
+| Easy | 2 moves | 1 | 0 | tinies, then everything else, one level at a time |
+| Normal | as far as it can | 1.5 | 4 | tinies, knights, bishops and rooks, then everything else |
+| Hard | 2 moves | 2 | 12 | any stone, at random |
+| Very hard | as far as it can | 2.25 | 17 | any stone, at random |
 
 "As far as it can" means one second of thinking (1.6 for the boss). Near the end of a match that reaches the very last move. A level 0 stone has one spike fewer on every spiked side, so a level 0 tiny has none.
 
@@ -275,18 +275,18 @@ stateDiagram-v2
     chooseDifficulty --> intro : Easy · Normal · Hard · Very hard
     intro --> startMatch : the king and the 7 spikiest stones are picked, change them, Fight
     startMatch --> finishMatch : board full
-    finishMatch --> offerRewards : you won, every opponent deck upgrades one stone
+    finishMatch --> offerRewards : you won, every opponent deck grows
     offerRewards --> nextMatch : upgrade one of 3 stones (+ a new stone)
     nextMatch --> intro
     finishMatch --> endRun : you lost, or won match 20
     endRun --> intro : keep one gain, new run, same difficulty
 ```
 
-- **Opponent decks** (`newDecks`, `upgradeOne`, `upgradeAllDecks` in `settings.js`): every opponent keeps one deck for the whole run, starting at the difficulty's level. After each match you win, every deck upgrades one stone, so they all grow, even the ones you are not facing. The boss starts with 6 extra upgrades. 
+- **Opponent decks** (`newDecks`, `upgradeOne`, `upgradeAllDecks` in `settings.js`): every opponent keeps one deck for the whole run, starting at the difficulty's level. After each match you win, every deck gains the difficulty's growth in levels, so they all grow, even the ones you are not facing. The boss misses the first `bossBehind` upgrades.
 - **The difficulty** (`save.difficulty`, `beginRun` in `run.js`) is chosen once for the whole game. Losing a run starts a new run of the same game, at the same difficulty. **New game** in the rules panel (`startNewGame`) starts over from the starter stones and asks again; records stay.
 - **Your last stone** is selected for you when it is your turn (`nextTurn` in `move.js`).
 - **Your collection** (`run.collection`, `spikiestDeck`, `deckFrom`, `renderCollection` in `run.js`): every stone you own this run, at every level you have had it, never twice the same. Before each match the king and the 7 with the most spikes are picked as your deck (`spikiestDeck`) and you may change them, at most one king and one queen (`sameLimitedPiece`); other stones may come at several levels, never twice the same code.
-- **Rewards** (`offerRewards`): after a win you upgrade one of three random stones from your deck by one level. The upgraded stone takes its place in the deck and the old one stays in the collection, except a queen, who is replaced. If the opponent played a stone (piece and turn) that you do not own, you also get one of those, at level 1.
+- **Rewards** (`offerRewards`): after a win you upgrade one of three random stones from your deck by one level. The upgraded stone takes its place in the deck and the old one stays in the collection, except a queen, who is replaced. A pawn or knight turn grows to at most one level more than the number of its turns you own, so one horse reaches level 2 and a third level needs a second horse. You also get one new stone (piece and turn) you do not own: one the opponent played, or any missing pawn or knight turn (`TURNED_STONES`), at the opponent's level or one below your best of that piece.
 - **The end of a run** (`endRun`): keep one stone you do not own yet in your collection for good. A queen replaces the one you had.
 - **Who places first** (`firstFor`): you in odd matches, the opponent in even ones, the boss always.
 - **Winning a match** (`winnerOf`): most points (stones), else most spikes left, else whoever placed first.
