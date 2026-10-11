@@ -343,9 +343,14 @@ h1 {
   opacity: 0.8;
   font-variant-numeric: tabular-nums;
 }
-.portrait svg,
+.portrait img,
+.big-portrait img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  image-rendering: pixelated;
+}
 .hidden-stone svg,
-.big-portrait svg,
 .hand-stone svg,
 .square svg.stone {
   width: 100%;
@@ -796,20 +801,34 @@ h1 {
   height: 52px;
   overflow: visible;
 }
-/* Your collection on the card before a match: stones in your deck are lit, the rest dimmed. */
-.collection {
+/* The two buttons at the foot of a card: the quiet one on the left, the main one on the right. */
+.card-buttons {
   display: flex;
-  flex-wrap: wrap;
   justify-content: center;
-  gap: 6px;
+  gap: 12px;
+}
+.card.wide {
+  width: min(1040px, 100%);
+}
+/* Your whole collection on its own wide card: big stones with their names, the ones in your deck lit,
+   the rest dimmed. */
+.collection {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 10px;
+  max-height: 64vh;
+  overflow-y: auto;
+  padding: 6px;
 }
 .owned {
-  width: 58px;
-  height: 58px;
-  padding: 3px;
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 10px 4px 8px;
   background: none;
   box-shadow: none;
-  border-radius: 12px;
+  border-radius: 14px;
   opacity: 0.38;
   filter: saturate(0.6);
   transition:
@@ -817,9 +836,14 @@ h1 {
     transform 0.12s;
 }
 .owned svg {
-  width: 100%;
-  height: 100%;
+  width: 84px;
+  height: 84px;
   overflow: visible;
+}
+.owned-name {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
 }
 .owned.in-deck {
   opacity: 1;
@@ -833,13 +857,82 @@ h1 {
 .deck-count {
   font-variant-numeric: tabular-nums;
 }
+/* A stone you got after the last match wears a badge: New or Up. */
+.deck-stone {
+  position: relative;
+}
+.badge {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #2a2410;
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  box-shadow: 0 2px 0 #0e1422;
+}
+.owned .badge {
+  top: 2px;
+  right: 6px;
+}
+
+/* The card after a win: a big Victory, then the new stone, shining. */
+.card h2.victory {
+  font-size: 40px;
+  color: var(--accent);
+  text-shadow: 0 4px 0 #6b4f08;
+  animation: drop 0.45s ease-out;
+}
+.gift {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 14px;
+  border-radius: 16px;
+  background: radial-gradient(circle at 50% 38%, rgba(243, 197, 74, 0.32), var(--panel-raised) 62%);
+  box-shadow: inset 0 0 0 2px rgba(243, 197, 74, 0.55);
+}
+.gift-stone {
+  position: relative;
+  width: 132px;
+  height: 132px;
+}
+.gift-stone::before {
+  content: '';
+  position: absolute;
+  inset: -26px;
+  background: repeating-conic-gradient(rgba(255, 236, 160, 0.3) 0 12deg, transparent 12deg 30deg);
+  border-radius: 50%;
+  mask: radial-gradient(circle, #000 35%, transparent 70%);
+  animation: spin 9s linear infinite;
+}
+.gift-stone svg {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  animation: drop 0.5s ease-out;
+}
+.gift .gift-name {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.gift .gift-where {
+  color: var(--ink);
+}
 .card .primary:disabled {
   opacity: 0.4;
   cursor: default;
   transform: none;
 }
 
-/* The card before a match: the opponent's stones, and a panel for each rare stone you have not met yet. */
+/* The card before a match: the opponent's stones, a panel for each rare stone you have not met yet, your deck. */
 .their-deck svg {
   width: 46px;
   height: 46px;
@@ -946,6 +1039,9 @@ h1 {
   height: auto;
   overflow: visible;
 }
+.piece-guide p {
+  grid-column: 3; /* the king has one picture, his words still go in the wide column */
+}
 .piece-guide b {
   font-weight: 600;
   display: block;
@@ -961,6 +1057,11 @@ h1 {
 }
 
 /* ===== Keyframes ===== */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 @keyframes thump {
   0%,
   100% {
@@ -1137,7 +1238,10 @@ h1 {
   .square.would-take::after,
   .points-pop,
   .name-tag,
-  .card {
+  .card,
+  .card h2.victory,
+  .gift-stone::before,
+  .gift-stone svg {
     animation: none;
   }
 }
