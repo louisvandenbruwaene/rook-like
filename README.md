@@ -9,7 +9,7 @@ The page is [`index.html`](index.html) (layout and rules text) with [`style.css`
 | [`src/rules.js`](src/rules.js) | 496 | the pieces, stones and stone codes, the board, one fight, one move. Pure logic, never touches the page |
 | [`src/computer.js`](src/computer.js) | 134 | the computer player |
 | [`src/art.js`](src/art.js) | 153 | every stone and portrait: the stones show the pixel-art PNGs in [`art/stones/`](art/stones/), the opponents the pixel-art PNGs in [`art/opponents/`](art/opponents/) |
-| [`src/settings.js`](src/settings.js) | 255 | board size, run length, difficulties, the opponents and their decks |
+| [`src/settings.js`](src/settings.js) | 248 | board size, run length, difficulties, the opponents and their decks |
 | [`src/save.js`](src/save.js) | 231 | progress and settings in localStorage |
 | [`src/screen.js`](src/screen.js) | 318 | the state of a match, a move playing out, and the `render…()` functions |
 | [`src/move.js`](src/move.js) | 262 | how a move plays out on screen, step by step |
@@ -30,7 +30,7 @@ Every file starts with a header that says what it builds on and lists its sectio
 | how an opponent portrait looks | its PNG in `art/opponents/` (64 x 64, made with PixelLab, named after `portrait` in `OPPONENTS`), shown by `drawPortrait` in `art.js` |
 | run length, deck size, thinking time | the top of `settings.js` |
 | difficulties | `DIFFICULTIES` in `settings.js` (the card text is made from it by `difficultyTile` in `run.js`) |
-| an opponent, their deck or line | `OPPONENTS` and `BOSS` in `settings.js` |
+| an opponent or their deck | `OPPONENTS` and `BOSS` in `settings.js` |
 | how strong the computer plays | `bestMove` and the values at the top of `computer.js` |
 | what a square on the board shows | `squareClasses` and `squareContents` in `screen.js`, styled in `style.css` |
 | the timing of a move on screen | the `…_MS` constants and `animate` in `move.js` |

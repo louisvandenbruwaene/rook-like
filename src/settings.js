@@ -75,7 +75,6 @@ const OPPONENTS = [
       'hairy_harambe_level_1',
       'king_level_1',
     ],
-    line: 'Everything has a price. My Harambe collects.',
   },
   {
     name: 'Sir Neighsalot',
@@ -90,7 +89,6 @@ const OPPONENTS = [
       'rook_level_1',
       'king_level_1',
     ],
-    line: 'Hold your horses. All of them.',
   },
   {
     name: 'Madame Swerve',
@@ -105,7 +103,6 @@ const OPPONENTS = [
       'knight_level_1',
       'king_level_1',
     ],
-    line: 'Darling, I never take the straight road.',
   },
   {
     name: 'Blocky Barb',
@@ -120,7 +117,6 @@ const OPPONENTS = [
       'knight_level_1',
       'king_level_1',
     ],
-    line: 'Square deal. Square face. Square loss.',
   },
   {
     name: 'Lady Lux',
@@ -135,7 +131,6 @@ const OPPONENTS = [
       'knight_level_1',
       'king_level_1',
     ],
-    line: 'I brought my sisters. You brought Tiny Tims.',
   },
   {
     name: 'Uncle Gambit',
@@ -150,7 +145,6 @@ const OPPONENTS = [
       'pawn_level_1_down',
       'king_level_1',
     ],
-    line: 'I sacrifice. You suffer.',
   },
 ];
 const BOSS = {
@@ -167,7 +161,6 @@ const BOSS = {
     'knight_level_1_right',
     'king_level_1',
   ],
-  line: 'Nineteen boards behind you. One crown ahead.',
 };
 
 // Lady Lux's Experienced Edna cures the poison of Madame Swerve's Venom Veronica, so Lady Lux always comes first.

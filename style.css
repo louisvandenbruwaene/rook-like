@@ -723,11 +723,6 @@ h1 {
     0 0 0 4px #9b5de5,
     0 0 40px rgba(155, 93, 229, 0.6);
 }
-.card q {
-  font-style: italic;
-  color: var(--ink);
-  font-size: 17px;
-}
 .choices {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));

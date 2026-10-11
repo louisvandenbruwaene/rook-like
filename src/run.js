@@ -128,7 +128,7 @@ function intro() {
   const portraitClass = opponent.isBoss ? 'big-portrait boss' : 'big-portrait';
   const theirDeck = deckOf(opponent);
   const newStones = newStonesIn(theirDeck);
-  const content = `<div class="${portraitClass}">${drawPortrait(opponent)}</div><h2>${opponent.name}</h2><q>${opponent.line}</q>
+  const content = `<div class="${portraitClass}">${drawPortrait(opponent)}</div><h2>${opponent.name}</h2>
 <p class="card-label quiet">They bring</p><div class="hand-row their-deck">${drawTheirDeck(theirDeck)}</div>
 ${newStones.map((type) => meetingHtml(type, opponent)).join('')}
 <p class="card-label quiet">You bring</p><div class="hand-row your-deck">${drawYourDeck(run)}</div>`;
