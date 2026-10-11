@@ -27,7 +27,7 @@ Every file starts with a header that says what it builds on and lists its sectio
 | what a power does in a fight | `fight`, `breakSpikes`, `poisonHit`, `sting`, `cure`, `take` in `rules.js` |
 | how a stone looks | its PNG in `art/stones/` (64 x 64, made with PixelLab), drawn by `drawCharacter` in `art.js` |
 | which detail of a stone shows its team's colour | `DETAILS` in `art/team_colours.py`; run it (needs Pillow and numpy) after changing a portrait to remake the copies `<piece>-blue.png` and `<piece>-red.png` next to each original |
-| how an opponent portrait looks | its PNG in `art/opponents/` (80 x 80, made with PixelLab, named after `portrait` in `OPPONENTS`), shown by `drawPortrait` in `art.js` |
+| how an opponent portrait looks | its PNG in `art/opponents/` (64 x 64, made with PixelLab, named after `portrait` in `OPPONENTS`), shown by `drawPortrait` in `art.js` |
 | run length, deck size, thinking time | the top of `settings.js` |
 | difficulties | `DIFFICULTIES` in `settings.js` (the card text is made from it by `difficultyTile` in `run.js`) |
 | an opponent, their deck or line | `OPPONENTS` and `BOSS` in `settings.js` |
