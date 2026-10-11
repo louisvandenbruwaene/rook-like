@@ -2,7 +2,7 @@
    A RUN  (builds on settings.js, save.js, screen.js and move.js)
    Everything between matches, from choosing a difficulty to the end of the run. A run goes:
 
-     (chooseDifficulty, once a game) -> intro (pick your deck) -> startMatch -> ... -> finishMatch -> offerRewards -> nextMatch -> intro
+     (chooseDifficulty, once a game) -> intro (<-> chooseDeck) -> startMatch -> ... -> finishMatch -> offerRewards -> nextMatch -> intro
                                                                                    \-> endRun (lost, gave up, or won the last match)
 
    Contents: cards · the run, match by match · your deck · rewards · a new game · the end of a run
@@ -15,16 +15,21 @@ function closeCard() {
   find('#card-modal').hidden = true;
 }
 
-// A card: a small label on top, its content, then choices to pick from and/or one main button.
-// choices: [{ html, onPick }], button: { label, onClick }, layout: an extra class for the choices,
-// 'compact' (smaller choices, for long lists) or 'difficulties'
-function showCard(label, contentHtml, { choices = [], button, layout = '' } = {}) {
+// A card: a small label on top, its content, then choices to pick from and/or one main button, with an optional
+// second, quieter button beside it.
+// choices: [{ html, onPick }], button and secondButton: { label, onClick }, layout: an extra class for the choices,
+// 'compact' (smaller choices, for long lists) or 'difficulties'. wide: a wider card, for your whole collection.
+function showCard(label, contentHtml, { choices = [], button, secondButton, layout = '', wide = false } = {}) {
   let html = `<div class="card-label">${label}</div>${contentHtml}`;
   if (choices.length > 0) {
     html += `<div class="choices ${layout}">${choices.map((choice) => `<button class="choice">${choice.html}</button>`).join('')}</div>`;
   }
-  if (button) html += `<div><button class="primary">${button.label}</button></div>`;
+  if (button) {
+    const second = secondButton ? `<button class="secondary">${secondButton.label}</button>` : '';
+    html += `<div class="card-buttons">${second}<button class="primary">${button.label}</button></div>`;
+  }
   find('#card').innerHTML = html;
+  find('#card').classList.toggle('wide', wide);
   find('#card-modal').hidden = false;
 
   document.querySelectorAll('#card .choice').forEach((choiceButton, index) => {
@@ -33,6 +38,12 @@ function showCard(label, contentHtml, { choices = [], button, layout = '' } = {}
       choices[index].onPick();
     };
   });
+  if (secondButton) {
+    find('#card .secondary').onclick = () => {
+      closeCard();
+      secondButton.onClick();
+    };
+  }
   if (button) {
     const mainButton = find('#card .primary');
     mainButton.onclick = () => {
@@ -62,7 +73,8 @@ function newRun() {
   const swerveIndex = order.indexOf(MADAME_SWERVE);
   if (swerveIndex < luxIndex) [order[swerveIndex], order[luxIndex]] = [order[luxIndex], order[swerveIndex]];
   const collection = save.collection.slice();
-  save.run = { match: 1, collection, startSize: collection.length, deck: [], opponentOrder: order };
+  const deck = deckLike(collection, save.lastDeck);
+  save.run = { match: 1, collection, startSize: collection.length, deck, opponentOrder: order, fresh: [] };
   if (save.difficulty) setRunDifficulty(save.difficulty);
   save.runsPlayed++;
   store();
@@ -103,11 +115,11 @@ function chooseDifficulty() {
   showCard('New game', '<h2>Choose a difficulty</h2>', { choices, layout: 'difficulties' });
 }
 
-// The next opponent and the stones they bring, a word on each rare stone you have not met yet, and your collection
-// to pick a deck from, with the spikiest deck already picked.
+// The next opponent and the stones they bring, a word on each rare stone you have not met yet, and the deck you
+// take in: the one you fought with last time, so Fight right away plays it again, and Change stones picks another.
 function intro() {
   const run = save.run;
-  run.deck = spikiestDeck(run.collection);
+  if (run.deck.length !== DECK_SIZE) run.deck = deckLike(run.collection, save.lastDeck);
   opponent = opponentFor(run.match);
   save.bestMatch = Math.max(save.bestMatch, run.match);
   store();
@@ -118,14 +130,49 @@ function intro() {
   const newStones = newStonesIn(theirDeck);
   const content = `<div class="${portraitClass}">${drawPortrait(opponent)}</div><h2>${opponent.name}</h2><q>${opponent.line}</q>
 <p class="card-label quiet">They bring</p><div class="hand-row their-deck">${drawTheirDeck(theirDeck)}</div>
-${newStones.map(meetingHtml).join('')}
-<p class="card-label quiet">You bring</p><div class="collection" id="collection"></div><p class="deck-count" id="deck-count"></p>`;
+${newStones.map((type) => meetingHtml(type, opponent)).join('')}
+<p class="card-label quiet">You bring</p><div class="hand-row your-deck">${drawYourDeck(run)}</div>`;
   const fight = () => {
     markExplained(newStones);
     startMatch();
   };
-  showCard(label, content, { button: { label: 'Fight', onClick: fight } });
+  showCard(label, content, {
+    button: { label: 'Fight', onClick: fight },
+    secondButton: { label: 'Change stones', onClick: chooseDeck },
+  });
+}
+
+// Your deck as it goes in, with a badge on each stone that is new or upgraded since the last match.
+function drawYourDeck(run) {
+  return run.deck
+    .map((index) => run.collection[index])
+    .sort((a, b) => handOrder(fromCode(a, YOU), fromCode(b, YOU)))
+    .map((code) => `<span class="deck-stone">${picture(code)}${freshBadge(code)}</span>`)
+    .join('');
+}
+
+// "New" or "Up" on a stone you got after the last match: a gift, or the upgrade you picked.
+function freshBadge(code) {
+  const fresh = (save.run.fresh || []).find((entry) => entry.code === code);
+  return fresh ? `<span class="badge">${fresh.upgraded ? 'Up' : 'New'}</span>` : '';
+}
+
+// Your whole collection, big, to pick the DECK_SIZE stones you take in. Done goes back to the card before the match.
+function chooseDeck() {
+  const content = `<h2>Your stones</h2><p>Tap a stone to take it in or leave it out. Lit stones go in.</p>
+<div class="collection" id="collection"></div><p class="deck-count" id="deck-count"></p>`;
+  showCard(`Against ${opponent.name}`, content, {
+    button: { label: 'Done', onClick: intro },
+    secondButton: { label: 'Spikiest 8', onClick: pickSpikiest },
+    wide: true,
+  });
   renderCollection();
+}
+
+function pickSpikiest() {
+  save.run.deck = spikiestDeck(save.run.collection);
+  store();
+  chooseDeck();
 }
 
 // The opponent's stones as they will look on the board: red, turned round.
@@ -139,6 +186,9 @@ function drawTheirDeck(codes) {
 
 function startMatch() {
   const run = save.run;
+  save.lastDeck = deckCodes(run);
+  run.fresh = [];
+  store();
   const yourStones = deckCodes(run)
     .map((code) => fromCode(code, YOU))
     .sort(handOrder);
@@ -227,17 +277,34 @@ function deckFrom(collection, preferredCodes) {
   return deck;
 }
 
-// The indexes of a deck of DECK_SIZE stones: the king, then the stones with the most spikes, keeping to one queen.
-// Level on spikes, the stone listed first in the collection goes in.
-function spikiestDeck(collection) {
+// The collection's codes, the king first, then the stones with the most spikes. Level on spikes, the stone listed
+// first in the collection comes first.
+function spikiestFirst(collection) {
   const isKing = (code) => pieceOf(code) === 'king';
-  const preferred = collection
-    .map((code) => ({ code, king: isKing(code), spikes: spikeCount(fromCode(code, YOU)) }))
-    .sort((a, b) => b.king - a.king || b.spikes - a.spikes);
-  return deckFrom(
-    collection,
-    preferred.map(({ code }) => code),
-  );
+  return collection
+    .map((code) => ({ code, king: isKing(code), spikes: spikesOf(code) }))
+    .sort((a, b) => b.king - a.king || b.spikes - a.spikes)
+    .map(({ code }) => code);
+}
+
+function spikesOf(code) {
+  return spikeCount(fromCode(code, YOU));
+}
+
+// The indexes of a deck of DECK_SIZE stones: the king, then the stones with the most spikes, keeping to one queen.
+function spikiestDeck(collection) {
+  return deckFrom(collection, spikiestFirst(collection));
+}
+
+// The indexes of a deck like the one you last fought with (codes): each of its stones, or when the collection
+// lacks it, the highest level you own of the same piece and turn; then the spikiest stones fill what is left.
+// So a stone you picked once, like Venom Veronica, stays in until you take it out.
+function deckLike(collection, codes) {
+  const highestFirst = collection.slice().sort((a, b) => parseCode(b).level - parseCode(a).level);
+  const preferred = codes
+    .map((code) => (collection.includes(code) ? code : highestFirst.find((owned) => stoneKey(owned) === stoneKey(code))))
+    .filter(Boolean);
+  return deckFrom(collection, [...preferred, ...spikiestFirst(collection)]);
 }
 
 // The deck index of a king or queen of the same piece as collection[index], or undefined. A deck holds one king
@@ -262,7 +329,7 @@ function renderCollection() {
   find('#collection').innerHTML = stones
     .map(({ code, index }) => {
       const inDeck = run.deck.includes(index) ? ' in-deck' : '';
-      return `<button class="owned${inDeck}" data-index="${index}" title="${titleOf(code)}">${picture(code)}</button>`;
+      return `<button class="owned${inDeck}" data-index="${index}" title="${titleOf(code)}">${picture(code)}${freshBadge(code)}<span class="owned-name">${titleOf(code)}</span></button>`;
     })
     .join('');
   find('#collection')
@@ -315,16 +382,21 @@ function handOrder(a, b) {
 
 function offerRewards(label, opponentDeck) {
   const run = save.run;
+  run.fresh = [];
   const gift = newStoneFrom(opponentDeck);
-  if (gift) run.collection.push(gift);
+  let giftHtml = '';
+  if (gift) {
+    const index = run.collection.push(gift) - 1;
+    const replaced = takeIntoDeckIfStronger(index);
+    run.fresh.push({ code: gift, upgraded: false });
+    giftHtml = giftPanel(gift, replaced);
+  }
   store();
-  const giftHtml = gift
-    ? `<p class="card-label quiet">New</p><div class="hand-row">${picture(gift)}</div><p>${titleOf(gift)}</p>`
-    : '';
+  const heading = `<h2 class="victory">Victory!</h2>`;
 
   const options = shuffle(run.deck.filter((index) => canUpgrade(run.collection, index))).slice(0, UPGRADE_CHOICES);
   if (options.length === 0) {
-    showCard(label, giftHtml, { button: { label: 'Next', onClick: nextMatch } });
+    showCard(label, heading + giftHtml, { button: { label: 'Next', onClick: nextMatch } });
     return;
   }
   const choices = options.map((index) => {
@@ -333,11 +405,35 @@ function offerRewards(label, opponentDeck) {
       html: swapPicture(code, upgraded(code)) + titleOf(upgraded(code)),
       onPick: () => {
         upgradeInDeck(index);
+        run.fresh.push({ code: upgraded(code), upgraded: true });
         nextMatch();
       },
     };
   });
-  showCard(label, giftHtml + '<h2>Upgrade one</h2>', { choices });
+  showCard(label, heading + giftHtml + '<p class="card-label">Upgrade one stone in your deck</p>', { choices });
+}
+
+// The new stone, big and shining, what it does if it is rare, and whether it went into your deck.
+function giftPanel(gift, replaced) {
+  const piece = PIECES[pieceOf(gift)];
+  const power = piece.chess ? '' : `<p>${piece.description}.</p>`;
+  const where = replaced
+    ? `It has more spikes than ${titleOf(replaced)}, so it takes its place in your deck.`
+    : 'It waits in your collection: Change stones before a match to take it in.';
+  return `<div class="gift"><p class="card-label">New stone for you</p><div class="gift-stone">${picture(gift)}</div>
+<p class="gift-name">${titleOf(gift)}</p>${power}<p class="gift-where">${where}</p></div>`;
+}
+
+// A new stone goes into your deck by itself only when it has more spikes than the weakest stone there (a queen only
+// in place of a weaker queen; the king never leaves). Returns the code it replaced, or null when it stays out.
+function takeIntoDeckIfStronger(index) {
+  const { deck, collection } = save.run;
+  const rival = sameLimitedPiece(collection, deck, index);
+  const candidates = rival !== undefined ? [rival] : deck.filter((i) => pieceOf(collection[i]) !== 'king');
+  const weakest = candidates.sort((a, b) => spikesOf(collection[a]) - spikesOf(collection[b]))[0];
+  if (weakest === undefined || spikesOf(collection[index]) <= spikesOf(collection[weakest])) return null;
+  deck[deck.indexOf(weakest)] = index;
+  return collection[weakest];
 }
 
 // collection[index] is offered as an upgrade when it can grow, stays within its level cap, and you own no higher

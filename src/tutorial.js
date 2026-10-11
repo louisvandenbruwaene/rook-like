@@ -197,12 +197,12 @@ function introduce(types, then) {
   coach(lines.join('<br>'), [{ label: 'Got it', onClick: gotIt }]);
 }
 
-// The panel on the card before a match for each new rare stone the opponent brings.
-function meetingHtml(type) {
+// The panel on the card before a match for each new rare stone the opponent brings, saying why it is shown.
+function meetingHtml(type, opponent) {
   const demo = DEMOS[type];
   const demoHtml = demo ? demoBoards(demo) : '';
   const caption = demo ? `<p class="demo-caption">${demo.caption}</p>` : '';
-  return `<div class="meeting"><p class="card-label">New stone</p>
+  return `<div class="meeting"><p class="card-label">New rare stone: ${opponent.name} plays it this match</p>
 <p><b>${PIECES[type].name}:</b> ${PIECES[type].description}.</p>${demoHtml}${caption}</div>`;
 }
 

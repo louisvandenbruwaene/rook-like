@@ -8,13 +8,13 @@ The page is [`index.html`](index.html) (layout and rules text) with [`style.css`
 |---|---|---|
 | [`src/rules.js`](src/rules.js) | 496 | the pieces, stones and stone codes, the board, one fight, one move. Pure logic, never touches the page |
 | [`src/computer.js`](src/computer.js) | 134 | the computer player |
-| [`src/art.js`](src/art.js) | 279 | every stone and portrait: the stones show the pixel-art PNGs in [`art/stones/`](art/stones/), the opponent portraits are SVG strings |
+| [`src/art.js`](src/art.js) | 153 | every stone and portrait: the stones show the pixel-art PNGs in [`art/stones/`](art/stones/), the opponents the pixel-art PNGs in [`art/opponents/`](art/opponents/) |
 | [`src/settings.js`](src/settings.js) | 255 | board size, run length, difficulties, the opponents and their decks |
-| [`src/save.js`](src/save.js) | 220 | progress and settings in localStorage |
+| [`src/save.js`](src/save.js) | 231 | progress and settings in localStorage |
 | [`src/screen.js`](src/screen.js) | 318 | the state of a match, a move playing out, and the `render…()` functions |
 | [`src/move.js`](src/move.js) | 262 | how a move plays out on screen, step by step |
-| [`src/run.js`](src/run.js) | 458 | the cards between matches: the run match by match, your deck, rewards, the end |
-| [`src/tutorial.js`](src/tutorial.js) | 281 | the coach line under the board: the four practice boards, and a word and a demo board for each rare stone you meet |
+| [`src/run.js`](src/run.js) | 554 | the cards between matches: the run match by match, your deck, rewards, the end |
+| [`src/tutorial.js`](src/tutorial.js) | 275 | the coach line under the board: the four practice boards, and a word and a demo board for each rare stone you meet |
 | [`src/controls.js`](src/controls.js) | 125 | the rules panel, mouse, touch and keys, and the start |
 
 Every file starts with a header that says what it builds on and lists its sections (`Contents: …`), and every section starts with a `/* ---------- name ---------- */` line, so a search for `----------` lists them all.
@@ -27,14 +27,15 @@ Every file starts with a header that says what it builds on and lists its sectio
 | what a power does in a fight | `fight`, `breakSpikes`, `poisonHit`, `sting`, `cure`, `take` in `rules.js` |
 | how a stone looks | its PNG in `art/stones/` (64 x 64, made with PixelLab), drawn by `drawCharacter` in `art.js` |
 | which detail of a stone shows its team's colour | `DETAILS` in `art/team_colours.py`; run it (needs Pillow and numpy) after changing a portrait to remake the copies `<piece>-blue.png` and `<piece>-red.png` next to each original |
-| how an opponent portrait looks | `PORTRAITS` in `art.js` |
+| how an opponent portrait looks | its PNG in `art/opponents/` (80 x 80, made with PixelLab, named after `portrait` in `OPPONENTS`), shown by `drawPortrait` in `art.js` |
 | run length, deck size, thinking time | the top of `settings.js` |
 | difficulties | `DIFFICULTIES` in `settings.js` (the card text is made from it by `difficultyTile` in `run.js`) |
 | an opponent, their deck or line | `OPPONENTS` and `BOSS` in `settings.js` |
 | how strong the computer plays | `bestMove` and the values at the top of `computer.js` |
 | what a square on the board shows | `squareClasses` and `squareContents` in `screen.js`, styled in `style.css` |
 | the timing of a move on screen | the `…_MS` constants and `animate` in `move.js` |
-| rewards and the end of a run | `offerRewards`, `endRun` in `run.js` |
+| rewards and the end of a run | `offerRewards`, `giftPanel`, `takeIntoDeckIfStronger`, `endRun` in `run.js` |
+| which stones go into your deck before a match | `deckLike` (the deck you last fought with, kept in `save.lastDeck`) and `chooseDeck` in `run.js` |
 | what is saved | `newSave` in `save.js`; add a `fromVersion…` step when the shape changes |
 | keys, mouse and touch | the input section of `controls.js` |
 | the rules text | `#rules-template` in `index.html` |
