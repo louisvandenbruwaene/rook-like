@@ -1,5 +1,11 @@
 # Rook-like: how the code works
 
+### ▶ [Play Rook-like in your browser](https://louisvandenbruwaene.github.io/rook-like/)
+
+No install, no account: open the link and play. Pick a stone, then a square on the board. A short tutorial starts on its own.
+
+[![Rook-like: the first tutorial match against Pawnbroker Pete](screenshot.png)](https://louisvandenbruwaene.github.io/rook-like/)
+
 Rook-like is a roguelike of spiked chess stones. You and the computer take turns placing stones on a 4 × 4 board. Facing spikes fight, the winner takes the other stone, and one move can set off a chain of fights. A run is twenty matches against opponents who grow stronger with every win, and the last one is the boss.
 
 The page is [`index.html`](index.html) (layout and rules text) with [`style.css`](style.css) and ten small scripts in [`src/`](src/), loaded in this order. They share one global scope, so a later file can use everything from an earlier one. The diagrams below use the function names from the code, so you can search for any box.
