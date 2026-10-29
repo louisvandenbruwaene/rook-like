@@ -1,7 +1,7 @@
 /* =====================================================================
    SAVED DATA  (builds on settings.js)
    Progress and settings in localStorage. Loading them makes the two globals the rest of the game reads and
-   writes: save (your progress) and settings (slow motion). store() writes both back.
+   writes: save (your progress) and settings (slow motion, sound off). store() writes both back.
 
    Contents: reading and writing · converting older saves · loading
    ===================================================================== */
@@ -13,13 +13,13 @@
            tutorialDone, explained (the rare stones whose power you have been told, see tutorial.js),
            lastDeck (the codes of the deck you last fought with; the next run starts with the same stones) }
    run:  { match, collection (stone codes owned this run), startSize (how many of them you started with),
-           deck (indexes into the run's collection), opponentOrder, difficulty,
+           deck (indexes into the run's collection), opponentOrder, difficulty, lives (hearts left),
            decks (each opponent's stone codes, see settings.js), over,
            fresh ([{ code, upgraded }] for each stone you got after the last match, shown with a badge until the next) } */
 
 const SAVE_KEY = 'chainstones-run';
 const SETTINGS_KEY = 'chainstones-cfg';
-const SAVE_VERSION = 8;
+const SAVE_VERSION = 9;
 
 function readStorage(key) {
   try {
@@ -46,7 +46,7 @@ function newSave() {
 
 function loadSettings() {
   const stored = readStorage(SETTINGS_KEY) || {};
-  return { slowMotion: Boolean(stored.slowMotion ?? stored.slow) };
+  return { slowMotion: Boolean(stored.slowMotion ?? stored.slow), muted: Boolean(stored.muted) };
 }
 
 function store() {
@@ -68,13 +68,14 @@ function currentDifficulty() {
 // Older saves are converted step by step. Saves from before version 2 (before the rare stones) start over.
 function loadSave() {
   let stored = readStorage(SAVE_KEY);
-  if (!stored || ![2, 3, 4, 5, 6, 7, 8].includes(stored.version)) return newSave();
+  if (!stored || ![2, 3, 4, 5, 6, 7, 8, 9].includes(stored.version)) return newSave();
   if (stored.version === 2) stored = fromVersion2(stored);
   if (stored.version === 3) stored = fromVersion3(stored);
   if (stored.version === 4) stored = fromVersion4(stored);
   if (stored.version === 5) stored = fromVersion5(stored);
   if (stored.version === 6) stored = fromVersion6(stored);
   if (stored.version === 7) stored = fromVersion7(stored);
+  if (stored.version === 8) stored = fromVersion8(stored);
   return stored;
 }
 
@@ -182,6 +183,13 @@ function fromVersion7(old) {
   const run = old.run;
   const lastDeck = run && run.deck && run.collection ? run.deck.map((index) => run.collection[index]) : [];
   return { ...old, version: 8, lastDeck };
+}
+
+// Version 9 gave runs hearts: a run in progress gets its difficulty's full lives.
+function fromVersion8(old) {
+  const run = old.run;
+  if (run && run.difficulty && !run.over) run.lives = DIFFICULTIES[run.difficulty].lives;
+  return { ...old, version: 9 };
 }
 
 // Saves from before the one of each stone rule may own a stone twice, and saves from before the one queen rule

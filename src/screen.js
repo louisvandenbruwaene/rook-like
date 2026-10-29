@@ -126,7 +126,8 @@ function renderLadder() {
   find('#ladder').innerHTML = rungs;
   const chosen = run.difficulty || run.decks; // a new run has neither until you pick a difficulty
   const difficulty = chosen ? ` · ${currentDifficulty().name}` : '';
-  find('#run-line').textContent = `${run.match} / ${RUN_LENGTH}${difficulty}`;
+  const hearts = run.lives ? ` <span class="hearts">${heartsOf(run)}</span>` : '';
+  find('#run-line').innerHTML = `${run.match} / ${RUN_LENGTH}${difficulty}${hearts}`;
   const record = find('#record');
   if (record) {
     const best = save.bestMatch ? `match ${save.bestMatch}` : 'none';
@@ -188,6 +189,7 @@ function stoneToDescribe() {
 }
 
 function select(handIndex) {
+  if (handIndex >= 0 && handIndex !== ui.selected) sounds.select();
   ui.selected = handIndex;
   renderHand();
   renderBoard();

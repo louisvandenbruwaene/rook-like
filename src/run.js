@@ -18,7 +18,8 @@ function closeCard() {
 // A card: a small label on top, its content, then choices to pick from and/or one main button, with an optional
 // second, quieter button beside it.
 // choices: [{ html, onPick }], button and secondButton: { label, onClick }, layout: an extra class for the choices,
-// 'compact' (smaller choices, for long lists) or 'difficulties'. wide: a wider card, for your whole collection.
+// 'compact' (smaller choices, for long lists), 'difficulties' or 'gifts' (big stones).
+// wide: a wider card, for your whole collection.
 function showCard(label, contentHtml, { choices = [], button, secondButton, layout = '', wide = false } = {}) {
   let html = `<div class="card-label">${label}</div>${contentHtml}`;
   if (choices.length > 0) {
@@ -83,6 +84,7 @@ function newRun() {
 function setRunDifficulty(key) {
   save.run.difficulty = key;
   save.run.decks = newDecks(DIFFICULTIES[key]);
+  save.run.lives = DIFFICULTIES[key].lives;
 }
 
 // A new run, which asks for a difficulty only when the game has none yet: losing a run does not start a new game.
@@ -98,7 +100,8 @@ function difficultyTile(difficulty, rank) {
     difficulty.lookAhead >= 99 ? 'Looks as far ahead as it can' : `Looks ${difficulty.lookAhead} moves ahead`;
   const pips = '●'.repeat(rank + 1) + '○'.repeat(Object.keys(DIFFICULTIES).length - rank - 1);
   return `<span class="pips">${pips}</span><span class="difficulty">${difficulty.name}</span>
-<span class="difficulty-detail">${looks} · they gain ${difficulty.growth} Lv a win</span>`;
+<span class="hearts">${HEART.repeat(difficulty.lives)}</span>
+${detail(`${looks} · they gain ${difficulty.growth} Lv a win`)}`;
 }
 
 function chooseDifficulty() {
@@ -218,8 +221,13 @@ function finishMatch() {
   ui.waiting = true;
   render();
   const run = save.run;
-  if (winnerOf(game) !== YOU) {
-    endRun(false, `${opponent.name} wins ${tally()}.`, worstMove());
+  const won = winnerOf(game) === YOU;
+  if (won) sounds.victory();
+  else sounds.defeat();
+  if (!won) {
+    const text = `${opponent.name} wins ${tally()}.`;
+    if (run.lives > 1) loseHeart(text, worstMove());
+    else endRun(false, text, worstMove());
     return;
   }
   if (run.match === RUN_LENGTH) {
@@ -250,6 +258,26 @@ function stonesTaken({ before, result }) {
     if (before.owners[cell] === YOU && result.owners[cell] === OPPONENT) taken++;
   }
   return taken;
+}
+
+// A lost match with a heart to spare: the heart breaks, and the same match is played again. Nothing else changes.
+function loseHeart(text, worst) {
+  const run = save.run;
+  run.lives--;
+  run.fresh = [];
+  store();
+  renderLadder();
+  const hearts = `<p class="hearts big">${heartsOf(run, true)}</p>`;
+  const content = `${hearts}<h2>Heart lost</h2><p>${text}</p>${worst ? worstMoveHtml(worst) : ''}`;
+  showCard(`${run.match} / ${RUN_LENGTH}`, content, { button: { label: 'Try again', onClick: intro } });
+  if (worst) find('#watch-again').onclick = () => watchAgain(worst);
+}
+
+// ♥♥♡: the hearts left, then the ones lost. With justLost the first lost heart breaks on screen.
+function heartsOf(run, justLost = false) {
+  const lost = DIFFICULTIES[run.difficulty].lives - run.lives;
+  const breaking = justLost ? `<span class="just-lost">${LOST_HEART}</span>` : LOST_HEART;
+  return HEART.repeat(run.lives) + (lost > 0 ? breaking + LOST_HEART.repeat(lost - 1) : '');
 }
 
 function nextMatch() {
@@ -302,7 +330,9 @@ function spikiestDeck(collection) {
 function deckLike(collection, codes) {
   const highestFirst = collection.slice().sort((a, b) => parseCode(b).level - parseCode(a).level);
   const preferred = codes
-    .map((code) => (collection.includes(code) ? code : highestFirst.find((owned) => stoneKey(owned) === stoneKey(code))))
+    .map((code) =>
+      collection.includes(code) ? code : highestFirst.find((owned) => stoneKey(owned) === stoneKey(code)),
+    )
     .filter(Boolean);
   return deckFrom(collection, [...preferred, ...spikiestFirst(collection)]);
 }
@@ -377,26 +407,58 @@ function handOrder(a, b) {
    place in your deck, and the old one stays in your collection, except a queen, who is replaced.
    A pawn or knight turn grows to at most one level more than the number of its turns you own: with one horse you can
    reach level 2, a level 3 horse needs a second horse first, and level 5 needs all four.
-   You also get one new stone (piece and turn) you do not own yet: one the opponent played, or a missing pawn or knight
-   turn. It comes at the level the opponent had it, or one below your best of that piece, and at least level 1. */
+   First you pick one new stone (piece and turn) you do not own yet, from GIFT_CHOICES: ones the opponent played, or
+   missing pawn or knight turns. It comes at the level the opponent had it, or one below your best of that piece, and at
+   least level 1. */
+
+const VICTORY_HEADING = '<h2 class="victory">Victory!</h2>';
 
 function offerRewards(label, opponentDeck) {
-  const run = save.run;
-  run.fresh = [];
-  const gift = newStoneFrom(opponentDeck);
-  let giftHtml = '';
-  if (gift) {
-    const index = run.collection.push(gift) - 1;
-    const replaced = takeIntoDeckIfStronger(index);
-    run.fresh.push({ code: gift, upgraded: false });
-    giftHtml = giftPanel(gift, replaced);
-  }
+  save.run.fresh = [];
   store();
-  const heading = `<h2 class="victory">Victory!</h2>`;
+  const gifts = newStonesFrom(opponentDeck, GIFT_CHOICES);
+  if (gifts.length <= 1) {
+    offerUpgrade(label, gifts.length === 1 ? takeGift(gifts[0]) : '');
+    return;
+  }
+  const choices = gifts.map((gift) => ({
+    html: `<span class="swap">${picture(gift)}</span>${titleOf(gift)}${detail(powerOf(gift))}`,
+    onPick: () => {
+      sounds.reward();
+      offerUpgrade(label, takeGift(gift));
+    },
+  }));
+  showCard(label, VICTORY_HEADING + '<p class="card-label">Pick a new stone</p>', { choices, layout: 'gifts' });
+}
+
+// The new stone joins your collection, and your deck if it is stronger. Returns the panel that says where it went.
+function takeGift(gift) {
+  const run = save.run;
+  const index = run.collection.push(gift) - 1;
+  const replaced = takeIntoDeckIfStronger(index);
+  run.fresh.push({ code: gift, upgraded: false });
+  store();
+  return giftPanel(gift, replaced);
+}
+
+// What a rare stone does, or '' for a chess piece.
+function powerOf(code) {
+  const piece = PIECES[pieceOf(code)];
+  return piece.chess ? '' : `${piece.description}.`;
+}
+
+// Small print under a choice, or nothing when there is none.
+function detail(text) {
+  return text ? `<span class="choice-detail">${text}</span>` : '';
+}
+
+// The new stone you got (giftHtml, or ''), then upgrade one of UPGRADE_CHOICES stones from your deck.
+function offerUpgrade(label, giftHtml) {
+  const run = save.run;
 
   const options = shuffle(run.deck.filter((index) => canUpgrade(run.collection, index))).slice(0, UPGRADE_CHOICES);
   if (options.length === 0) {
-    showCard(label, heading + giftHtml, { button: { label: 'Next', onClick: nextMatch } });
+    showCard(label, VICTORY_HEADING + giftHtml, { button: { label: 'Next', onClick: nextMatch } });
     return;
   }
   const choices = options.map((index) => {
@@ -404,19 +466,21 @@ function offerRewards(label, opponentDeck) {
     return {
       html: swapPicture(code, upgraded(code)) + titleOf(upgraded(code)),
       onPick: () => {
+        sounds.reward();
         upgradeInDeck(index);
         run.fresh.push({ code: upgraded(code), upgraded: true });
         nextMatch();
       },
     };
   });
-  showCard(label, heading + giftHtml + '<p class="card-label">Upgrade one stone in your deck</p>', { choices });
+  showCard(label, VICTORY_HEADING + giftHtml + '<p class="card-label">Upgrade one stone in your deck</p>', {
+    choices,
+  });
 }
 
 // The new stone, big and shining, what it does if it is rare, and whether it went into your deck.
 function giftPanel(gift, replaced) {
-  const piece = PIECES[pieceOf(gift)];
-  const power = piece.chess ? '' : `<p>${piece.description}.</p>`;
+  const power = powerOf(gift) && `<p>${powerOf(gift)}</p>`;
   const where = replaced
     ? `It has more spikes than ${titleOf(replaced)}, so it takes its place in your deck.`
     : 'It waits in your collection: Change stones before a match to take it in.';
@@ -465,17 +529,23 @@ function stoneKey(code) {
   return `${type}:${direction}`;
 }
 
-// One stone you do not own at any level, from the opponent's deck or a pawn or knight turn, or null.
-function newStoneFrom(opponentDeck) {
+// Up to `count` different stones you do not own at any level, from the opponent's deck or pawn and knight turns.
+function newStonesFrom(opponentDeck, count) {
   const collection = save.run.collection;
   const owned = new Set(collection.map(stoneKey));
   const oneOfEach = new Map([...TURNED_STONES, ...opponentDeck].map((code) => [stoneKey(code), code]));
   const missing = [...oneOfEach.values()].filter((code) => !owned.has(stoneKey(code)));
-  if (missing.length === 0) return null;
-  const code = missing[Math.floor(Math.random() * missing.length)];
-  const type = pieceOf(code);
-  const level = Math.max(1, opponentDeck.includes(code) ? parseCode(code).level : 0, bestLevelOf(collection, type) - 1);
-  return withLevel(code, Math.min(level, levelCap([...collection, code], type)));
+  return shuffle(missing)
+    .slice(0, count)
+    .map((code) => {
+      const type = pieceOf(code);
+      const level = Math.max(
+        1,
+        opponentDeck.includes(code) ? parseCode(code).level : 0,
+        bestLevelOf(collection, type) - 1,
+      );
+      return withLevel(code, Math.min(level, levelCap([...collection, code], type)));
+    });
 }
 
 function upgradeInDeck(index) {
@@ -540,7 +610,7 @@ function endRun(won, text, worst = null) {
 }
 
 function worstMoveHtml(worst) {
-  const stones = `${worst.taken} of your stone${worst.taken === 1 ? '' : 's'}`;
+  const stones = worst.taken === 1 ? 'one of your stones' : `${worst.taken} of your stones`;
   return `<p class="worst-move">The move that hurt most: their <b>${nameOf(worst.stone)}</b> took ${stones}.
 <button class="text-button" id="watch-again">Watch it again</button></p>`;
 }
