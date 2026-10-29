@@ -13,6 +13,7 @@ const DECK_SIZE = 8; // the stones you take into a match, chosen from your colle
 const ONE_PER_DECK = ['king', 'queen']; // a deck holds at most one king and one queen, whatever their turn
 const ONLY_ONE_OWNED = ['queen']; // you own one queen: an upgraded or newly kept queen replaces the old one
 const UPGRADE_CHOICES = 3; // after a win, you pick one of this many stones from your deck to upgrade
+const GIFT_CHOICES = 2; // after a win, you pick your new stone from this many
 // Every turn of the pawn and the knight: after a win, a turn you do not own yet may be your new stone.
 const TURNED_STONES = [
   'pawn_level_1_up',
@@ -49,13 +50,17 @@ const BOSS_THINK_MS = 1600;
 //   bossBehind    how many of those upgrades the boss misses, at the start of the run
 //   upgradeOrder  which stones the opponents upgrade first after your wins, as groups of pieces, with
 //                 every other piece as one last group (see upgradeOne). null: any stone, at random.
+//   lives         the hearts a run starts with. A lost match costs one and is played again; losing the last ends
+//                 the run. 1 is the old rule: lose one match and the run is over.
 // prettier-ignore
 const DIFFICULTIES = {
-  easy:     { name: 'Easy',      lookAhead: 2,  startLevel: 0, growth: 1,    bossBehind: 0,  upgradeOrder: [['pawn']] },
-  normal:   { name: 'Normal',    lookAhead: 99, startLevel: 0, growth: 1.5,  bossBehind: 4,  upgradeOrder: [['pawn', 'knight', 'bishop', 'rook']] },
-  hard:     { name: 'Hard',      lookAhead: 2,  startLevel: 0, growth: 2,    bossBehind: 12, upgradeOrder: null },
-  veryHard: { name: 'Very hard', lookAhead: 99, startLevel: 0, growth: 2.25, bossBehind: 17, upgradeOrder: null },
+  easy:     { name: 'Easy',      lookAhead: 2,  startLevel: 0, growth: 1,    bossBehind: 0,  lives: 3, upgradeOrder: [['pawn']] },
+  normal:   { name: 'Normal',    lookAhead: 99, startLevel: 0, growth: 1.5,  bossBehind: 4,  lives: 3, upgradeOrder: [['pawn', 'knight', 'bishop', 'rook']] },
+  hard:     { name: 'Hard',      lookAhead: 2,  startLevel: 0, growth: 2,    bossBehind: 12, lives: 2, upgradeOrder: null },
+  veryHard: { name: 'Very hard', lookAhead: 99, startLevel: 0, growth: 2.25, bossBehind: 17, lives: 1, upgradeOrder: null },
 };
+const HEART = '♥';
+const LOST_HEART = '♡';
 
 /* ---------- Opponents ----------
    Each opponent brings the same stones in every run, their rare stone included.

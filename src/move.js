@@ -135,6 +135,7 @@ function playOut(cell, result, mover, stone) {
   render();
   renderInfo();
   bump('thump');
+  sounds.place(mover);
 
   const nameTagClass = mover === YOU ? 'name-tag you' : 'name-tag opponent';
   popUp(cell, nameOf(stone), nameTagClass, scaled(NAME_TAG_MS), -centreOf(cell).size * NAME_TAG_RAISE);
@@ -177,7 +178,10 @@ function animate(result, placedCell) {
 
   const placedStone = result.stones[placedCell];
   if (PIECES[placedStone.type].swarm || PIECES[shownStone(placedCell).type].swarm) {
-    after(PAUSE_BEFORE_FIRST_STEP_MS - BEES_BEFORE_FIRST_STEP_MS, () => releaseBees(placedCell));
+    after(PAUSE_BEFORE_FIRST_STEP_MS - BEES_BEFORE_FIRST_STEP_MS, () => {
+      releaseBees(placedCell);
+      sounds.buzz();
+    });
   }
 
   let time = PAUSE_BEFORE_FIRST_STEP_MS;
@@ -215,6 +219,7 @@ function showStep(result, step, fights, flips, breaks, promotions) {
     if (flip.owner === DEBRIS) replay.effects.set(flip.cell, 'crumbling');
   }
   for (const promotion of promotions) replay.effects.set(promotion.cell, 'crowned');
+  stepSounds(step, flips, breaks, promotions);
 
   const changed = new Set([
     ...flips.map((flip) => flip.cell),
@@ -226,6 +231,20 @@ function showStep(result, step, fights, flips, breaks, promotions) {
   renderScores();
 }
 
+// One step of a move, heard: the effects of the step (shield, bite) and what broke, turned over or was crowned.
+function stepSounds(step, flips, breaks, promotions) {
+  const effects = [...replay.effects.values()];
+  if (effects.includes('shield-hit')) sounds.shield();
+  if (effects.includes('bitten')) sounds.bite();
+  if (breaks.length > 0) sounds.crack(breaks.reduce((sum, broken) => sum + broken.count, 0));
+  // Several stones turning the same way in one step sound once.
+  for (const owner of new Set(flips.map((flip) => flip.owner))) {
+    if (owner === DEBRIS) sounds.crumble();
+    else sounds.turnOver(owner, step);
+  }
+  if (promotions.length > 0) sounds.crown();
+}
+
 // The +/- pop after a move: the points it won or lost, not counting the new stone itself.
 function popGain(before, result, cell, mover, endTime) {
   const net = pointsOf(result, mover) - pointsOf(before, mover) - 1;
@@ -234,6 +253,7 @@ function popGain(before, result, cell, mover, endTime) {
   const className = net > 0 ? 'points-pop' : 'points-pop loss';
   after(endTime + POINTS_POP_DELAY_MS, () => {
     popUp(cell, text, className, scaled(POINTS_POP_MS));
+    sounds.points(mover === YOU ? net : -net);
     if (net >= BIG_CAPTURE) bump('shake');
   });
 }

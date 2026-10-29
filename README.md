@@ -6,22 +6,23 @@ No install, no account: open the link and play. Pick a stone, then a square on t
 
 [![Rook-like: the first tutorial match against Pawnbroker Pete](screenshot.png)](https://louisvandenbruwaene.github.io/rook-like/)
 
-Rook-like is a roguelike of spiked chess stones. You and the computer take turns placing stones on a 4 × 4 board. Facing spikes fight, the winner takes the other stone, and one move can set off a chain of fights. A run is twenty matches against opponents who grow stronger with every win, and the last one is the boss.
+Rook-like is a roguelike of spiked chess stones. You and the computer take turns placing stones on a 4 × 4 board. Facing spikes fight, the winner takes the other stone, and one move can set off a chain of fights. A run is twenty matches against opponents who grow stronger with every win, and the last one is the boss. A lost match costs a heart and is played again.
 
-The page is [`index.html`](index.html) (layout and rules text) with [`style.css`](style.css) and ten small scripts in [`src/`](src/), loaded in this order. They share one global scope, so a later file can use everything from an earlier one. The diagrams below use the function names from the code, so you can search for any box.
+The page is [`index.html`](index.html) (layout and rules text) with [`style.css`](style.css) and eleven small scripts in [`src/`](src/), loaded in this order. They share one global scope, so a later file can use everything from an earlier one. The diagrams below use the function names from the code, so you can search for any box.
 
 | File | Lines | What it holds |
 |---|---|---|
-| [`src/rules.js`](src/rules.js) | 496 | the pieces, stones and stone codes, the board, one fight, one move. Pure logic, never touches the page |
-| [`src/computer.js`](src/computer.js) | 134 | the computer player |
+| [`src/rules.js`](src/rules.js) | 484 | the pieces, stones and stone codes, the board, one fight, one move. Pure logic, never touches the page |
+| [`src/computer.js`](src/computer.js) | 132 | the computer player |
 | [`src/art.js`](src/art.js) | 153 | every stone and portrait: the stones show the pixel-art PNGs in [`art/stones/`](art/stones/), the opponents the pixel-art PNGs in [`art/opponents/`](art/opponents/) |
-| [`src/settings.js`](src/settings.js) | 248 | board size, run length, difficulties, the opponents and their decks |
-| [`src/save.js`](src/save.js) | 231 | progress and settings in localStorage |
-| [`src/screen.js`](src/screen.js) | 318 | the state of a match, a move playing out, and the `render…()` functions |
-| [`src/move.js`](src/move.js) | 262 | how a move plays out on screen, step by step |
-| [`src/run.js`](src/run.js) | 554 | the cards between matches: the run match by match, your deck, rewards, the end |
+| [`src/settings.js`](src/settings.js) | 253 | board size, run length, difficulties and their hearts, the opponents and their decks |
+| [`src/save.js`](src/save.js) | 239 | progress and settings in localStorage |
+| [`src/screen.js`](src/screen.js) | 314 | the state of a match, a move playing out, and the `render…()` functions |
+| [`src/sound.js`](src/sound.js) | 146 | a tiny synth, no audio files: every sound of the game, and the Sound button |
+| [`src/move.js`](src/move.js) | 282 | how a move plays out on screen, step by step, seen and heard |
+| [`src/run.js`](src/run.js) | 620 | the cards between matches: the run match by match, hearts, your deck, rewards, the end |
 | [`src/tutorial.js`](src/tutorial.js) | 275 | the coach line under the board: the four practice boards, and a word and a demo board for each rare stone you meet |
-| [`src/controls.js`](src/controls.js) | 125 | the rules panel, mouse, touch and keys, and the start |
+| [`src/controls.js`](src/controls.js) | 129 | the rules panel, mouse, touch and keys, and the start |
 
 Every file starts with a header that says what it builds on and lists its sections (`Contents: …`), and every section starts with a `/* ---------- name ---------- */` line, so a search for `----------` lists them all.
 
@@ -40,7 +41,8 @@ Every file starts with a header that says what it builds on and lists its sectio
 | how strong the computer plays | `bestMove` and the values at the top of `computer.js` |
 | what a square on the board shows | `squareClasses` and `squareContents` in `screen.js`, styled in `style.css` |
 | the timing of a move on screen | the `…_MS` constants and `animate` in `move.js` |
-| rewards and the end of a run | `offerRewards`, `giftPanel`, `takeIntoDeckIfStronger`, `endRun` in `run.js` |
+| rewards and the end of a run | `offerRewards`, `offerUpgrade`, `takeGift`, `takeIntoDeckIfStronger`, `loseHeart`, `endRun` in `run.js` |
+| how something sounds, and the volume | `sounds` and the settings at the top of `sound.js`; `stepSounds` in `move.js` picks them for each step of a move |
 | which stones go into your deck before a match | `deckLike` (the deck you last fought with, kept in `save.lastDeck`) and `chooseDeck` in `run.js` |
 | what is saved | `newSave` in `save.js`; add a `fromVersion…` step when the shape changes |
 | keys, mouse and touch | the input section of `controls.js` |
@@ -55,7 +57,8 @@ The files share one global scope. These are the only variables that change while
 
 | Variable | File | What it is |
 |---|---|---|
-| `save`, `settings` | `save.js` | your progress and slow motion, written back by `store()` |
+| `save`, `settings` | `save.js` | your progress, slow motion and sound off, written back by `store()` |
+| `audio` | `sound.js` | the AudioContext, made at the first sound |
 | `game`, `opponent` | `screen.js` | the match being played and who you face, set by `startMatch` and `makeMove` |
 | `ui` | `screen.js` | your selected stone, the hovered square, the last move, whether input waits |
 | `history` | `screen.js` | every move of the match, for the loss card |
@@ -236,12 +239,12 @@ flowchart TD
 
 The difficulty sets how many moves ahead the computer may look and how fast its stones grow. Every opponent starts at level 0; after each of your wins every deck gains `growth` levels (1.5 is 1, 2, 1, 2, ...), one stone one level at a time, so the opponents pull further ahead the longer the run goes. The boss misses the first `bossBehind` of those upgrades: with two queens and placing first it needs no more.
 
-| Difficulty | Looks ahead | Levels a win | Boss misses | Which stones grow first |
-|---|---|---|---|---|
-| Easy | 2 moves | 1 | 0 | tinies, then everything else, one level at a time |
-| Normal | as far as it can | 1.5 | 4 | tinies, knights, bishops and rooks, then everything else |
-| Hard | 2 moves | 2 | 12 | any stone, at random |
-| Very hard | as far as it can | 2.25 | 17 | any stone, at random |
+| Difficulty | Looks ahead | Levels a win | Boss misses | Hearts | Which stones grow first |
+|---|---|---|---|---|---|
+| Easy | 2 moves | 1 | 0 | 3 | tinies, then everything else, one level at a time |
+| Normal | as far as it can | 1.5 | 4 | 3 | tinies, knights, bishops and rooks, then everything else |
+| Hard | 2 moves | 2 | 12 | 2 | any stone, at random |
+| Very hard | as far as it can | 2.25 | 17 | 1 | any stone, at random |
 
 "As far as it can" means one second of thinking (1.6 for the boss). Near the end of a match that reaches the very last move. A level 0 stone has one spike fewer on every spiked side, so a level 0 tiny has none.
 
@@ -283,9 +286,12 @@ stateDiagram-v2
     intro --> startMatch : the king and the 7 spikiest stones are picked, change them, Fight
     startMatch --> finishMatch : board full
     finishMatch --> offerRewards : you won, every opponent deck grows
-    offerRewards --> nextMatch : upgrade one of 3 stones (+ a new stone)
+    offerRewards --> offerUpgrade : pick one of 2 new stones
+    offerUpgrade --> nextMatch : upgrade one of 3 stones
     nextMatch --> intro
-    finishMatch --> endRun : you lost, or won match 20
+    finishMatch --> loseHeart : you lost, with a heart to spare
+    loseHeart --> intro : the same match again
+    finishMatch --> endRun : you lost your last heart, or won match 20
     endRun --> intro : keep one gain, new run, same difficulty
 ```
 
@@ -293,7 +299,8 @@ stateDiagram-v2
 - **The difficulty** (`save.difficulty`, `beginRun` in `run.js`) is chosen once for the whole game. Losing a run starts a new run of the same game, at the same difficulty. **New game** in the rules panel (`startNewGame`) starts over from the starter stones and asks again; records stay.
 - **Your last stone** is selected for you when it is your turn (`nextTurn` in `move.js`).
 - **Your collection** (`run.collection`, `spikiestDeck`, `deckFrom`, `renderCollection` in `run.js`): every stone you own this run, at every level you have had it, never twice the same. Before each match the king and the 7 with the most spikes are picked as your deck (`spikiestDeck`) and you may change them, at most one king and one queen (`sameLimitedPiece`); other stones may come at several levels, never twice the same code.
-- **Rewards** (`offerRewards`): after a win you upgrade one of three random stones from your deck by one level. The upgraded stone takes its place in the deck and the old one stays in the collection, except a queen, who is replaced. A pawn or knight turn grows to at most one level more than the number of its turns you own, so one horse reaches level 2 and a third level needs a second horse. You also get one new stone (piece and turn) you do not own: one the opponent played, or any missing pawn or knight turn (`TURNED_STONES`), at the opponent's level or one below your best of that piece.
+- **Hearts** (`run.lives`, `loseHeart`): a run starts with the difficulty's `lives`. A lost match costs one and is played again, against the same deck; losing with one heart left ends the run.
+- **Rewards** (`offerRewards`, `offerUpgrade`): after a win you first pick one of two new stones (`GIFT_CHOICES`), then upgrade one of three random stones from your deck by one level. The upgraded stone takes its place in the deck and the old one stays in the collection, except a queen, who is replaced. A pawn or knight turn grows to at most one level more than the number of its turns you own, so one horse reaches level 2 and a third level needs a second horse. The new stones are ones (piece and turn) you do not own: ones the opponent played, or any missing pawn or knight turn (`TURNED_STONES`), at the opponent's level or one below your best of that piece.
 - **The end of a run** (`endRun`): keep one stone you do not own yet in your collection for good. A queen replaces the one you had.
 - **Who places first** (`firstFor`): you in odd matches, the opponent in even ones, the boss always.
 - **Winning a match** (`winnerOf`): most points (stones), else most spikes left, else whoever placed first.

@@ -40,6 +40,7 @@
     <div class="run-progress"><div class="ladder" id="ladder"></div><div class="run-line" id="run-line"></div></div>
     <div class="controls">
       <button id="rules-button" title="Rules">?</button>
+      <button id="sound-button" aria-pressed="true" title="Sound (M)">Sound</button>
       <button id="slow-button" aria-pressed="false" title="Slow motion (S)">Slow</button>
     </div>
   </header>
@@ -87,14 +88,14 @@
   </ul>
   <h3>A run</h3>
   <ul>
-    <li>A run is <b>20 matches</b>, and match 20 is the boss. Lose one and the run is over. The difficulty is picked once per game (New game, below, starts over with the starter stones): Easy (opponents look 2 moves ahead), Normal (as far ahead as they can), Hard (2 moves) or Very hard (as far as they can). The card shows how many levels their stones gain per win.</li>
+    <li>A run is <b>20 matches</b>, and match 20 is the boss. A lost match costs a heart ♥ and is played again; lose your last heart and the run is over (Easy and Normal have 3, Hard 2, Very hard 1). The difficulty is picked once per game (New game, below, starts over with the starter stones): Easy (opponents look 2 moves ahead), Normal (as far ahead as they can), Hard (2 moves) or Very hard (as far as they can). The card shows how many levels their stones gain per win.</li>
     <li>Before each match you see the opponent's stones and the 8 of yours you take in, at most one king and one queen: the same stones as last match, even in a new run. Fight plays them, Change stones swaps some.</li>
     <li>After each match you win, every opponent's deck gains levels, one stone one level at a time. On Easy the Tinies go first, on Normal the Tinies, knights, bishops and rooks. The boss skips the first few upgrades. Lady Lux, whose Experienced Edna cures poison, always comes before Madame Swerve and her Venom Veronica.</li>
-    <li>After a win you get a new stone: one the opponent played or a pawn or knight turn you do not own yet. It goes into your deck by itself only when it has more spikes than your weakest stone there. Then upgrade one of three stones from your deck by one level (the old one stays, except a queen, who is replaced). When a run ends, keep one stone you gained in it for good.</li>
+    <li>After a win you pick one of two new stones: ones the opponent played or pawn and knight turns you do not own yet. It goes into your deck by itself only when it has more spikes than your weakest stone there. Then upgrade one of three stones from your deck by one level (the old one stays, except a queen, who is replaced). When a run ends, keep one stone you gained in it for good.</li>
   </ul>
   <h3>Controls</h3>
   <ul>
-    <li>Pick a stone (or press its number), then point at a square, or tap it once on a phone: yellow stones you would take, red stones you would lose, faded spikes would break. Slow (or S) plays every move four times slower.</li>
+    <li>Pick a stone (or press its number), then point at a square, or tap it once on a phone: yellow stones you would take, red stones you would lose, faded spikes would break. Slow (or S) plays every move four times slower, Sound (or M) turns the sound on and off.</li>
   </ul>
   <div class="piece-guide" id="piece-guide"></div>
   <p class="record" id="record"></p>
@@ -117,6 +118,7 @@
 <script src="src/settings.js"></script>
 <script src="src/save.js"></script>
 <script src="src/screen.js"></script>
+<script src="src/sound.js"></script>
 <script src="src/move.js"></script>
 <script src="src/run.js"></script>
 <script src="src/tutorial.js"></script>

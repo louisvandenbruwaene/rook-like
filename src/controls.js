@@ -91,12 +91,14 @@ board.addEventListener('pointerleave', (event) => {
   if (event.pointerType === 'mouse') hover(-1);
 });
 
-// S toggles slow motion, Escape drops the selected stone, the number keys pick a stone from your hand.
+// S toggles slow motion, M the sound, Escape drops the selected stone, the number keys pick a stone from your hand.
 addEventListener('keydown', (event) => {
   const aCardIsOpen = !find('#card-modal').hidden || !find('#rules-modal').hidden;
   if (aCardIsOpen) return;
   const isS = event.key === 's' || event.key === 'S';
-  if (isS && !event.metaKey && !event.ctrlKey) setSlow(!settings.slowMotion);
+  const plainKey = !event.metaKey && !event.ctrlKey && !event.altKey;
+  if (isS && plainKey) setSlow(!settings.slowMotion);
+  if ((event.key === 'm' || event.key === 'M') && plainKey) setMuted(!settings.muted);
   if (event.key === 'Escape' && ui.selected >= 0) select(-1);
   const number = Number(event.key);
   if (game && isYourTurn() && number >= 1 && number <= game.hands[YOU].length) select(number - 1);
@@ -110,11 +112,13 @@ function setSlow(on) {
 }
 
 find('#slow-button').onclick = () => setSlow(!settings.slowMotion);
+find('#sound-button').onclick = () => setMuted(!settings.muted);
 find('#rules-button').onclick = showRules;
 
 /* ---------- Start ---------- */
 
 setSlow(settings.slowMotion);
+setMuted(settings.muted);
 const needsNewRun = !save.run || save.run.over;
 if (needsNewRun) newRun();
 opponent = opponentFor(save.run.match);
