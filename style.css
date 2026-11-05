@@ -759,6 +759,16 @@ h1 {
   font-weight: 600;
   line-height: 1.3;
 }
+/* the choice in focus (arrow keys or Tab) lifts and glows, so you always see what Enter takes */
+.choice {
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.choice:focus-visible,
+.choice:hover {
+  outline: none;
+  transform: translateY(-4px) scale(1.03);
+  box-shadow: 0 0 0 3px var(--accent), 0 10px 24px rgba(0, 0, 0, 0.45);
+}
 .choice svg {
   width: 76px;
   height: 76px;

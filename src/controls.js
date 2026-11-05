@@ -91,8 +91,40 @@ board.addEventListener('pointerleave', (event) => {
   if (event.pointerType === 'mouse') hover(-1);
 });
 
+// On a card the arrow keys move between its buttons by where they sit: left and right along a row, up and down to the
+// nearest button in the row above or below, wrapping at the ends of a row. Enter or Space presses the one in focus.
+function moveFocusOnCard(key) {
+  const buttons = [...document.querySelectorAll('#card button')].filter((button) => button.offsetParent !== null);
+  if (buttons.length === 0) return;
+  const centre = (button) => {
+    const box = button.getBoundingClientRect();
+    return { button, x: box.left + box.width / 2, y: box.top + box.height / 2, height: box.height };
+  };
+  const all = buttons.map(centre);
+  const from = all.find((spot) => spot.button === document.activeElement);
+  if (!from) {
+    all[0].button.focus();
+    return;
+  }
+  const sideways = key === 'ArrowLeft' || key === 'ArrowRight';
+  const sign = key === 'ArrowLeft' || key === 'ArrowUp' ? -1 : 1;
+  const along = (spot) => (sideways ? spot.x - from.x : spot.y - from.y) * sign;
+  const across = (spot) => Math.abs(sideways ? spot.y - from.y : spot.x - from.x);
+  const sameRow = (spot) => !sideways || across(spot) < Math.max(from.height, spot.height) / 2;
+  const ahead = all.filter((spot) => spot !== from && along(spot) > 1 && sameRow(spot));
+  const behind = all.filter((spot) => spot !== from && along(spot) < -1 && sameRow(spot));
+  const byDistance = (a, b) => along(a) + 3 * across(a) - (along(b) + 3 * across(b));
+  const to = ahead.sort(byDistance)[0] || behind.sort((a, b) => along(a) + across(a) - (along(b) + across(b)))[0];
+  if (to) to.button.focus();
+}
+
 // S toggles slow motion, M the sound, Escape drops the selected stone, the number keys pick a stone from your hand.
 addEventListener('keydown', (event) => {
+  if (!find('#card-modal').hidden && event.key.startsWith('Arrow')) {
+    event.preventDefault();
+    moveFocusOnCard(event.key);
+    return;
+  }
   const aCardIsOpen = !find('#card-modal').hidden || !find('#rules-modal').hidden;
   if (aCardIsOpen) return;
   const isS = event.key === 's' || event.key === 'S';

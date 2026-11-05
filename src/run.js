@@ -52,6 +52,9 @@ function showCard(label, contentHtml, { choices = [], button, secondButton, layo
       button.onClick();
     };
     mainButton.focus();
+  } else {
+    // no main button: the first choice has focus, so the arrow keys and Enter work at once
+    find('#card .choice')?.focus();
   }
 }
 
